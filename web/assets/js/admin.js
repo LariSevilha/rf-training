@@ -26,7 +26,6 @@ const createBtn = document.getElementById("createBtn");
 const search = document.getElementById("search");
 const refreshBtn = document.getElementById("refreshBtn");
 const userList = document.getElementById("userList");
-const loadBtn = document.getElementById("loadBtn");
 
 const studentEmail = document.getElementById("studentEmail");
 const active = document.getElementById("active");
@@ -38,66 +37,73 @@ const saveBtn = document.getElementById("saveBtn");
 const resetBtn = document.getElementById("resetBtn");
 const deleteBtn = document.getElementById("deleteBtn");
 
+const totalUsers = document.getElementById("totalUsers");
+const activeUsers = document.getElementById("activeUsers");
+const inactiveUsers = document.getElementById("inactiveUsers");
+
 let token = null;
 
-logoutBtn.addEventListener("click", () => {
+logoutBtn.onclick = () => {
   clearSession();
   window.location.href = "/pages/index.html";
-});
+};
 
 function renderUsers(users) {
   userList.innerHTML = "";
+
+  let activeCount = 0;
+
   if (!users.length) {
-    userList.innerHTML = `<div style="opacity:.7;font-size:13px;">Nenhum aluno encontrado.</div>`;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="2" style="opacity:.7;padding:12px;">Nenhum aluno encontrado.</td>`;
+    userList.appendChild(tr);
+
+    totalUsers.textContent = 0;
+    activeUsers.textContent = 0;
+    inactiveUsers.textContent = 0;
     return;
   }
 
-  users.forEach((u) => {
-    const div = document.createElement("div");
-    div.className = "miniBtn";
-    div.style.minWidth = "auto";
-    div.style.textAlign = "left";
-    div.textContent = `${u.active ? "🟢" : "🔴"} ${u.email}`;
-    div.addEventListener("click", () => {
+  users.forEach(u => {
+    if (u.active) activeCount++;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.active ? "🟢" : "🔴"}</td>
+      <td>${u.email}</td>
+    `;
+    tr.onclick = () => {
       studentEmail.value = u.email;
       active.checked = !!u.active;
-      setMsg(ok, "Aluno selecionado. Clique em Carregar aluno.", "ok");
-      setTimeout(() => clearMsg(ok), 900);
-    });
-    userList.appendChild(div);
+      setMsg(ok, "Aluno selecionado ✅", "ok");
+      setTimeout(() => clearMsg(ok), 800);
+    };
+    userList.appendChild(tr);
   });
+
+  totalUsers.textContent = users.length;
+  activeUsers.textContent = activeCount;
+  inactiveUsers.textContent = users.length - activeCount;
 }
 
 async function refreshList() {
-  clearMsg(ok); clearMsg(err);
+  clearMsg(ok);
+  clearMsg(err);
+
   const q = (search.value || "").trim();
   const data = await apiAdminListUsers(token, q);
   renderUsers(data.users || []);
 }
 
-async function loadStudent() {
-  clearMsg(ok); clearMsg(err);
-  const em = studentEmail.value.trim().toLowerCase();
-  if (!em) return setMsg(err, "Digite o email do aluno.", "error");
-
-  const u = await apiAdminGetUser(token, em);
-  active.checked = !!u.user.active;
-
-  const docs = await apiAdminGetDocs(token, em);
-  training.value = docs.training || "";
-  diet.value = docs.diet || "";
-  supp.value = docs.supp || "";
-
-  setMsg(ok, "Aluno carregado ✅", "ok");
-  setTimeout(() => clearMsg(ok), 900);
-}
-
-createBtn.addEventListener("click", async () => {
-  clearMsg(ok); clearMsg(err);
+createBtn.onclick = async () => {
+  clearMsg(ok);
+  clearMsg(err);
 
   const email = newEmail.value.trim().toLowerCase();
   const password = newPass.value.trim();
-  if (!email || !password) return setMsg(err, "Preencha email e senha inicial.", "error");
+
+  if (!email || !password)
+    return setMsg(err, "Preencha email e senha inicial.", "error");
 
   try {
     await apiAdminCreateUser(token, email, password, !!newActive.checked);
@@ -108,20 +114,16 @@ createBtn.addEventListener("click", async () => {
   } catch (e) {
     setMsg(err, e.message || "Erro ao criar.", "error");
   }
-});
+};
 
-refreshBtn.addEventListener("click", async () => {
+refreshBtn.onclick = async () => {
   try { await refreshList(); }
   catch (e) { setMsg(err, e.message || "Erro ao listar.", "error"); }
-});
+};
 
-loadBtn.addEventListener("click", async () => {
-  try { await loadStudent(); }
-  catch (e) { setMsg(err, e.message || "Erro ao carregar.", "error"); }
-});
-
-saveBtn.addEventListener("click", async () => {
-  clearMsg(ok); clearMsg(err);
+saveBtn.onclick = async () => {
+  clearMsg(ok);
+  clearMsg(err);
 
   const em = studentEmail.value.trim().toLowerCase();
   if (!em) return setMsg(err, "Digite o email do aluno.", "error");
@@ -129,7 +131,7 @@ saveBtn.addEventListener("click", async () => {
   const docs = {
     training: training.value.trim() || undefined,
     diet: diet.value.trim() || undefined,
-    supp: supp.value.trim() || undefined,
+    supp: supp.value.trim() || undefined
   };
 
   try {
@@ -140,10 +142,11 @@ saveBtn.addEventListener("click", async () => {
   } catch (e) {
     setMsg(err, e.message || "Erro ao salvar.", "error");
   }
-});
+};
 
-resetBtn.addEventListener("click", async () => {
-  clearMsg(ok); clearMsg(err);
+resetBtn.onclick = async () => {
+  clearMsg(ok);
+  clearMsg(err);
 
   const em = studentEmail.value.trim().toLowerCase();
   if (!em) return setMsg(err, "Digite o email do aluno.", "error");
@@ -157,10 +160,11 @@ resetBtn.addEventListener("click", async () => {
   } catch (e) {
     setMsg(err, e.message || "Erro ao resetar senha.", "error");
   }
-});
+};
 
-deleteBtn.addEventListener("click", async () => {
-  clearMsg(ok); clearMsg(err);
+deleteBtn.onclick = async () => {
+  clearMsg(ok);
+  clearMsg(err);
 
   const em = studentEmail.value.trim().toLowerCase();
   if (!em) return setMsg(err, "Digite o email do aluno.", "error");
@@ -170,15 +174,17 @@ deleteBtn.addEventListener("click", async () => {
   try {
     await apiAdminDeleteUser(token, em);
     setMsg(ok, "Aluno deletado ✅", "ok");
+
     studentEmail.value = "";
     training.value = "";
     diet.value = "";
     supp.value = "";
+
     await refreshList();
   } catch (e) {
     setMsg(err, e.message || "Erro ao deletar.", "error");
   }
-});
+};
 
 (async function init() {
   const session = await requireAuth("admin");

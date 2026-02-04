@@ -7,11 +7,18 @@
   <link rel="stylesheet" href="../assets/css/styles.css" />
 </head>
 <body>
-  <div class="wrap">
-    <div class="shell">
-      <div class="device">
-        <div class="phone">
-          <div class="topbar">
+  <!-- força o conteúdo a ocupar a tela toda -->
+  <div class="wrap" style="padding:18px;">
+    <!-- remove o grid 2 colunas do .shell e deixa 1 coluna -->
+    <div class="shell" style="grid-template-columns: 1fr; width: min(1280px, 100%);">
+
+      <!-- expande o “device” -->
+      <div class="device" style="padding:16px;">
+        <!-- tira cara de “phone” e vira painel grande -->
+        <div class="phone" style="min-height: auto; border-radius: 22px;">
+
+          <!-- TOPBAR -->
+          <div class="topbar" style="height:64px;">
             <div class="logo">
               <div class="logo-badge">RF</div>
               <div class="logo-text">
@@ -22,84 +29,114 @@
             <button class="pill" id="logoutBtn">Sair</button>
           </div>
 
-          <section class="screen active">
-            <div class="card">
-              <div class="title">Admin</div>
-              <p class="desc">Conta: <span id="who" style="color:var(--gold2); font-weight:750;"></span></p>
+          <!-- ADMIN DASH -->
+          <section class="screen active adminDash" style="padding:18px;">
 
-              <div class="hr"></div>
-
-              <div class="title" style="font-size:16px;">Criar aluno</div>
-              <div class="field">
-                <div class="label">Email</div>
-                <input id="newEmail" type="email" placeholder="aluno@email.com" />
-              </div>
-              <div class="field">
-                <div class="label">Senha inicial</div>
-                <input id="newPass" type="text" placeholder="mín. 6 caracteres" />
-              </div>
-              <label class="check">
-                <input id="newActive" type="checkbox" checked />
-                Ativo
-              </label>
-              <button class="btn" id="createBtn">CRIAR</button>
-
-              <div class="hr"></div>
-
-              <div class="title" style="font-size:16px;">Buscar / listar</div>
-              <div class="field">
-                <div class="label">Pesquisar email</div>
-                <input id="search" type="text" placeholder="ex: maria" />
-              </div>
-              <div class="miniRow">
-                <div class="miniBtn" id="refreshBtn">Atualizar lista</div>
-                <div class="miniBtn" id="loadBtn">Carregar aluno</div>
+            <div class="dashHeader" style="align-items:flex-end;">
+              <div>
+                <h1 style="margin:0; font-size:22px;">Admin Dashboard</h1>
+                <p style="margin:6px 0 0; opacity:.85;">
+                  Conta: <span id="who" style="font-weight:800;"></span>
+                </p>
               </div>
 
-              <div id="userList" style="margin-top:10px;"></div>
-
-              <div class="hr"></div>
-
-              <div class="title" style="font-size:16px;">Editar aluno</div>
-              <div class="field">
-                <div class="label">Email do aluno</div>
-                <input id="studentEmail" type="email" placeholder="aluno@email.com" />
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="pill" id="refreshBtn">Atualizar lista</button>
               </div>
-              <label class="check">
-                <input id="active" type="checkbox" checked />
-                Ativo
-              </label>
-
-              <div class="field">
-                <div class="label">Link Treino</div>
-                <input id="training" type="text" placeholder="https://drive.google.com/..." />
-              </div>
-              <div class="field">
-                <div class="label">Link Dieta</div>
-                <input id="diet" type="text" placeholder="https://drive.google.com/..." />
-              </div>
-              <div class="field">
-                <div class="label">Link Suplementação</div>
-                <input id="supp" type="text" placeholder="https://drive.google.com/..." />
-              </div>
-
-              <div class="miniRow">
-                <div class="miniBtn gold" id="saveBtn">Salvar</div>
-                <div class="miniBtn" id="resetBtn">Reset senha</div>
-                <div class="miniBtn" id="deleteBtn">Deletar</div>
-              </div>
-
-              <div class="msg ok" id="ok"></div>
-              <div class="msg error" id="err"></div>
             </div>
+
+            <!-- STATS -->
+            <div class="statsGrid" style="margin-top:14px;">
+              <div class="statCard">
+                <span>Total alunos</span>
+                <strong id="totalUsers">—</strong>
+              </div>
+              <div class="statCard">
+                <span>Ativos</span>
+                <strong id="activeUsers">—</strong>
+              </div>
+              <div class="statCard">
+                <span>Inativos</span>
+                <strong id="inactiveUsers">—</strong>
+              </div>
+            </div>
+
+            <!-- GRID -->
+            <div class="adminGrid" style="margin-top:16px;">
+
+              <!-- CRIAR -->
+              <div class="card">
+                <h3 style="margin:0 0 4px;">Criar aluno</h3>
+
+                <input id="newEmail" type="email" placeholder="Email do aluno" />
+                <input id="newPass" type="text" placeholder="Senha inicial" />
+
+                <label class="check" style="margin-top:2px;">
+                  <input id="newActive" type="checkbox" checked />
+                  Ativo
+                </label>
+
+                <button class="btn" id="createBtn">Criar aluno</button>
+              </div>
+
+              <!-- LISTA -->
+              <div class="card wide">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                  <h3 style="margin:0;">Alunos</h3>
+                  <input id="search" type="text" placeholder="Pesquisar email..." style="max-width:340px;" />
+                </div>
+
+                <div class="tableWrap" style="margin-top:12px;">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width:92px;">Status</th>
+                        <th>Email</th>
+                      </tr>
+                    </thead>
+                    <tbody id="userList"></tbody>
+                  </table>
+                </div>
+
+                <div style="opacity:.7; font-size:12px; margin-top:10px;">
+                  Dica: clique em um aluno na tabela para preencher o email na edição.
+                </div>
+              </div>
+
+              <!-- EDITAR -->
+              <div class="card">
+                <h3 style="margin:0 0 4px;">Editar aluno</h3>
+
+                <input id="studentEmail" type="email" placeholder="Email do aluno" />
+
+                <label class="check" style="margin-top:2px;">
+                  <input id="active" type="checkbox" checked />
+                  Ativo
+                </label>
+
+                <input id="training" type="text" placeholder="Link treino" />
+                <input id="diet" type="text" placeholder="Link dieta" />
+                <input id="supp" type="text" placeholder="Link suplementação" />
+
+                <div class="miniRow">
+                  <button class="miniBtn gold" id="saveBtn">Salvar</button>
+                  <button class="miniBtn" id="resetBtn">Reset senha</button>
+                  <button class="miniBtn" id="deleteBtn">Deletar</button>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="msg ok" id="ok"></div>
+            <div class="msg error" id="err"></div>
+
           </section>
+
         </div>
       </div>
 
-      <div class="panel">
-        <h2>CRUD</h2>
-        <p>Crie, pesquise, edite, resete senha e delete alunos.</p>
-      </div>
+      <!-- ✅ painel CRUD removido -->
+
     </div>
   </div>
 
