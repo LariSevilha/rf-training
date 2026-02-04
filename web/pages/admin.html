@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RF App – Admin</title>
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <div class="device">
+        <div class="phone">
+          <div class="topbar">
+            <div class="logo">
+              <div class="logo-badge">RF</div>
+              <div class="logo-text">
+                <div class="brand">RF FITNESS</div>
+                <div class="sub">Admin</div>
+              </div>
+            </div>
+            <button class="pill" id="logoutBtn">Sair</button>
+          </div>
+
+          <section class="screen active">
+            <div class="card">
+              <div class="title">Admin</div>
+              <p class="desc">Conta: <span id="who" style="color:var(--gold2); font-weight:750;"></span></p>
+
+              <div class="hr"></div>
+
+              <div class="title" style="font-size:16px;">Criar aluno</div>
+              <div class="field">
+                <div class="label">Email</div>
+                <input id="newEmail" type="email" placeholder="aluno@email.com" />
+              </div>
+              <div class="field">
+                <div class="label">Senha inicial</div>
+                <input id="newPass" type="text" placeholder="mín. 6 caracteres" />
+              </div>
+              <label class="check">
+                <input id="newActive" type="checkbox" checked />
+                Ativo
+              </label>
+              <button class="btn" id="createBtn">CRIAR</button>
+
+              <div class="hr"></div>
+
+              <div class="title" style="font-size:16px;">Buscar / listar</div>
+              <div class="field">
+                <div class="label">Pesquisar email</div>
+                <input id="search" type="text" placeholder="ex: maria" />
+              </div>
+              <div class="miniRow">
+                <div class="miniBtn" id="refreshBtn">Atualizar lista</div>
+                <div class="miniBtn" id="loadBtn">Carregar aluno</div>
+              </div>
+
+              <div id="userList" style="margin-top:10px;"></div>
+
+              <div class="hr"></div>
+
+              <div class="title" style="font-size:16px;">Editar aluno</div>
+              <div class="field">
+                <div class="label">Email do aluno</div>
+                <input id="studentEmail" type="email" placeholder="aluno@email.com" />
+              </div>
+              <label class="check">
+                <input id="active" type="checkbox" checked />
+                Ativo
+              </label>
+
+              <div class="field">
+                <div class="label">Link Treino</div>
+                <input id="training" type="text" placeholder="https://drive.google.com/..." />
+              </div>
+              <div class="field">
+                <div class="label">Link Dieta</div>
+                <input id="diet" type="text" placeholder="https://drive.google.com/..." />
+              </div>
+              <div class="field">
+                <div class="label">Link Suplementação</div>
+                <input id="supp" type="text" placeholder="https://drive.google.com/..." />
+              </div>
+
+              <div class="miniRow">
+                <div class="miniBtn gold" id="saveBtn">Salvar</div>
+                <div class="miniBtn" id="resetBtn">Reset senha</div>
+                <div class="miniBtn" id="deleteBtn">Deletar</div>
+              </div>
+
+              <div class="msg ok" id="ok"></div>
+              <div class="msg error" id="err"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>CRUD</h2>
+        <p>Crie, pesquise, edite, resete senha e delete alunos.</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../assets/js/admin.js"></script>
+</body>
+</html>

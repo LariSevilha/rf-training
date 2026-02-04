@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RF App – Aluno</title>
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <div class="device">
+        <div class="phone">
+
+          <!-- TOPBAR -->
+          <div class="topbar" id="topbar">
+            <div class="logo">
+              <div class="logo-badge">RF</div>
+              <div class="logo-text">
+                <div class="brand">RF FITNESS</div>
+                <div class="sub">Painel do Aluno</div>
+              </div>
+            </div>
+            <button class="pill" id="logoutBtn">Sair</button>
+          </div>
+
+          <!-- MENU -->
+          <section class="screen active">
+            <div class="card">
+              <div class="title">Bem-vindo(a) 👋</div>
+              <p class="desc">
+                Conta:
+                <span id="who" style="color:var(--gold2); font-weight:750;"></span>
+              </p>
+
+              <div class="menuGrid">
+                <div class="menuBtn" data-open="training">
+                  <div class="menuLeft">
+                    <div class="icon">T</div>
+                    <div class="menuTxt">
+                      <p class="h">Treino</p>
+                      <p class="s">Abrir PDF</p>
+                    </div>
+                  </div>
+                  <div class="chev">›</div>
+                </div>
+
+                <div class="menuBtn" data-open="diet">
+                  <div class="menuLeft">
+                    <div class="icon">A</div>
+                    <div class="menuTxt">
+                      <p class="h">Alimentação</p>
+                      <p class="s">Abrir PDF</p>
+                    </div>
+                  </div>
+                  <div class="chev">›</div>
+                </div>
+
+                <div class="menuBtn" data-open="supp">
+                  <div class="menuLeft">
+                    <div class="icon">S</div>
+                    <div class="menuTxt">
+                      <p class="h">Suplementação</p>
+                      <p class="s">Abrir PDF</p>
+                    </div>
+                  </div>
+                  <div class="chev">›</div>
+                </div>
+              </div>
+
+              <div class="msg ok" id="ok"></div>
+              <div class="msg error" id="err"></div>
+            </div>
+          </section>
+
+          <!-- PDF OVERLAY -->
+          <div class="pdfOverlay" id="pdfOverlay" aria-hidden="true">
+            <div class="pdfBar">
+              <button class="backBtn" id="pdfBack">← Voltar</button>
+              <div class="pdfTitle" id="pdfTitle">PDF</div>
+            </div>
+
+            <div class="pdfFrameWrap">
+              <iframe id="pdfFrame" title="PDF"></iframe>
+
+              <div class="loadingLayer" id="loadingLayer">
+                <div class="spinner"></div>
+                <div class="loadingText">Carregando PDF…</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Status</h2>
+        <p id="status">Carregando documentos…</p>
+        <div class="hr"></div>
+        <p>Toque em um item para abrir o PDF.</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../assets/js/aluno.js"></script>
+</body>
+</html>
