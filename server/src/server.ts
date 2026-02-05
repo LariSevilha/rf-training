@@ -90,7 +90,8 @@ async function main() {
       where: { userId: user.id }
     });
 
-    const out: Record<string, string> = { training: "", diet: "", supp: "" };
+    // ✅ NOVO: inclui stretch
+    const out: Record<string, string> = { training: "", diet: "", supp: "", stretch: "" };
     for (const d of docs) out[d.docType] = d.url;
 
     return out;
@@ -176,7 +177,8 @@ async function main() {
 
     const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
 
-    const out: Record<string, string> = { training: "", diet: "", supp: "" };
+    // ✅ NOVO: inclui stretch
+    const out: Record<string, string> = { training: "", diet: "", supp: "", stretch: "" };
     for (const d of docs) out[d.docType] = d.url;
 
     return out;
@@ -203,10 +205,12 @@ async function main() {
 
     const email = String(req.params.email).toLowerCase();
 
+    // ✅ NOVO: inclui stretch
     const schema = z.object({
       training: z.string().optional(),
       diet: z.string().optional(),
-      supp: z.string().optional()
+      supp: z.string().optional(),
+      stretch: z.string().optional()
     });
     const body = schema.parse(req.body);
 
@@ -259,7 +263,8 @@ async function main() {
   // start
   const port = Number(process.env.PORT) || 3333;
   await app.listen({ port, host: "0.0.0.0" });
-}  
+}
+
 main().catch((e) => {
   console.error(e);
   process.exit(1);
