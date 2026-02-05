@@ -41,13 +41,13 @@ export async function apiDocuments(token) {
 
 // ===== Admin =====
 export async function apiAdminListUsers(token, q = "") {
-  const url = new URL(`${API}/admin/users`);
-  if (q) url.searchParams.set("q", q);
+  const url = `${API}/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`;
 
   return readJson(
     await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   );
 }
+
 
 export async function apiAdminCreateUser(token, email, password, active = true) {
   return readJson(
