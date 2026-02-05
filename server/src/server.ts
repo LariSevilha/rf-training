@@ -257,10 +257,9 @@ async function main() {
   });
 
   // start
-  const port = 3333;
+  const port = Number(process.env.PORT) || 3333;
   await app.listen({ port, host: "0.0.0.0" });
-}
-
+}  
 main().catch((e) => {
   console.error(e);
   process.exit(1);
