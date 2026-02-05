@@ -1,7 +1,7 @@
-const API =
-  location.hostname === "localhost" || location.hostname === "127.0.0.1"
-    ? "http://localhost:3333"
-    : `http://${location.hostname}:3333`;
+const API = location.hostname === "localhost"
+  ? "http://localhost:3333"
+  : "/api";
+
 
 async function readJson(res) {
   const data = await res.json().catch(() => ({}));
