@@ -32,6 +32,8 @@ const active = document.getElementById("active");
 const training = document.getElementById("training");
 const diet = document.getElementById("diet");
 const supp = document.getElementById("supp");
+// ✅ NOVO
+const stretch = document.getElementById("stretch");
 
 const saveBtn = document.getElementById("saveBtn");
 const resetBtn = document.getElementById("resetBtn");
@@ -131,7 +133,9 @@ saveBtn.onclick = async () => {
   const docs = {
     training: training.value.trim() || undefined,
     diet: diet.value.trim() || undefined,
-    supp: supp.value.trim() || undefined
+    supp: supp.value.trim() || undefined,
+    // ✅ NOVO
+    stretch: stretch.value.trim() || undefined
   };
 
   try {
@@ -179,6 +183,8 @@ deleteBtn.onclick = async () => {
     training.value = "";
     diet.value = "";
     supp.value = "";
+    // ✅ NOVO
+    stretch.value = "";
 
     await refreshList();
   } catch (e) {

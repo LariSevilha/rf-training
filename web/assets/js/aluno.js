@@ -18,7 +18,8 @@ const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
 const loadingLayer = document.getElementById("loadingLayer");
 
-const urls = { training: "", diet: "", supp: "" };
+// ✅ agora inclui stretch
+const urls = { training: "", diet: "", supp: "", stretch: "" };
 
 // loading helpers
 let fallbackTimer = null;
@@ -35,12 +36,41 @@ function hideLoading() {
 
 pdfFrame.addEventListener("load", hideLoading);
 
+// ✅ mostra/oculta botões conforme link existir
+function applyVisibility() {
+  const buttons = Array.from(document.querySelectorAll(".menuBtn"));
+
+  let available = 0;
+
+  buttons.forEach((btn) => {
+    const type = btn?.dataset?.open;
+    if (!type) return;
+
+    const hasLink = !!(urls[type] || "").trim();
+
+    if (hasLink) {
+      btn.style.display = ""; // mostra
+      available++;
+    } else {
+      btn.style.display = "none"; // some (condição que você pediu)
+    }
+  });
+
+  if (available === 0) {
+    statusEl.textContent = "Nenhum documento liberado para sua conta ainda.";
+  } else {
+    statusEl.textContent = `${available} item(ns) disponível(is) ✅`;
+  }
+}
+
 // abrir PDF
 function openPdf(type) {
   const titles = {
     training: "TREINO",
     diet: "ALIMENTAÇÃO",
-    supp: "SUPLEMENTAÇÃO"
+    supp: "SUPLEMENTAÇÃO",
+    // ✅ novo
+    stretch: "ALONGAMENTOS E MOBILIDADE"
   };
 
   pdfTitle.textContent = titles[type] || "PDF";
@@ -53,8 +83,7 @@ function openPdf(type) {
       "PDF não configurado",
       "Entre em contato com o personal."
     );
-    pdfFrame.src =
-      "data:text/html;charset=utf-8," + encodeURIComponent(html);
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
     setTimeout(hideLoading, 300);
   } else {
     pdfFrame.src = preview;
@@ -97,12 +126,17 @@ logoutBtn.addEventListener("click", () => {
 
   try {
     const docs = await apiDocuments(session.token);
-    urls.training = docs.training || "";
-    urls.diet = docs.diet || "";
-    urls.supp = docs.supp || "";
 
-    statusEl.textContent = "Documentos carregados ✅";
-    setMsg(ok, "Toque em um item para abrir.", "ok");
+    urls.training = (docs.training || "").trim();
+    urls.diet = (docs.diet || "").trim();
+    urls.supp = (docs.supp || "").trim();
+    // ✅ novo
+    urls.stretch = (docs.stretch || "").trim();
+
+    // ✅ aplica regra de aparecer/sumir
+    applyVisibility();
+
+    setMsg(ok, "Toque em um item disponível para abrir.", "ok");
     setTimeout(() => clearMsg(ok), 1200);
   } catch (e) {
     statusEl.textContent = "Erro ao carregar documentos ❌";
