@@ -1,5 +1,5 @@
 const API = location.hostname === "localhost"
-  ? "http://localhost:3333"
+  ? "http://localhost:3333/api"
   : "/api";
 
 async function readJson(res) {
@@ -104,7 +104,8 @@ export async function apiAdminResetPassword(token, email, password) {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` },
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ password }),
     })
   );
