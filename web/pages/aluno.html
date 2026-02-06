@@ -2,9 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>RF App – Aluno</title>
-  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=20260206-2" />
 </head>
 <body>
   <div class="wrap">
@@ -36,14 +36,12 @@
             </div>
           </div>
         </div>
-      
+
         <div class="content">
           <div class="card" id="menuCard">
             <h3>Documentos disponíveis</h3>
-      
-            <!-- BOTÕES PDF -->
+
             <div style="display:grid; gap:10px; margin-top:12px;">
-      
               <div class="navBtn menuBtn" data-open="training">
                 <div class="navLeft">
                   <div class="navIcon">T</div>
@@ -53,7 +51,7 @@
                 </div>
                 <div class="navChev">›</div>
               </div>
-      
+
               <div class="navBtn menuBtn" data-open="diet">
                 <div class="navLeft">
                   <div class="navIcon">A</div>
@@ -63,7 +61,7 @@
                 </div>
                 <div class="navChev">›</div>
               </div>
-      
+
               <div class="navBtn menuBtn" data-open="supp">
                 <div class="navLeft">
                   <div class="navIcon">S</div>
@@ -73,7 +71,7 @@
                 </div>
                 <div class="navChev">›</div>
               </div>
-      
+
               <div class="navBtn menuBtn" data-open="stretch">
                 <div class="navLeft">
                   <div class="navIcon">M</div>
@@ -83,21 +81,20 @@
                 </div>
                 <div class="navChev">›</div>
               </div>
-      
             </div>
           </div>
         </div>
-      
-        <!-- PDF OVERLAY (mantém) -->
+
+        <!-- PDF OVERLAY -->
         <div class="pdfOverlay" id="pdfOverlay" aria-hidden="true">
           <div class="pdfBar">
             <button class="backBtn" id="pdfBack">← Voltar</button>
             <div class="pdfTitle" id="pdfTitle">PDF</div>
           </div>
-      
+
           <div class="pdfFrameWrap">
             <iframe id="pdfFrame" title="PDF"></iframe>
-      
+
             <div class="loadingLayer" id="loadingLayer">
               <div class="spinner"></div>
               <div class="loadingText">Carregando PDF…</div>
@@ -105,12 +102,12 @@
           </div>
         </div>
       </main>
-      
+
     </div>
   </div>
 
   <div class="toastWrap" id="toastWrap"></div>
 
-  <script type="module" src="../assets/js/aluno.js"></script>
+  <script type="module" src="/assets/js/aluno.js"></script>
 </body>
 </html>

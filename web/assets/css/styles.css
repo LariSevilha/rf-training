@@ -712,3 +712,493 @@ iframe{width:100%;height:100%;border:0;background:#000;}
   .pdfBar{height:56px;}
   .backBtn{padding:11px 12px;border-radius:14px;}
 }
+
+/* ===== MOBILE COM MAIS RESPIRO (cole no FINAL) ===== */
+@media (max-width: 780px){
+
+  /* geral */
+  body{
+    letter-spacing: .15px;
+  }
+
+  /* ADMIN: tira “aperto” geral */
+  .mainArea{
+    padding: 12px !important;
+  }
+
+  .topbar{
+    height: auto !important;
+    padding: 12px !important;
+    gap: 10px;
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .topLeft .hello{
+    font-size: 15px;
+  }
+  .topLeft .meta{
+    font-size: 12px;
+  }
+
+  /* sidebar do admin (quando vira topo) */
+  .sidebarFixed{
+    padding: 12px 12px !important;
+  }
+  .nav{
+    padding: 10px 4px !important;
+    gap: 10px !important;
+  }
+  .navBtn{
+    padding: 16px 14px !important;
+    border-radius: 18px !important;
+  }
+  .navTxt .h{font-size: 14px !important;}
+  .navTxt .s{font-size: 12.5px !important;}
+
+  /* cards mais confortáveis */
+  .card{
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+  .card h2{font-size: 17px !important;}
+  .card p{font-size: 13.5px !important;}
+
+  /* inputs maiores e com “respiro” */
+  .label{font-size: 12.5px !important;}
+  input[type="email"], input[type="password"], input[type="text"]{
+    padding: 15px 14px !important;
+    border-radius: 16px !important;
+    font-size: 15px !important;
+  }
+
+  /* botões maiores (dedo) */
+  .btn, .btnGhost{
+    padding: 15px 14px !important;
+    border-radius: 18px !important;
+    font-size: 14px !important;
+  }
+
+  .pill{
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* ações do admin: 1 por linha (evita esmagar) */
+  .actionsRow{
+    flex-direction: column;
+    gap: 10px !important;
+  }
+  .actionsRow > *{
+    min-width: 100% !important;
+    flex: none !important;
+  }
+
+  /* tabela no celular: mais legível */
+  th, td{
+    padding: 12px 12px !important;
+    font-size: 13.5px !important;
+  }
+
+  /* aluno: respiro melhor */
+  .wrap{ padding: 14px !important; }
+  .content{ padding: 16px !important; }
+
+  /* toast: não encosta na borda */
+  .toastWrap{
+    right: 12px !important;
+    left: 12px !important;
+    bottom: 12px !important;
+  }
+  .toast{
+    width: 100% !important;
+  }
+}
+/* ===== FULLSCREEN REAL (PDF) ===== */
+.pdfOverlay{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* viewport real no mobile moderno */
+  background: #000;
+  z-index: 9999;
+}
+
+/* safe-area (iPhone) */
+.pdfBar{
+  padding-top: env(safe-area-inset-top);
+}
+
+.pdfFrameWrap{
+  height: calc(100% - 54px);
+  height: calc(100dvh - 54px);
+}
+
+@media (max-width: 780px){
+  .pdfBar{
+    height: 60px !important;
+    padding: 0 12px !important;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pdfFrameWrap{
+    height: calc(100dvh - 60px);
+  }
+
+  .backBtn{
+    padding: 12px 14px !important;
+    border-radius: 16px !important;
+    font-size: 14px !important;
+  }
+
+  .pdfTitle{
+    font-size: 12px !important;
+  }
+}
+
+/* =========================================================
+   MOBILE REFACTOR (cole no FINAL do styles.css)
+   Objetivo: mais respiro, touch targets maiores, layouts menos apertados
+========================================================= */
+
+@media (max-width: 780px){
+
+  :root{
+    --radius: 20px;
+    --radius2: 16px;
+  }
+
+  /* base */
+  body{
+    letter-spacing: .15px;
+  }
+
+  /* =========================================
+     ADMIN (sidebarFixed vira topo + main melhora)
+  ========================================= */
+
+  .appShell{
+    display:block; /* evita compressão de flex no mobile */
+  }
+
+  .sidebarFixed{
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 12px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--stroke) !important;
+    background: linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.25)) !important;
+    z-index: 20;
+  }
+
+  .mainArea{
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 12px !important;
+  }
+
+  .sideTop{
+    padding: 8px 6px 12px !important;
+    gap: 10px !important;
+  }
+
+  .nav{
+    padding: 10px 0 !important;
+    gap: 10px !important;
+  }
+
+  .navBtn{
+    padding: 16px 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .navIcon{
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 16px !important;
+    font-size: 13px !important;
+  }
+
+  .navTxt .h{font-size: 14px !important;}
+  .navTxt .s{font-size: 12.5px !important;}
+
+  /* topbar: vira coluna e com respiro */
+  .topbar{
+    height: auto !important;
+    padding: 14px !important;
+    gap: 10px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .topRight{
+    width: 100% !important;
+    display:flex !important;
+    gap:10px !important;
+  }
+
+  /* search e refresh: largura total quando estiverem visíveis */
+  .searchWrap{
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 12px 14px !important;
+    border-radius: 18px !important;
+  }
+  .searchWrap input{
+    font-size: 15px !important;
+  }
+  #refreshBtn{
+    white-space: nowrap;
+  }
+
+  /* cards e forms com mais espaço */
+  .card{
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+  .card h2{
+    font-size: 17px !important;
+  }
+  .card p{
+    font-size: 13.5px !important;
+  }
+
+  .grid2{
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .label{
+    font-size: 12.5px !important;
+    margin-bottom: 7px !important;
+  }
+
+  input[type="email"], input[type="password"], input[type="text"]{
+    padding: 15px 14px !important;
+    border-radius: 16px !important;
+    font-size: 15px !important;
+  }
+
+  .btn, .btnGhost{
+    padding: 15px 14px !important;
+    border-radius: 18px !important;
+    font-size: 14px !important;
+  }
+
+  .pill{
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* ações: 1 por linha */
+  .actionsRow{
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .actionsRow > *{
+    min-width: 100% !important;
+    flex: none !important;
+  }
+
+  /* =========================================
+     ADMIN LISTA (tabela vira "cards" por linha)
+     - melhora MUITO no celular
+  ========================================= */
+  .tableWrap{
+    border-radius: 18px !important;
+  }
+
+  table thead{
+    display:none !important; /* esconde cabeçalho no mobile */
+  }
+
+  table, tbody, tr, td{
+    display:block;
+    width:100%;
+  }
+
+  tbody tr{
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    padding: 10px 10px;
+    cursor: pointer;
+  }
+
+  tbody tr:hover{
+    background: rgba(255,255,255,.02) !important;
+  }
+
+  tbody tr.selected{
+    background: rgba(206,172,94,.10) !important;
+  }
+
+  /* cada linha vira card */
+  tbody td{
+    padding: 8px 10px !important;
+  }
+
+  /* status + email alinhados melhor */
+  tbody td:nth-child(1){
+    font-size: 15px !important;
+    padding-top: 10px !important;
+  }
+  tbody td:nth-child(2){
+    font-size: 14px !important;
+    word-break: break-word;
+    opacity: .95;
+  }
+
+  /* coluna ações: deixa botões maiores e alinhados */
+  tbody td:nth-child(3) > div{
+    justify-content: flex-start !important;
+    gap: 10px !important;
+  }
+  tbody td:nth-child(3) button{
+    padding: 12px 14px !important;
+    border-radius: 16px !important;
+  }
+
+  /* =========================================
+     ALUNO (menu e leitura melhor)
+  ========================================= */
+  .wrap{
+    padding: 14px !important;
+  }
+
+  .app{
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .sidebar{
+    position: relative !important;
+    top: auto !important;
+    border-radius: 22px !important;
+  }
+
+  .main{
+    border-radius: 22px !important;
+  }
+
+  .content{
+    padding: 16px !important;
+  }
+
+  /* menu de documentos: botões mais altos */
+  .menuBtn{
+    padding: 16px 14px !important;
+    border-radius: 18px !important;
+  }
+  .menuBtn .navIcon{
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 16px !important;
+    font-size: 13px !important;
+  }
+  .menuBtn .navTxt .h{
+    font-size: 14.5px !important;
+  }
+
+  /* status do aluno mais legível */
+  #status{
+    display:block;
+    margin-top: 6px;
+    font-size: 13px;
+    opacity: .85;
+  }
+
+  /* =========================================
+     TOAST: não encosta na borda
+  ========================================= */
+  .toastWrap{
+    right: 12px !important;
+    left: 12px !important;
+    bottom: 12px !important;
+  }
+  .toast{
+    width: 100% !important;
+  }
+
+  /* =========================================
+     PDF overlay: garante viewport real
+  ========================================= */
+  .pdfOverlay{
+    height: 100dvh !important;
+  }
+  .pdfBar{
+    height: 60px !important;
+    padding: 0 12px !important;
+    padding-top: env(safe-area-inset-top) !important;
+  }
+  .pdfFrameWrap{
+    height: calc(100dvh - 60px) !important;
+  }
+  .backBtn{
+    padding: 12px 14px !important;
+    border-radius: 16px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Extra: telas MUITO pequenas (ex: 360px) */
+@media (max-width: 420px){
+  .logoBadge{width:42px;height:42px;border-radius:14px;}
+  .navBtn{padding: 15px 12px !important;}
+  .card{padding:16px !important;}
+  input[type="email"], input[type="password"], input[type="text"]{font-size: 14.5px !important;}
+}
+
+/* ===== FIX OVERLAP: ADMIN MENU NÃO PODE COBRIR O FORM (MOBILE) ===== */
+@media (max-width: 780px){
+
+  /* tira totalmente o comportamento de FIXED do desktop */
+  .sidebarFixed{
+    position: relative !important;   /* <- chave */
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+
+    height: auto !important;
+    width: 100% !important;
+
+    z-index: 1 !important;          /* não fica por cima do conteúdo */
+    overflow: visible !important;
+
+    margin-bottom: 12px !important;  /* cria respiro entre menu e formulário */
+  }
+
+  /* garante que a main não “entra por baixo” */
+  .mainArea{
+    margin-left: 0 !important;
+    width: 100% !important;
+    position: relative;
+    z-index: 2;                      /* conteúdo acima */
+  }
+}
+@media (max-width: 780px){
+  .topbar{
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+}
+/* ===== MOBILE: reduzir glow dourado do background ===== */
+@media (max-width: 780px){
+  body{
+    background:
+      radial-gradient(900px 420px at 20% 0%, rgba(206,172,94,.06), transparent 60%),
+      radial-gradient(700px 360px at 85% 10%, rgba(206,172,94,.04), transparent 60%),
+      var(--bg) !important;
+  }
+}
+/* ===== MOBILE: cards mais opacos (não deixa o glow vazar) ===== */
+@media (max-width: 780px){
+  .card{
+    background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.35)) !important;
+    border-color: rgba(255,255,255,.10) !important;
+  }
+}
