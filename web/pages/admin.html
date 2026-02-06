@@ -7,14 +7,10 @@
   <link rel="stylesheet" href="../assets/css/styles.css" />
 </head>
 <body>
-  <!-- força o conteúdo a ocupar a tela toda -->
   <div class="wrap" style="padding:18px;">
-    <!-- remove o grid 2 colunas do .shell e deixa 1 coluna -->
     <div class="shell" style="grid-template-columns: 1fr; width: min(1280px, 100%);">
 
-      <!-- expande o “device” -->
       <div class="device" style="padding:16px;">
-        <!-- tira cara de “phone” e vira painel grande -->
         <div class="phone" style="min-height: auto; border-radius: 22px;">
 
           <!-- TOPBAR -->
@@ -99,7 +95,7 @@
                 </div>
 
                 <div style="opacity:.7; font-size:12px; margin-top:10px;">
-                  Dica: clique em um aluno na tabela para preencher o email na edição.
+                  Dica: clique em um aluno na tabela para carregar os links e editar.
                 </div>
               </div>
 
@@ -117,13 +113,16 @@
                 <input id="training" type="text" placeholder="Link treino" />
                 <input id="diet" type="text" placeholder="Link dieta" />
                 <input id="supp" type="text" placeholder="Link suplementação" />
-                <!-- ✅ NOVO -->
                 <input id="stretch" type="text" placeholder="Link alongamentos" />
 
                 <div class="miniRow">
                   <button class="miniBtn gold" id="saveBtn">Salvar</button>
                   <button class="miniBtn" id="resetBtn">Reset senha</button>
                   <button class="miniBtn" id="deleteBtn">Deletar</button>
+                </div>
+
+                <div style="opacity:.7; font-size:12px; margin-top:10px;">
+                  Dica: para <b>limpar</b> um link, deixe o campo vazio e clique em <b>Salvar</b>.
                 </div>
               </div>
 
@@ -136,8 +135,6 @@
 
         </div>
       </div>
-
-      <!-- ✅ painel CRUD removido -->
 
     </div>
   </div>

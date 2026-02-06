@@ -2,7 +2,6 @@ import { requireAuth } from "./guard.js";
 import {
   apiAdminListUsers,
   apiAdminCreateUser,
-  apiAdminGetUser,
   apiAdminGetDocs,
   apiAdminSetActive,
   apiAdminSaveDocs,
@@ -32,7 +31,6 @@ const active = document.getElementById("active");
 const training = document.getElementById("training");
 const diet = document.getElementById("diet");
 const supp = document.getElementById("supp");
-// ✅ NOVO
 const stretch = document.getElementById("stretch");
 
 const saveBtn = document.getElementById("saveBtn");
@@ -49,6 +47,13 @@ logoutBtn.onclick = () => {
   clearSession();
   window.location.href = "/pages/index.html";
 };
+
+function clearEditFields() {
+  training.value = "";
+  diet.value = "";
+  supp.value = "";
+  stretch.value = "";
+}
 
 function renderUsers(users) {
   userList.innerHTML = "";
@@ -74,12 +79,33 @@ function renderUsers(users) {
       <td>${u.active ? "🟢" : "🔴"}</td>
       <td>${u.email}</td>
     `;
-    tr.onclick = () => {
+
+    // ✅ Selecionar aluno: limpa campos e carrega docs do aluno do banco
+    tr.onclick = async () => {
+      clearMsg(ok);
+      clearMsg(err);
+
       studentEmail.value = u.email;
       active.checked = !!u.active;
-      setMsg(ok, "Aluno selecionado ✅", "ok");
-      setTimeout(() => clearMsg(ok), 800);
+
+      // ✅ evita “vazamento” de um aluno pro outro
+      clearEditFields();
+
+      try {
+        const docs = await apiAdminGetDocs(token, u.email);
+
+        training.value = docs.training || "";
+        diet.value = docs.diet || "";
+        supp.value = docs.supp || "";
+        stretch.value = docs.stretch || "";
+
+        setMsg(ok, "Aluno selecionado ✅", "ok");
+        setTimeout(() => clearMsg(ok), 800);
+      } catch (e) {
+        setMsg(err, e.message || "Erro ao carregar documentos do aluno.", "error");
+      }
     };
+
     userList.appendChild(tr);
   });
 
@@ -130,12 +156,13 @@ saveBtn.onclick = async () => {
   const em = studentEmail.value.trim().toLowerCase();
   if (!em) return setMsg(err, "Digite o email do aluno.", "error");
 
+  // ✅ IMPORTANTE: envia string vazia quando você apagou o campo
+  // Isso permite “limpar” no banco
   const docs = {
-    training: training.value.trim() || undefined,
-    diet: diet.value.trim() || undefined,
-    supp: supp.value.trim() || undefined,
-    // ✅ NOVO
-    stretch: stretch.value.trim() || undefined
+    training: training.value.trim(),
+    diet: diet.value.trim(),
+    supp: supp.value.trim(),
+    stretch: stretch.value.trim()
   };
 
   try {
@@ -180,11 +207,7 @@ deleteBtn.onclick = async () => {
     setMsg(ok, "Aluno deletado ✅", "ok");
 
     studentEmail.value = "";
-    training.value = "";
-    diet.value = "";
-    supp.value = "";
-    // ✅ NOVO
-    stretch.value = "";
+    clearEditFields();
 
     await refreshList();
   } catch (e) {

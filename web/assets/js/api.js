@@ -2,7 +2,6 @@ const API = location.hostname === "localhost"
   ? "http://localhost:3333"
   : "/api";
 
-
 async function readJson(res) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || `Erro HTTP ${res.status}`);
@@ -32,11 +31,19 @@ export async function apiMe(token) {
 }
 
 export async function apiDocuments(token) {
-  return readJson(
+  const data = await readJson(
     await fetch(`${API}/documents`, {
       headers: { Authorization: `Bearer ${token}` },
     })
   );
+
+  // ✅ normaliza: sempre retorna todas as chaves
+  return {
+    training: (data.training || "").trim(),
+    diet: (data.diet || "").trim(),
+    supp: (data.supp || "").trim(),
+    stretch: (data.stretch || "").trim(), // ✅ novo
+  };
 }
 
 // ===== Admin =====
@@ -47,7 +54,6 @@ export async function apiAdminListUsers(token, q = "") {
     await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   );
 }
-
 
 export async function apiAdminCreateUser(token, email, password, active = true) {
   return readJson(

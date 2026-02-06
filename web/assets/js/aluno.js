@@ -18,7 +18,7 @@ const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
 const loadingLayer = document.getElementById("loadingLayer");
 
-// ✅ agora inclui stretch
+// ✅ inclui stretch
 const urls = { training: "", diet: "", supp: "", stretch: "" };
 
 // loading helpers
@@ -36,10 +36,9 @@ function hideLoading() {
 
 pdfFrame.addEventListener("load", hideLoading);
 
-// ✅ mostra/oculta botões conforme link existir
+// ✅ esconde botões que não têm link
 function applyVisibility() {
   const buttons = Array.from(document.querySelectorAll(".menuBtn"));
-
   let available = 0;
 
   buttons.forEach((btn) => {
@@ -48,19 +47,15 @@ function applyVisibility() {
 
     const hasLink = !!(urls[type] || "").trim();
 
-    if (hasLink) {
-      btn.style.display = ""; // mostra
-      available++;
-    } else {
-      btn.style.display = "none"; // some (condição que você pediu)
-    }
+    // some se não tem link
+    btn.style.display = hasLink ? "" : "none";
+    if (hasLink) available++;
   });
 
-  if (available === 0) {
-    statusEl.textContent = "Nenhum documento liberado para sua conta ainda.";
-  } else {
-    statusEl.textContent = `${available} item(ns) disponível(is) ✅`;
-  }
+  statusEl.textContent =
+    available === 0
+      ? "Nenhum documento liberado para sua conta ainda."
+      : `${available} item(ns) disponível(is) ✅`;
 }
 
 // abrir PDF
@@ -69,19 +64,35 @@ function openPdf(type) {
     training: "TREINO",
     diet: "ALIMENTAÇÃO",
     supp: "SUPLEMENTAÇÃO",
-    // ✅ novo
     stretch: "ALONGAMENTOS E MOBILIDADE"
   };
 
   pdfTitle.textContent = titles[type] || "PDF";
   showLoading();
 
-  const preview = driveToPreview(urls[type]);
+  const rawUrl = (urls[type] || "").trim();
 
-  if (!preview) {
+  // ✅ se não existe link, mostra placeholder (segurança)
+  if (!rawUrl) {
     const html = placeholderHtml(
       "PDF não configurado",
       "Entre em contato com o personal."
+    );
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+    setTimeout(hideLoading, 300);
+
+    topbar.style.display = "none";
+    pdfOverlay.classList.add("show");
+    pdfOverlay.setAttribute("aria-hidden", "false");
+    return;
+  }
+
+  const preview = driveToPreview(rawUrl);
+
+  if (!preview) {
+    const html = placeholderHtml(
+      "Link inválido ou não suportado",
+      "Envie o link do Drive no formato correto."
     );
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
     setTimeout(hideLoading, 300);
@@ -127,13 +138,13 @@ logoutBtn.addEventListener("click", () => {
   try {
     const docs = await apiDocuments(session.token);
 
+    // ✅ trim pra evitar " " e garantir condição
     urls.training = (docs.training || "").trim();
     urls.diet = (docs.diet || "").trim();
     urls.supp = (docs.supp || "").trim();
-    // ✅ novo
     urls.stretch = (docs.stretch || "").trim();
 
-    // ✅ aplica regra de aparecer/sumir
+    // ✅ agora só aparecem os botões com link
     applyVisibility();
 
     setMsg(ok, "Toque em um item disponível para abrir.", "ok");
