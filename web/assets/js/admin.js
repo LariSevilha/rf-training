@@ -203,14 +203,27 @@ saveBtn?.addEventListener("click", async () => {
   };
 
   try {
+    // ativa/desativa
     await apiAdminSetActive(token, em, !!active?.checked);
-    await apiAdminSaveDocs(token, em, docs);
+
+    // ✅ salva e RECEBE de volta os docs do banco
+    const saved = await apiAdminSaveDocs(token, em, docs);
+
+    // ✅ re-preenche campos (garante que após recarregar/voltar view fica certo)
+    if (training) training.value = saved.training || "";
+    if (diet) diet.value = saved.diet || "";
+    if (supp) supp.value = saved.supp || "";
+    if (stretch) stretch.value = saved.stretch || "";
+
     toast("ok", "Salvo", "Alterações aplicadas com sucesso.");
+
+    // (opcional) atualizar lista de alunos
     await refreshList().catch(()=>{});
   } catch (e) {
     toast("error", "Erro ao salvar", e.message || "Erro ao salvar.");
   }
 });
+
 
 resetBtn?.addEventListener("click", async () => {
   const em = (studentEmail?.value || "").trim().toLowerCase();
