@@ -16,7 +16,6 @@ type JwtPayload = { sub: string; role: "admin" | "student" };
 async function main() {
   const app = Fastify({ logger: true });
 
-  // CORS: libera Authorization + PUT/PATCH/DELETE
   await app.register(cors, {
     origin: ["http://localhost:3000", "http://192.168.0.111:3000"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -90,7 +89,7 @@ async function main() {
       where: { userId: user.id }
     });
 
-    // ✅ NOVO: inclui stretch
+    // ✅ inclui stretch
     const out: Record<string, string> = { training: "", diet: "", supp: "", stretch: "" };
     for (const d of docs) out[d.docType] = d.url;
 
@@ -99,7 +98,7 @@ async function main() {
 
   // ===== ADMIN =====
 
-  // Listar alunos (search)
+  // Listar alunos
   app.get("/admin/users", { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -149,41 +148,6 @@ async function main() {
     return { ok: true, user };
   });
 
-  // Buscar aluno
-  app.get("/admin/users/:email", { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-
-    const email = String(req.params.email).toLowerCase();
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { email: true, active: true, role: true, createdAt: true }
-    });
-
-    if (!user || user.role !== "student") {
-      return reply.code(404).send({ message: "Aluno não encontrado" });
-    }
-
-    return { user };
-  });
-
-  // Ver documentos do aluno
-  app.get("/admin/users/:email/documents", { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-
-    const email = String(req.params.email).toLowerCase();
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
-
-    const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
-
-    // ✅ NOVO: inclui stretch
-    const out: Record<string, string> = { training: "", diet: "", supp: "", stretch: "" };
-    for (const d of docs) out[d.docType] = d.url;
-
-    return out;
-  });
-
   // Ativar/desativar
   app.patch("/admin/users/:email", { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
@@ -199,13 +163,29 @@ async function main() {
     return { ok: true, user: { email: updated.email, active: updated.active } };
   });
 
-  // Salvar documentos (upsert)
+  // ✅ (FALTAVA) Buscar documentos do aluno (ADMIN)
+  app.get("/admin/users/:email/documents", { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    if (!requireAdmin(req, reply)) return;
+
+    const email = String(req.params.email).toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
+
+    const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
+
+    // ✅ inclui stretch
+    const out: Record<string, string> = { training: "", diet: "", supp: "", stretch: "" };
+    for (const d of docs) out[d.docType] = d.url;
+
+    return out;
+  });
+
+  // Salvar documentos (upsert + delete quando vazio)
   app.put("/admin/users/:email/documents", { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
     const email = String(req.params.email).toLowerCase();
 
-    // ✅ NOVO: inclui stretch
     const schema = z.object({
       training: z.string().optional(),
       diet: z.string().optional(),
@@ -217,13 +197,26 @@ async function main() {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
 
-    const entries = Object.entries(body).filter(([_, v]) => typeof v === "string");
+    // processa todas as chaves, inclusive vazias
+    const entries = Object.entries(body);
 
     for (const [docType, url] of entries) {
+      if (typeof url === "undefined") continue;
+
+      const clean = String(url).trim();
+
+      // ✅ se veio vazio, remove do banco
+      if (clean === "") {
+        await prisma.studentDocument.deleteMany({
+          where: { userId: user.id, docType }
+        });
+        continue;
+      }
+
       await prisma.studentDocument.upsert({
         where: { userId_docType: { userId: user.id, docType } },
-        update: { url: url!, updatedAt: new Date() },
-        create: { userId: user.id, docType, url: url! }
+        update: { url: clean, updatedAt: new Date() },
+        create: { userId: user.id, docType, url: clean }
       });
     }
 
@@ -247,7 +240,7 @@ async function main() {
     return { ok: true };
   });
 
-  // Deletar aluno (hard delete)
+  // Deletar aluno
   app.delete("/admin/users/:email", { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -260,7 +253,6 @@ async function main() {
     return { ok: true };
   });
 
-  // start
   const port = Number(process.env.PORT) || 3333;
   await app.listen({ port, host: "0.0.0.0" });
 }
