@@ -7,54 +7,43 @@
   <link rel="stylesheet" href="../assets/css/styles.css" />
 </head>
 <body>
-  <div class="wrap">
-    <div class="shell">
-      <div class="device">
-        <div class="phone">
-          <div class="topbar">
-            <div class="logo">
-              <div class="logo-badge">RF</div>
-              <div class="logo-text">
-                <div class="brand">RF FITNESS</div>
-                <div class="sub">Login</div>
-              </div>
-            </div>
-          </div>
+  <div class="loginWrap">
+    <div class="loginCard">
 
-          <section class="screen active">
-            <div class="card">
-              <div class="title">Entrar</div>
-              <p class="desc">Digite seu email e senha.</p>
-
-              <div class="field">
-                <div class="label">Email</div>
-                <input type="email" id="email" placeholder="ex: aluno@email.com" autocomplete="username" />
-              </div>
-
-              <div class="field">
-                <div class="label">Senha</div>
-                <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password" />
-              </div>
-
-              <button class="btn" id="loginBtn">ENTRAR</button>
-
-              <div class="msg error" id="err"></div>
-              <div class="msg ok" id="ok"></div>
-
-              <p class="desc" style="margin-top:12px;">
-                Status: <span id="status">Checando API…</span>
-              </p>
-            </div>
-          </section>
+      <div class="loginTop">
+        <div class="logoBadge">RF</div>
+        <div class="loginHead">
+          <div class="loginTitle">RF FITNESS</div>
+          <div class="loginSub">Acesso ao painel</div>
         </div>
       </div>
 
-      <div class="panel">
-        <h2>Info</h2>
-        <p>
-          Após login, você será direcionado automaticamente para a área correta.
-        </p>
+      <div class="field">
+        <div class="label">Email</div>
+        <input type="email" id="email" placeholder="ex: aluno@email.com" autocomplete="username" />
       </div>
+
+      <div class="field">
+        <div class="label">Senha</div>
+        <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <div class="row">
+        <label class="check">
+          <input id="remember" type="checkbox" />
+          Lembrar email
+        </label>
+      </div>
+
+      <button class="btn btnFull" id="loginBtn" type="button" style="margin-top:12px;">Entrar</button>
+
+      <div class="msgBox error" id="err"></div>
+      <div class="msgBox ok" id="ok"></div>
+
+      <div class="loginStatus">
+        Status: <span id="status">Checando API…</span>
+      </div>
+
     </div>
   </div>
 

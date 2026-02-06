@@ -9,13 +9,11 @@ import {
   apiAdminDeleteUser
 } from "./api.js";
 import { clearSession } from "./state.js";
-import { setMsg, clearMsg } from "./ui.js";
+import { toast, openModal } from "./ui.js";
 
+// ===== Elements =====
 const who = document.getElementById("who");
 const logoutBtn = document.getElementById("logoutBtn");
-
-const ok = document.getElementById("ok");
-const err = document.getElementById("err");
 
 const newEmail = document.getElementById("newEmail");
 const newPass = document.getElementById("newPass");
@@ -37,194 +35,246 @@ const saveBtn = document.getElementById("saveBtn");
 const resetBtn = document.getElementById("resetBtn");
 const deleteBtn = document.getElementById("deleteBtn");
 
-const totalUsers = document.getElementById("totalUsers");
-const activeUsers = document.getElementById("activeUsers");
-const inactiveUsers = document.getElementById("inactiveUsers");
-
 let token = null;
+let selectedRow = null;
 
-logoutBtn.onclick = () => {
-  clearSession();
-  window.location.href = "/pages/index.html";
-};
-
+// ===== Helpers =====
 function clearEditFields() {
-  training.value = "";
-  diet.value = "";
-  supp.value = "";
-  stretch.value = "";
+  if (training) training.value = "";
+  if (diet) diet.value = "";
+  if (supp) supp.value = "";
+  if (stretch) stretch.value = "";
+}
+
+function markSelectedRow(tr){
+  if (selectedRow) selectedRow.classList.remove("selected");
+  selectedRow = tr;
+  if (selectedRow) selectedRow.classList.add("selected");
+}
+
+async function selectUser(email, isActive) {
+  if (studentEmail) studentEmail.value = email;
+  if (active) active.checked = !!isActive;
+
+  clearEditFields();
+
+  const docs = await apiAdminGetDocs(token, email);
+
+  if (training) training.value = docs.training || "";
+  if (diet) diet.value = docs.diet || "";
+  if (supp) supp.value = docs.supp || "";
+  if (stretch) stretch.value = docs.stretch || "";
 }
 
 function renderUsers(users) {
+  if (!userList) return;
   userList.innerHTML = "";
 
-  let activeCount = 0;
-
-  if (!users.length) {
+  if (!users || users.length === 0) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="2" style="opacity:.7;padding:12px;">Nenhum aluno encontrado.</td>`;
+    tr.innerHTML = `<td colspan="3" style="opacity:.7;padding:12px;">Nenhum aluno encontrado.</td>`;
     userList.appendChild(tr);
-
-    totalUsers.textContent = 0;
-    activeUsers.textContent = 0;
-    inactiveUsers.textContent = 0;
     return;
   }
 
   users.forEach(u => {
-    if (u.active) activeCount++;
-
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
-      <td>${u.active ? "🟢" : "🔴"}</td>
+      <td style="width:92px;">${u.active ? "🟢" : "🔴"}</td>
       <td>${u.email}</td>
+      <td style="width:120px;">
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button class="btnGhost" data-act="edit" title="Editar"
+            style="padding:10px 12px; border-radius:14px; min-width:auto;">✎</button>
+          <button class="btnGhost" data-act="del" title="Excluir"
+            style="padding:10px 12px; border-radius:14px; min-width:auto;">🗑</button>
+        </div>
+      </td>
     `;
 
-    // ✅ Selecionar aluno: limpa campos e carrega docs do aluno do banco
-    tr.onclick = async () => {
-      clearMsg(ok);
-      clearMsg(err);
-
-      studentEmail.value = u.email;
-      active.checked = !!u.active;
-
-      // ✅ evita “vazamento” de um aluno pro outro
-      clearEditFields();
+    // clicar na linha = selecionar + carregar docs
+    tr.addEventListener("click", async () => {
+      markSelectedRow(tr);
 
       try {
-        const docs = await apiAdminGetDocs(token, u.email);
-
-        training.value = docs.training || "";
-        diet.value = docs.diet || "";
-        supp.value = docs.supp || "";
-        stretch.value = docs.stretch || "";
-
-        setMsg(ok, "Aluno selecionado ✅", "ok");
-        setTimeout(() => clearMsg(ok), 800);
+        await selectUser(u.email, u.active);
+        toast("ok", "Aluno selecionado", "Dados carregados.");
+        if (window.__setRoute) window.__setRoute("edit");
       } catch (e) {
-        setMsg(err, e.message || "Erro ao carregar documentos do aluno.", "error");
+        toast("error", "Erro", e.message || "Erro ao carregar documentos do aluno.");
       }
-    };
+    });
+
+    // EDITAR (não propaga)
+    tr.querySelector('[data-act="edit"]').addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      tr.click();
+    });
+
+    // EXCLUIR (não propaga)
+    tr.querySelector('[data-act="del"]').addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+
+      const okConfirm = await openModal({
+        title: "Deletar aluno",
+        text: `Tem certeza que deseja deletar ${u.email}? Essa ação não pode ser desfeita.`,
+        mode: "confirm",
+        okText: "Deletar"
+      });
+
+      if (!okConfirm) return;
+
+      try {
+        await apiAdminDeleteUser(token, u.email);
+        toast("ok", "Aluno deletado", "Conta removida com sucesso.");
+
+        // se estava selecionado, limpa a edição
+        if ((studentEmail?.value || "").trim().toLowerCase() === u.email.toLowerCase()) {
+          if (studentEmail) studentEmail.value = "";
+          clearEditFields();
+        }
+
+        await refreshList();
+      } catch (e) {
+        toast("error", "Erro", e.message || "Erro ao deletar.");
+      }
+    });
 
     userList.appendChild(tr);
   });
-
-  totalUsers.textContent = users.length;
-  activeUsers.textContent = activeCount;
-  inactiveUsers.textContent = users.length - activeCount;
 }
 
 async function refreshList() {
-  clearMsg(ok);
-  clearMsg(err);
-
-  const q = (search.value || "").trim();
+  const q = (search?.value || "").trim();
   const data = await apiAdminListUsers(token, q);
   renderUsers(data.users || []);
 }
 
-createBtn.onclick = async () => {
-  clearMsg(ok);
-  clearMsg(err);
+// ===== Events =====
+logoutBtn?.addEventListener("click", () => {
+  clearSession();
+  window.location.href = "/pages/index.html";
+});
 
-  const email = newEmail.value.trim().toLowerCase();
-  const password = newPass.value.trim();
+createBtn?.addEventListener("click", async () => {
+  const email = (newEmail?.value || "").trim().toLowerCase();
+  const password = (newPass?.value || "").trim();
 
-  if (!email || !password)
-    return setMsg(err, "Preencha email e senha inicial.", "error");
+  if (!email || !password) {
+    return toast("error", "Atenção", "Preencha email e senha inicial.");
+  }
 
   try {
-    await apiAdminCreateUser(token, email, password, !!newActive.checked);
-    setMsg(ok, "Aluno criado ✅", "ok");
-    newEmail.value = "";
-    newPass.value = "";
-    await refreshList();
+    await apiAdminCreateUser(token, email, password, !!newActive?.checked);
+    toast("ok", "Aluno criado", "Conta criada com sucesso.");
+
+    if (newEmail) newEmail.value = "";
+    if (newPass) newPass.value = "";
+
+    await refreshList().catch(()=>{});
   } catch (e) {
-    setMsg(err, e.message || "Erro ao criar.", "error");
+    toast("error", "Erro ao criar", e.message || "Erro ao criar.");
   }
-};
+});
 
-refreshBtn.onclick = async () => {
-  try { await refreshList(); }
-  catch (e) { setMsg(err, e.message || "Erro ao listar.", "error"); }
-};
+refreshBtn?.addEventListener("click", async () => {
+  try {
+    await refreshList();
+    toast("ok", "Atualizado", "Lista carregada.");
+  } catch (e) {
+    toast("error", "Erro", e.message || "Erro ao listar.");
+  }
+});
 
-saveBtn.onclick = async () => {
-  clearMsg(ok);
-  clearMsg(err);
+search?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") refreshBtn?.click();
+});
 
-  const em = studentEmail.value.trim().toLowerCase();
-  if (!em) return setMsg(err, "Digite o email do aluno.", "error");
+saveBtn?.addEventListener("click", async () => {
+  const em = (studentEmail?.value || "").trim().toLowerCase();
+  if (!em) return toast("error", "Atenção", "Digite o email do aluno.");
 
-  // ✅ IMPORTANTE: envia string vazia quando você apagou o campo
-  // Isso permite “limpar” no banco
   const docs = {
-    training: training.value.trim(),
-    diet: diet.value.trim(),
-    supp: supp.value.trim(),
-    stretch: stretch.value.trim()
+    training: (training?.value || "").trim(),
+    diet: (diet?.value || "").trim(),
+    supp: (supp?.value || "").trim(),
+    stretch: (stretch?.value || "").trim()
   };
 
   try {
-    await apiAdminSetActive(token, em, !!active.checked);
+    await apiAdminSetActive(token, em, !!active?.checked);
     await apiAdminSaveDocs(token, em, docs);
-    setMsg(ok, "Salvo com sucesso ✅", "ok");
-    await refreshList();
+    toast("ok", "Salvo", "Alterações aplicadas com sucesso.");
+    await refreshList().catch(()=>{});
   } catch (e) {
-    setMsg(err, e.message || "Erro ao salvar.", "error");
+    toast("error", "Erro ao salvar", e.message || "Erro ao salvar.");
   }
-};
+});
 
-resetBtn.onclick = async () => {
-  clearMsg(ok);
-  clearMsg(err);
+resetBtn?.addEventListener("click", async () => {
+  const em = (studentEmail?.value || "").trim().toLowerCase();
+  if (!em) return toast("error", "Atenção", "Digite o email do aluno.");
 
-  const em = studentEmail.value.trim().toLowerCase();
-  if (!em) return setMsg(err, "Digite o email do aluno.", "error");
+  const val = await openModal({
+    title: "Reset de senha",
+    text: `Defina uma nova senha para ${em}.`,
+    mode: "prompt",
+    placeholder: "Mínimo 6 caracteres",
+    okText: "Resetar"
+  });
 
-  const newPassword = prompt("Nova senha do aluno (mín. 6 caracteres):");
-  if (!newPassword) return;
+  if (!val) return;
+  if (val.length < 6) return toast("error", "Senha fraca", "Use no mínimo 6 caracteres.");
 
   try {
-    await apiAdminResetPassword(token, em, newPassword);
-    setMsg(ok, "Senha resetada ✅", "ok");
+    await apiAdminResetPassword(token, em, val);
+    toast("ok", "Senha resetada", "Nova senha definida com sucesso.");
   } catch (e) {
-    setMsg(err, e.message || "Erro ao resetar senha.", "error");
+    toast("error", "Erro", e.message || "Erro ao resetar senha.");
   }
-};
+});
 
-deleteBtn.onclick = async () => {
-  clearMsg(ok);
-  clearMsg(err);
+deleteBtn?.addEventListener("click", async () => {
+  const em = (studentEmail?.value || "").trim().toLowerCase();
+  if (!em) return toast("error", "Atenção", "Digite o email do aluno.");
 
-  const em = studentEmail.value.trim().toLowerCase();
-  if (!em) return setMsg(err, "Digite o email do aluno.", "error");
+  const okConfirm = await openModal({
+    title: "Deletar aluno",
+    text: `Tem certeza que deseja deletar ${em}? Essa ação não pode ser desfeita.`,
+    mode: "confirm",
+    okText: "Deletar"
+  });
 
-  if (!confirm(`Deletar o aluno ${em}?`)) return;
+  if (!okConfirm) return;
 
   try {
     await apiAdminDeleteUser(token, em);
-    setMsg(ok, "Aluno deletado ✅", "ok");
-
-    studentEmail.value = "";
+    toast("ok", "Aluno deletado", "Conta removida com sucesso.");
+    if (studentEmail) studentEmail.value = "";
     clearEditFields();
-
-    await refreshList();
+    await refreshList().catch(()=>{});
+    if (window.__setRoute) window.__setRoute("list");
   } catch (e) {
-    setMsg(err, e.message || "Erro ao deletar.", "error");
+    toast("error", "Erro", e.message || "Erro ao deletar.");
   }
-};
+});
 
+// quando abrir "Alunos", carrega automaticamente
+window.addEventListener("routechange", async (e) => {
+  if (e?.detail?.route === "list") {
+    try { await refreshList(); }
+    catch (err) { toast("error", "Erro", err?.message || "Erro ao listar."); }
+  }
+});
+
+// ===== Init =====
 (async function init() {
   const session = await requireAuth("admin");
   if (!session) return;
 
   token = session.token;
-  who.textContent = session.user.email;
+  if (who) who.textContent = session.user.email;
 
-  try {
-    await refreshList();
-  } catch (e) {
-    setMsg(err, e.message || "Erro ao listar.", "error");
-  }
+  await refreshList().catch(()=>{});
 })();
