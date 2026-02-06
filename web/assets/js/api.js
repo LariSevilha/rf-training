@@ -37,22 +37,18 @@ export async function apiDocuments(token) {
     })
   );
 
-  // ✅ normaliza: sempre retorna todas as chaves
   return {
     training: (data.training || "").trim(),
     diet: (data.diet || "").trim(),
     supp: (data.supp || "").trim(),
-    stretch: (data.stretch || "").trim(), // ✅ novo
+    stretch: (data.stretch || "").trim(),
   };
 }
 
 // ===== Admin =====
 export async function apiAdminListUsers(token, q = "") {
   const url = `${API}/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`;
-
-  return readJson(
-    await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-  );
+  return readJson(await fetch(url, { headers: { Authorization: `Bearer ${token}` } }));
 }
 
 export async function apiAdminCreateUser(token, email, password, active = true) {
@@ -64,14 +60,6 @@ export async function apiAdminCreateUser(token, email, password, active = true) 
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ email, password, active }),
-    })
-  );
-}
-
-export async function apiAdminGetUser(token, email) {
-  return readJson(
-    await fetch(`${API}/admin/users/${encodeURIComponent(email)}`, {
-      headers: { Authorization: `Bearer ${token}` },
     })
   );
 }
@@ -116,8 +104,7 @@ export async function apiAdminResetPassword(token, email, password) {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+        Authorization: `Bearer ${token}` },
       body: JSON.stringify({ password }),
     })
   );
