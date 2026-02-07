@@ -26,7 +26,7 @@ const search = document.getElementById("search");
 const refreshBtn = document.getElementById("refreshBtn");
 const userList = document.getElementById("userList");
 
-const studentName = document.getElementById("studentName"); // ✅
+const studentName = document.getElementById("studentName");
 const studentEmail = document.getElementById("studentEmail");
 const active = document.getElementById("active");
 
@@ -38,6 +38,24 @@ const stretch = document.getElementById("stretch");
 const saveBtn = document.getElementById("saveBtn");
 const resetBtn = document.getElementById("resetBtn");
 const deleteBtn = document.getElementById("deleteBtn");
+
+// ===== Dashboard Elements =====
+const dashTotal = document.getElementById("dashTotal");
+const dashActive = document.getElementById("dashActive");
+const dashInactive = document.getElementById("dashInactive");
+const dashActivePct = document.getElementById("dashActivePct");
+const dashInactivePct = document.getElementById("dashInactivePct");
+
+const dashMonthlyBody = document.getElementById("dashMonthlyBody");
+const dashRefreshBtn = document.getElementById("dashRefreshBtn");
+
+const dashFrom = document.getElementById("dashFrom");
+const dashTo = document.getElementById("dashTo");
+const dashApplyBtn = document.getElementById("dashApplyBtn");
+const dashPdfBtn = document.getElementById("dashPdfBtn");
+
+const dashPeriodNew = document.getElementById("dashPeriodNew");
+const dashPeriodLabel = document.getElementById("dashPeriodLabel");
 
 let token = null;
 let selectedRow = null;
@@ -112,12 +130,12 @@ function renderUsers(users) {
       }
     });
 
-    tr.querySelector('[data-act="edit"]').addEventListener("click", (ev) => {
+    tr.querySelector('[data-act="edit"]')?.addEventListener("click", (ev) => {
       ev.stopPropagation();
       tr.click();
     });
 
-    tr.querySelector('[data-act="del"]').addEventListener("click", async (ev) => {
+    tr.querySelector('[data-act="del"]')?.addEventListener("click", async (ev) => {
       ev.stopPropagation();
 
       const okConfirm = await openModal({
@@ -155,6 +173,213 @@ async function refreshList() {
   renderUsers(data.users || []);
 }
 
+// ===== DASHBOARD =====
+function monthKey(d) {
+  const dt = new Date(d);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function monthLabel(key) {
+  const [y, m] = key.split("-");
+  return `${m}/${y}`;
+}
+
+function pct(part, total) {
+  if (!total) return "0%";
+  return Math.round((part / total) * 100) + "%";
+}
+
+function pickDate(u) {
+  return u.createdAt || u.created_at || u.updatedAt || u.updated_at || null;
+}
+
+function buildMonthOptions(n = 24) {
+  const now = new Date();
+  const cursor = new Date(now.getFullYear(), now.getMonth(), 1);
+  const keys = [];
+  for (let i = 0; i < n; i++) {
+    keys.push(monthKey(cursor));
+    cursor.setMonth(cursor.getMonth() - 1);
+  }
+  return keys; // mais recente -> mais antigo
+}
+
+function fillMonthSelects() {
+  if (!dashFrom || !dashTo) return;
+
+  const keys = buildMonthOptions(24);
+  const opts = keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join("");
+
+  dashFrom.innerHTML = opts;
+  dashTo.innerHTML = opts;
+
+  // default: últimos 6 meses (do mais antigo -> mais recente)
+  const defaultTo = keys[0];
+  const defaultFrom = keys[Math.min(5, keys.length - 1)];
+
+  dashFrom.value = defaultFrom;
+  dashTo.value = defaultTo;
+}
+
+function monthsBetween(fromKey, toKey) {
+  const [fy, fm] = fromKey.split("-").map(Number);
+  const [ty, tm] = toKey.split("-").map(Number);
+
+  const start = new Date(fy, fm - 1, 1);
+  const end = new Date(ty, tm - 1, 1);
+
+  const a = start <= end ? start : end;
+  const b = start <= end ? end : start;
+
+  const out = [];
+  const cur = new Date(a.getFullYear(), a.getMonth(), 1);
+  while (cur <= b) {
+    out.push(monthKey(cur));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  return out; // crescente
+}
+
+function renderMonthly(rows) {
+  if (!dashMonthlyBody) return;
+
+  if (!rows || rows.length === 0) {
+    dashMonthlyBody.innerHTML = `<tr><td colspan="4" style="opacity:.7;padding:12px;">—</td></tr>`;
+    return;
+  }
+
+  dashMonthlyBody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${monthLabel(r.key)}</td>
+      <td>${r.total}</td>
+      <td>${r.active}</td>
+      <td>${r.inactive}</td>
+    </tr>
+  `).join("");
+}
+
+async function loadDashboard() {
+  if (!dashTotal || !dashMonthlyBody) return;
+
+  try {
+    dashTotal.textContent = "…";
+    dashActive.textContent = "…";
+    dashInactive.textContent = "…";
+    if (dashPeriodNew) dashPeriodNew.textContent = "…";
+    if (dashActivePct) dashActivePct.textContent = "—";
+    if (dashInactivePct) dashInactivePct.textContent = "—";
+    if (dashPeriodLabel) dashPeriodLabel.textContent = "—";
+
+    dashMonthlyBody.innerHTML = `<tr><td colspan="4" style="opacity:.7;padding:12px;">Carregando...</td></tr>`;
+
+    const data = await apiAdminListUsers(token, "");
+    const users = data?.users || [];
+
+    const total = users.length;
+    const activeCount = users.filter(u => !!u.active).length;
+    const inactiveCount = total - activeCount;
+
+    dashTotal.textContent = String(total);
+    dashActive.textContent = String(activeCount);
+    dashInactive.textContent = String(inactiveCount);
+
+    if (dashActivePct) dashActivePct.textContent = `${pct(activeCount, total)} do total`;
+    if (dashInactivePct) dashInactivePct.textContent = `${pct(inactiveCount, total)} do total`;
+
+    const fromKey = dashFrom?.value || monthKey(new Date());
+    const toKey = dashTo?.value || monthKey(new Date());
+    const keys = monthsBetween(fromKey, toKey);
+
+    if (dashPeriodLabel) {
+      dashPeriodLabel.textContent = `Período: ${monthLabel(keys[0])} → ${monthLabel(keys[keys.length - 1])}`;
+    }
+
+    const periodNew = users.filter(u => {
+      const d = pickDate(u);
+      if (!d) return false;
+      return keys.includes(monthKey(d));
+    }).length;
+
+    if (dashPeriodNew) dashPeriodNew.textContent = String(periodNew);
+
+    const monthly = keys.map(key => {
+      const inMonth = users.filter(u => {
+        const d = pickDate(u);
+        if (!d) return false;
+        return monthKey(d) === key;
+      });
+
+      const t = inMonth.length;
+      const a = inMonth.filter(u => !!u.active).length;
+      return { key, total: t, active: a, inactive: t - a };
+    });
+
+    renderMonthly(monthly);
+  } catch (e) {
+    toast("error", "Erro", e.message || "Erro ao carregar dashboard.");
+    if (dashMonthlyBody) {
+      dashMonthlyBody.innerHTML = `<tr><td colspan="4" style="opacity:.7;padding:12px;">Erro ao carregar.</td></tr>`;
+    }
+  }
+}
+
+function buildDashboardPrintHTML() {
+  const period = dashPeriodLabel?.textContent || "";
+  const total = dashTotal?.textContent || "—";
+  const act = dashActive?.textContent || "—";
+  const inact = dashInactive?.textContent || "—";
+  const newp = dashPeriodNew?.textContent || "—";
+  const now = new Date().toLocaleString("pt-BR");
+
+  const bodyRows = dashMonthlyBody?.innerHTML || "";
+
+  return `
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <title>RF — Relatório de Alunos</title>
+  <style>
+    body{ font-family: Arial; padding: 24px; color:#111; }
+    h1{ margin:0 0 6px; }
+    .muted{ color:#444; margin:0 0 18px; }
+    .grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 18px; }
+    .box{ border:1px solid #ddd; border-radius:10px; padding:12px; }
+    .label{ font-size:12px; color:#555; }
+    .val{ font-size:22px; font-weight:800; margin-top:6px; }
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ border:1px solid #ddd; padding:8px; text-align:left; }
+    th{ background:#f6f6f6; }
+    @media print { button{display:none;} }
+  </style>
+</head>
+<body>
+  <h1>RF FITNESS — Relatório de Alunos</h1>
+  <p class="muted">${period} • Gerado em: ${now}</p>
+
+  <div class="grid">
+    <div class="box"><div class="label">Total</div><div class="val">${total}</div></div>
+    <div class="box"><div class="label">Ativos</div><div class="val">${act}</div></div>
+    <div class="box"><div class="label">Inativos</div><div class="val">${inact}</div></div>
+    <div class="box"><div class="label">Cadastros no período</div><div class="val">${newp}</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Mês</th><th>Total cadastrados</th><th>Ativos</th><th>Inativos</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${bodyRows}
+    </tbody>
+  </table>
+</body>
+</html>`;
+}
+
 // ===== Events =====
 logoutBtn?.addEventListener("click", () => {
   clearSession();
@@ -185,10 +410,16 @@ createBtn?.addEventListener("click", async () => {
 
 refreshBtn?.addEventListener("click", async () => {
   try {
-    await refreshList();
-    toast("ok", "Atualizado", "Lista carregada.");
+    const r = sessionStorage.getItem("route") || "";
+    if (r === "dash") {
+      await loadDashboard();
+      toast("ok", "Atualizado", "Dashboard carregado.");
+    } else {
+      await refreshList();
+      toast("ok", "Atualizado", "Lista carregada.");
+    }
   } catch (e) {
-    toast("error", "Erro", e.message || "Erro ao listar.");
+    toast("error", "Erro", e.message || "Erro ao atualizar.");
   }
 });
 
@@ -210,13 +441,9 @@ saveBtn?.addEventListener("click", async () => {
   };
 
   try {
-    // ✅ salva nome
     await apiAdminUpdateProfile(token, em, { name: nm });
-
-    // ✅ ativa/desativa
     await apiAdminSetActive(token, em, !!active?.checked);
 
-    // ✅ docs
     const saved = await apiAdminSaveDocs(token, em, docs);
 
     if (training) training.value = saved.training || "";
@@ -225,7 +452,6 @@ saveBtn?.addEventListener("click", async () => {
     if (stretch) stretch.value = saved.stretch || "";
 
     toast("ok", "Salvo", "Alterações aplicadas com sucesso.");
-
     await refreshList().catch(()=>{});
   } catch (e) {
     toast("error", "Erro ao salvar", e.message || "Erro ao salvar.");
@@ -283,10 +509,37 @@ deleteBtn?.addEventListener("click", async () => {
   }
 });
 
+// Dashboard events
+dashApplyBtn?.addEventListener("click", async () => {
+  await loadDashboard();
+  toast("ok", "Filtro aplicado", "Relatório atualizado.");
+});
+
+dashRefreshBtn?.addEventListener("click", async () => {
+  await loadDashboard();
+  toast("ok", "Atualizado", "Dashboard carregado.");
+});
+
+dashPdfBtn?.addEventListener("click", () => {
+  const w = window.open("", "_blank");
+  if (!w) return toast("error", "Popup bloqueado", "Permita popups para gerar o PDF.");
+  w.document.open();
+  w.document.write(buildDashboardPrintHTML());
+  w.document.close();
+  w.focus();
+  w.print();
+});
+
+// ✅ Route change: carrega o que precisa
 window.addEventListener("routechange", async (e) => {
   if (e?.detail?.route === "list") {
     try { await refreshList(); }
     catch (err) { toast("error", "Erro", err?.message || "Erro ao listar."); }
+  }
+
+  if (e?.detail?.route === "dash") {
+    try { await loadDashboard(); }
+    catch (err) { toast("error", "Erro", err?.message || "Erro ao carregar dashboard."); }
   }
 });
 
@@ -298,5 +551,9 @@ window.addEventListener("routechange", async (e) => {
   token = session.token;
   if (who) who.textContent = session.user.email;
 
+  // prepara selects do dashboard
+  fillMonthSelects();
+
+  // carrega lista inicialmente
   await refreshList().catch(()=>{});
 })();

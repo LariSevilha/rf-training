@@ -13,8 +13,8 @@
     <aside class="sidebarFixed">
       <div class="sideTop">
         <div class="logoBadge">
-          <img 
-            src="../img/logoapp.png" 
+          <img
+            src="../img/logoapp.png"
             alt="RF Fitness"
             class="logoImg"
           />
@@ -26,6 +26,18 @@
       </div>
 
       <nav class="nav">
+        <!-- ✅ NOVO: DASHBOARD -->
+        <button class="navBtn" data-route="dash" type="button">
+          <div class="navLeft">
+            <div class="navIcon">📊</div>
+            <div class="navTxt">
+              <p class="h">Dashboard</p>
+              <p class="s">Visão geral</p>
+            </div>
+          </div>
+          <div class="navChev">›</div>
+        </button>
+
         <button class="navBtn active" data-route="create" type="button">
           <div class="navLeft">
             <div class="navIcon">+</div>
@@ -69,20 +81,102 @@
     <main class="mainArea">
       <header class="topbar">
         <div class="topLeft">
-          <div class="hello">Admin Dashboard</div>
+          <div class="hello" id="pageTitle">Admin Dashboard</div>
           <div class="meta">Conta: <span id="who" style="font-weight:950;color:var(--gold2)"></span></div>
         </div>
 
         <div class="topRight">
+          <!-- aparece no LIST -->
           <div class="searchWrap" id="searchWrap" style="display:none;">
             <span>🔎</span>
             <input id="search" type="text" placeholder="Buscar por email..." />
           </div>
+
+          <!-- aparece no LIST e DASH -->
           <button class="pill" id="refreshBtn" type="button" style="display:none;">Atualizar</button>
         </div>
       </header>
 
       <section class="viewWrap">
+
+        <!-- ✅ VIEW: DASH -->
+        <section class="view" id="view-dash">
+          <div class="card">
+            <div class="dashHead">
+              <div>
+                <h2 style="margin:0;">Dashboard</h2>
+                <p class="muted" style="margin:6px 0 0;">Visão geral e relatório mensal de alunos.</p>
+              </div>
+        
+              <div class="dashActions">
+                <button class="btnGhost" id="dashRefreshBtn" type="button">Atualizar</button>
+                <button class="btn" id="dashPdfBtn" type="button">Gerar PDF</button>
+              </div>
+            </div>
+        
+            <div class="dashFilters">
+              <div class="fItem">
+                <div class="label">De</div>
+                <select id="dashFrom"></select>
+              </div>
+        
+              <div class="fItem">
+                <div class="label">Até</div>
+                <select id="dashTo"></select>
+              </div>
+        
+              <button class="btnGhost" id="dashApplyBtn" type="button">Aplicar</button>
+            </div>
+        
+            <div class="dashStats">
+              <div class="statCard">
+                <div class="label">Total de alunos</div>
+                <div class="statVal" id="dashTotal">—</div>
+              </div>
+        
+              <div class="statCard">
+                <div class="label">Ativos</div>
+                <div class="statVal" id="dashActive">—</div>
+                <div class="smallHint" id="dashActivePct">—</div>
+              </div>
+        
+              <div class="statCard">
+                <div class="label">Inativos</div>
+                <div class="statVal" id="dashInactive">—</div>
+                <div class="smallHint" id="dashInactivePct">—</div>
+              </div>
+        
+              <div class="statCard">
+                <div class="label">Cadastros no período</div>
+                <div class="statVal" id="dashPeriodNew">—</div>
+                <div class="smallHint" id="dashPeriodLabel">—</div>
+              </div>
+            </div>
+        
+            <div class="hr"></div>
+        
+            <div class="tableWrap" style="margin-top:10px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mês</th>
+                    <th>Total cadastrados</th>
+                    <th>Ativos</th>
+                    <th>Inativos</th>
+                  </tr>
+                </thead>
+                <tbody id="dashMonthlyBody">
+                  <tr><td colspan="4" style="opacity:.7;padding:12px;">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+        
+            <div class="smallHint" style="margin-top:10px;">
+              Obs: cadastro usa <b>createdAt</b> (ou <b>updatedAt</b> se não existir).
+            </div>
+          </div>
+        </section>
+        
 
         <!-- VIEW: CREATE -->
         <section class="view active" id="view-create">
@@ -90,7 +184,6 @@
             <h2>Criar aluno</h2>
             <p>Crie um novo acesso e defina se começa ativo.</p>
 
-            <!-- ✅ NOME -->
             <div>
               <div class="label">Nome do aluno</div>
               <input id="newName" type="text" placeholder="ex: Larissa Silva" />
@@ -149,7 +242,6 @@
             <h2>Editar aluno</h2>
             <p>Ative/desative, edite nome e os links dos PDFs. Para remover um link, deixe em branco e salve.</p>
 
-            <!-- ✅ NOME -->
             <div class="label">Nome do aluno</div>
             <input id="studentName" type="text" placeholder="Nome do aluno" />
 
