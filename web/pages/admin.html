@@ -84,7 +84,13 @@
             <h2>Criar aluno</h2>
             <p>Crie um novo acesso e defina se começa ativo.</p>
 
-            <div class="grid2">
+            <!-- ✅ NOME -->
+            <div>
+              <div class="label">Nome do aluno</div>
+              <input id="newName" type="text" placeholder="ex: Larissa Silva" />
+            </div>
+
+            <div class="grid2" style="margin-top:12px;">
               <div>
                 <div class="label">Email do aluno</div>
                 <input id="newEmail" type="email" placeholder="ex: aluna@email.com" />
@@ -118,6 +124,7 @@
                 <thead>
                   <tr>
                     <th style="width:92px;">Status</th>
+                    <th>Nome</th>
                     <th>Email</th>
                     <th style="width:120px;">Ações</th>
                   </tr>
@@ -134,7 +141,13 @@
         <section class="view" id="view-edit">
           <div class="card">
             <h2>Editar aluno</h2>
-            <p>Ative/desative e edite os links dos PDFs. Para remover um link, deixe em branco e salve.</p>
+            <p>Ative/desative, edite nome e os links dos PDFs. Para remover um link, deixe em branco e salve.</p>
+
+            <!-- ✅ NOME -->
+            <div class="label">Nome do aluno</div>
+            <input id="studentName" type="text" placeholder="Nome do aluno" />
+
+            <div style="height:10px;"></div>
 
             <div class="label">Email do aluno</div>
             <input id="studentEmail" type="email" placeholder="Email do aluno" />

@@ -51,7 +51,7 @@ export async function apiAdminListUsers(token, q = "") {
   return readJson(await fetch(url, { headers: { Authorization: `Bearer ${token}` } }));
 }
 
-export async function apiAdminCreateUser(token, email, password, active = true) {
+export async function apiAdminCreateUser(token, email, password, active = true, name = "") {
   return readJson(
     await fetch(`${API}/admin/users`, {
       method: "POST",
@@ -59,7 +59,21 @@ export async function apiAdminCreateUser(token, email, password, active = true) 
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ email, password, active }),
+      body: JSON.stringify({ email, password, active, name }),
+    })
+  );
+}
+
+// ✅ novo: atualizar nome
+export async function apiAdminUpdateProfile(token, email, data) {
+  return readJson(
+    await fetch(`${API}/admin/users/${encodeURIComponent(email)}/profile`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
     })
   );
 }

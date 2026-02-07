@@ -4,58 +4,40 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>RF App – Aluno</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=20260206-2" />
+  <link rel="stylesheet" href="/assets/css/styles.css?v=20260207-2" />
 </head>
 <body>
 
   <div class="wrap">
-    <div class="app">
+    <div class="studentApp">
 
-      <!-- SIDEBAR / HEADER -->
-      <aside class="sidebar">
-        <div class="sideTop">
-          <div class="logoBadge">RF</div>
+      <!-- TOP / HERO -->
+      <header class="studentHero" id="studentHero">
+        <div class="heroInner">
+          <div class="heroLeft"> 
+            <h1 class="heroTitle">
+              Olá, <span id="studentName" class="heroName">—</span>
+            </h1>
+          </div>
 
-          <div class="brandBlock">
-            <div class="brand">RF FITNESS</div>
-
-            <div class="subline">
-              <span class="chip">ALUNO</span>
-              <span class="sub">Painel</span>
-            </div>
+          <div class="heroActions">
+            <button class="pill pillExit" id="logoutBtn" type="button">
+              Sair
+            </button>
           </div>
         </div>
+      </header>
 
-        <div class="sideFooter">
-          <button class="pill" id="logoutBtn" type="button" style="width:100%;">
-            Sair
-          </button>
-        </div>
-      </aside>
-
-      <!-- MAIN -->
-      <main class="main">
-
-        <!-- TOPBAR -->
-        <div class="topbar" id="topbar">
-          <div class="topLeft">
-            <div class="hello">Seus documentos</div>
-            <div class="meta">
-              Conta:
-              <span id="who" style="font-weight:900;color:var(--gold2)"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- CONTENT -->
+      <!-- CONTENT -->
+      <main class="studentMain">
         <div class="content">
           <div class="card" id="menuCard">
             <h3>Documentos disponíveis</h3>
 
-            <div style="display:grid; gap:8px; margin-top:10px;">
+            <div class="menuGrid">
 
               <!-- TREINO -->
-              <div class="navBtn menuBtn" data-open="training">
+              <button class="navBtn menuBtn" data-open="training" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" class="ico">
@@ -67,10 +49,10 @@
                   </div>
                 </div>
                 <div class="navChev">›</div>
-              </div>
+              </button>
 
               <!-- ALIMENTAÇÃO -->
-              <div class="navBtn menuBtn" data-open="diet">
+              <button class="navBtn menuBtn" data-open="diet" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" class="ico">
@@ -82,10 +64,10 @@
                   </div>
                 </div>
                 <div class="navChev">›</div>
-              </div>
+              </button>
 
               <!-- SUPLEMENTAÇÃO -->
-              <div class="navBtn menuBtn" data-open="supp">
+              <button class="navBtn menuBtn" data-open="supp" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" class="ico">
@@ -97,10 +79,10 @@
                   </div>
                 </div>
                 <div class="navChev">›</div>
-              </div>
+              </button>
 
               <!-- ALONGAMENTOS / MOBILIDADE -->
-              <div class="navBtn menuBtn" data-open="stretch">
+              <button class="navBtn menuBtn" data-open="stretch" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" class="ico">
@@ -108,20 +90,22 @@
                     </svg>
                   </div>
                   <div class="navTxt">
-                    <p class="h">Alongamentos e mobilidade</p>
+                    <p class="h">Alongamentos</p> 
                   </div>
                 </div>
                 <div class="navChev">›</div>
-              </div>
+              </button>
 
             </div>
+
+            
           </div>
         </div>
 
         <!-- PDF OVERLAY -->
         <div class="pdfOverlay" id="pdfOverlay" aria-hidden="true">
           <div class="pdfBar">
-            <button class="backBtn" id="pdfBack">← Voltar</button>
+            <button class="backBtn" id="pdfBack" type="button">← Voltar</button>
             <div class="pdfTitle" id="pdfTitle">PDF</div>
           </div>
 
@@ -136,6 +120,7 @@
         </div>
 
       </main>
+
     </div>
   </div>
 

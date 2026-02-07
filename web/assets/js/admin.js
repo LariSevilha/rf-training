@@ -2,6 +2,7 @@ import { requireAuth } from "./guard.js";
 import {
   apiAdminListUsers,
   apiAdminCreateUser,
+  apiAdminUpdateProfile,
   apiAdminGetDocs,
   apiAdminSetActive,
   apiAdminSaveDocs,
@@ -15,6 +16,7 @@ import { toast, openModal } from "./ui.js";
 const who = document.getElementById("who");
 const logoutBtn = document.getElementById("logoutBtn");
 
+const newName = document.getElementById("newName");
 const newEmail = document.getElementById("newEmail");
 const newPass = document.getElementById("newPass");
 const newActive = document.getElementById("newActive");
@@ -24,8 +26,10 @@ const search = document.getElementById("search");
 const refreshBtn = document.getElementById("refreshBtn");
 const userList = document.getElementById("userList");
 
+const studentName = document.getElementById("studentName"); // ✅
 const studentEmail = document.getElementById("studentEmail");
 const active = document.getElementById("active");
+
 const training = document.getElementById("training");
 const diet = document.getElementById("diet");
 const supp = document.getElementById("supp");
@@ -46,14 +50,15 @@ function clearEditFields() {
   if (stretch) stretch.value = "";
 }
 
-function markSelectedRow(tr){
+function markSelectedRow(tr) {
   if (selectedRow) selectedRow.classList.remove("selected");
   selectedRow = tr;
   if (selectedRow) selectedRow.classList.add("selected");
 }
 
-async function selectUser(email, isActive) {
+async function selectUser(email, isActive, name = "") {
   if (studentEmail) studentEmail.value = email;
+  if (studentName) studentName.value = name || "";
   if (active) active.checked = !!isActive;
 
   clearEditFields();
@@ -72,16 +77,18 @@ function renderUsers(users) {
 
   if (!users || users.length === 0) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="3" style="opacity:.7;padding:12px;">Nenhum aluno encontrado.</td>`;
+    tr.innerHTML = `<td colspan="4" style="opacity:.7;padding:12px;">Nenhum aluno encontrado.</td>`;
     userList.appendChild(tr);
     return;
   }
 
   users.forEach(u => {
     const tr = document.createElement("tr");
+    const nm = (u.name || "").trim();
 
     tr.innerHTML = `
       <td style="width:92px;">${u.active ? "🟢" : "🔴"}</td>
+      <td style="opacity:${nm ? 1 : .6};">${nm || "—"}</td>
       <td>${u.email}</td>
       <td style="width:120px;">
         <div style="display:flex; gap:8px; justify-content:flex-end;">
@@ -93,12 +100,11 @@ function renderUsers(users) {
       </td>
     `;
 
-    // clicar na linha = selecionar + carregar docs
     tr.addEventListener("click", async () => {
       markSelectedRow(tr);
 
       try {
-        await selectUser(u.email, u.active);
+        await selectUser(u.email, u.active, u.name || "");
         toast("ok", "Aluno selecionado", "Dados carregados.");
         if (window.__setRoute) window.__setRoute("edit");
       } catch (e) {
@@ -106,13 +112,11 @@ function renderUsers(users) {
       }
     });
 
-    // EDITAR (não propaga)
     tr.querySelector('[data-act="edit"]').addEventListener("click", (ev) => {
       ev.stopPropagation();
       tr.click();
     });
 
-    // EXCLUIR (não propaga)
     tr.querySelector('[data-act="del"]').addEventListener("click", async (ev) => {
       ev.stopPropagation();
 
@@ -129,9 +133,9 @@ function renderUsers(users) {
         await apiAdminDeleteUser(token, u.email);
         toast("ok", "Aluno deletado", "Conta removida com sucesso.");
 
-        // se estava selecionado, limpa a edição
         if ((studentEmail?.value || "").trim().toLowerCase() === u.email.toLowerCase()) {
           if (studentEmail) studentEmail.value = "";
+          if (studentName) studentName.value = "";
           clearEditFields();
         }
 
@@ -158,17 +162,18 @@ logoutBtn?.addEventListener("click", () => {
 });
 
 createBtn?.addEventListener("click", async () => {
+  const name = (newName?.value || "").trim();
   const email = (newEmail?.value || "").trim().toLowerCase();
   const password = (newPass?.value || "").trim();
 
-  if (!email || !password) {
-    return toast("error", "Atenção", "Preencha email e senha inicial.");
-  }
+  if (!name) return toast("error", "Atenção", "Preencha o nome do aluno.");
+  if (!email || !password) return toast("error", "Atenção", "Preencha email e senha inicial.");
 
   try {
-    await apiAdminCreateUser(token, email, password, !!newActive?.checked);
+    await apiAdminCreateUser(token, email, password, !!newActive?.checked, name);
     toast("ok", "Aluno criado", "Conta criada com sucesso.");
 
+    if (newName) newName.value = "";
     if (newEmail) newEmail.value = "";
     if (newPass) newPass.value = "";
 
@@ -195,6 +200,8 @@ saveBtn?.addEventListener("click", async () => {
   const em = (studentEmail?.value || "").trim().toLowerCase();
   if (!em) return toast("error", "Atenção", "Digite o email do aluno.");
 
+  const nm = (studentName?.value || "").trim();
+
   const docs = {
     training: (training?.value || "").trim(),
     diet: (diet?.value || "").trim(),
@@ -203,13 +210,15 @@ saveBtn?.addEventListener("click", async () => {
   };
 
   try {
-    // ativa/desativa
+    // ✅ salva nome
+    await apiAdminUpdateProfile(token, em, { name: nm });
+
+    // ✅ ativa/desativa
     await apiAdminSetActive(token, em, !!active?.checked);
 
-    // ✅ salva e RECEBE de volta os docs do banco
+    // ✅ docs
     const saved = await apiAdminSaveDocs(token, em, docs);
 
-    // ✅ re-preenche campos (garante que após recarregar/voltar view fica certo)
     if (training) training.value = saved.training || "";
     if (diet) diet.value = saved.diet || "";
     if (supp) supp.value = saved.supp || "";
@@ -217,13 +226,11 @@ saveBtn?.addEventListener("click", async () => {
 
     toast("ok", "Salvo", "Alterações aplicadas com sucesso.");
 
-    // (opcional) atualizar lista de alunos
     await refreshList().catch(()=>{});
   } catch (e) {
     toast("error", "Erro ao salvar", e.message || "Erro ao salvar.");
   }
 });
-
 
 resetBtn?.addEventListener("click", async () => {
   const em = (studentEmail?.value || "").trim().toLowerCase();
@@ -264,8 +271,11 @@ deleteBtn?.addEventListener("click", async () => {
   try {
     await apiAdminDeleteUser(token, em);
     toast("ok", "Aluno deletado", "Conta removida com sucesso.");
+
     if (studentEmail) studentEmail.value = "";
+    if (studentName) studentName.value = "";
     clearEditFields();
+
     await refreshList().catch(()=>{});
     if (window.__setRoute) window.__setRoute("list");
   } catch (e) {
@@ -273,7 +283,6 @@ deleteBtn?.addEventListener("click", async () => {
   }
 });
 
-// quando abrir "Alunos", carrega automaticamente
 window.addEventListener("routechange", async (e) => {
   if (e?.detail?.route === "list") {
     try { await refreshList(); }
