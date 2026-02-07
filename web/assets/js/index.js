@@ -29,7 +29,7 @@ loginBtn?.addEventListener("click", async (e) => {
     const data = await apiLogin(email, password);
 
     if (!data.user.active) {
-      return setMsg(err, "Usuário desativado. Fale com o personal/admin.", "error");
+      return setMsg(err, "Usuário inativo. Entre em contato com seu personal.", "error");
     }
 
     if (rememberEl?.checked) saveEmail(email);
