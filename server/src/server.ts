@@ -49,15 +49,6 @@ async function main() {
     return true;
   }
 
-  /**
-   * IMPORTANTÍSSIMO:
-   * - LOCAL normalmente usa /api
-   * - PRODUÇÃO às vezes o NGINX faz rewrite e remove /api antes de chegar aqui
-   *
-   * Então deixe configurável:
-   *   API_PREFIX=/api   (local)
-   *   API_PREFIX=       (produção se o proxy remover /api)
-   */
   const API_PREFIX = process.env.API_PREFIX ?? "/api"; // default /api
 
   // Health
@@ -86,7 +77,12 @@ async function main() {
 
     return {
       token,
-      user: { email: user.email, active: user.active, role: user.role },
+      user: {
+        email: user.email,
+        name: user.name,          // ✅
+        active: user.active,
+        role: user.role
+      },
     };
   });
 
@@ -94,7 +90,14 @@ async function main() {
     const payload = req.user as JwtPayload;
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) return { user: null };
-    return { user: { email: user.email, active: user.active, role: user.role } };
+    return {
+      user: {
+        email: user.email,
+        name: user.name,          // ✅
+        active: user.active,
+        role: user.role
+      }
+    };
   });
 
   // ===== ALUNO =====
@@ -117,7 +120,7 @@ async function main() {
 
   // ===== ADMIN =====
 
-  // list users
+  // list users (✅ inclui name)
   app.get(`${API_PREFIX}/admin/users`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -130,13 +133,13 @@ async function main() {
       },
       orderBy: { createdAt: "desc" },
       take: 50,
-      select: { email: true, active: true, createdAt: true },
+      select: { email: true, name: true, active: true, createdAt: true }, // ✅
     });
 
     return { users };
   });
 
-  // create user
+  // create user (✅ aceita name)
   app.post(`${API_PREFIX}/admin/users`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -144,9 +147,10 @@ async function main() {
       email: z.string().email(),
       password: z.string().min(6),
       active: z.boolean().optional(),
+      name: z.string().min(2).max(80).optional(), // ✅
     });
 
-    const { email, password, active } = schema.parse(req.body);
+    const { email, password, active, name } = schema.parse(req.body);
     const normalized = normEmail(email);
 
     const exists = await prisma.user.findUnique({ where: { email: normalized } });
@@ -155,11 +159,42 @@ async function main() {
     const passwordHash = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: { email: normalized, passwordHash, role: "student", active: active ?? true },
-      select: { email: true, active: true, role: true, createdAt: true },
+      data: {
+        email: normalized,
+        name: name?.trim() || null, // ✅
+        passwordHash,
+        role: "student",
+        active: active ?? true
+      },
+      select: { email: true, name: true, active: true, role: true, createdAt: true }, // ✅
     });
 
     return { ok: true, user };
+  });
+
+  // ✅ update profile (name)
+  app.patch(`${API_PREFIX}/admin/users/:email/profile`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    if (!requireAdmin(req, reply)) return;
+
+    const email = normEmail(req.params.email);
+
+    const schema = z.object({
+      name: z.string().trim().min(2).max(80).optional().nullable(),
+    });
+
+    const { name } = schema.parse(req.body);
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
+
+    const clean = (name ?? "").toString().trim();
+    const updated = await prisma.user.update({
+      where: { email },
+      data: { name: clean ? clean : null },
+      select: { email: true, name: true },
+    });
+
+    return { ok: true, user: updated };
   });
 
   // set active
@@ -178,7 +213,7 @@ async function main() {
     return { ok: true, user: { email: updated.email, active: updated.active } };
   });
 
-  // ✅ GET docs admin (ESSA É A ROTA DO ERRO)
+  // GET docs admin
   app.get(`${API_PREFIX}/admin/users/:email/documents`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -197,7 +232,7 @@ async function main() {
     return out;
   });
 
-  // ✅ PUT docs admin (salva e devolve os docs do banco)
+  // PUT docs admin (salva e devolve os docs do banco)
   app.put(`${API_PREFIX}/admin/users/:email/documents`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
