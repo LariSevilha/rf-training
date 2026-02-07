@@ -66,3 +66,53 @@ loginBtn?.addEventListener("click", async (e) => {
     }
   }
 })();
+
+const emailInput = document.getElementById("email");
+const passInput = document.getElementById("pass");
+const rememberChk = document.getElementById("remember");
+const togglePassBtn = document.getElementById("togglePass");
+
+// ===== MOSTRAR / OCULTAR SENHA =====
+togglePassBtn.addEventListener("click", () => {
+  const isHidden = passInput.type === "password";
+  passInput.type = isHidden ? "text" : "password";
+  togglePassBtn.textContent = isHidden ? "🙈" : "👁";
+});
+
+// ===== CARREGAR LOGIN SALVO =====
+(function loadSavedLogin(){
+  const saved = JSON.parse(localStorage.getItem("rf_login") || "{}");
+
+  if (saved.email) {
+    emailInput.value = saved.email;
+    rememberChk.checked = true;
+  }
+
+  if (saved.password) {
+    passInput.value = saved.password;
+    rememberChk.checked = true;
+  }
+})();
+
+// ===== AO CLICAR EM LOGIN =====
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  const password = passInput.value;
+
+  if (!email || !password) {
+    showError("Preencha email e senha.");
+    return;
+  }
+
+  // 🔐 salvar ou limpar credenciais
+  if (rememberChk.checked) {
+    localStorage.setItem(
+      "rf_login",
+      JSON.stringify({ email, password })
+    );
+  } else {
+    localStorage.removeItem("rf_login");
+  }
+
+  // 👉 continua teu fluxo normal de login aqui
+}); 

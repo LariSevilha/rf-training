@@ -33,15 +33,26 @@
 
       <div class="field">
         <div class="label">Senha</div>
-        <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password" />
+      
+        <div class="inputWrap">
+          <input 
+            type="password" 
+            id="pass" 
+            placeholder="••••••••" 
+            autocomplete="current-password"
+          />
+          <button class="eyeBtn" id="togglePass" type="button" aria-label="Mostrar senha">
+            👁
+          </button>
+        </div>
       </div>
+      
 
-      <div class="row">
-        <label class="check">
-          <input id="remember" type="checkbox" />
-          Lembrar email
-        </label>
-      </div>
+      <label class="check">
+        <input id="remember" type="checkbox" />
+        Lembrar login?
+      </label>
+      
 
       <button class="btn btnFull" id="loginBtn" type="button" style="margin-top:12px;">Entrar</button>
 
