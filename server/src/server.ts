@@ -171,7 +171,68 @@ async function main() {
 
     return { ok: true, user };
   });
+  // ===== ME (UPDATE) =====
+  app.patch(`${API_PREFIX}/me`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    const payload = req.user as JwtPayload;
 
+    const schema = z.object({
+      name: z.string().trim().min(2).max(80).optional().nullable(),
+      email: z.string().email().optional().nullable(),
+    });
+
+    const body = schema.parse(req.body);
+
+    const me = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!me) return reply.code(404).send({ message: "Usuário não encontrado" });
+
+    const data: any = {};
+
+    // nome
+    if ("name" in body) {
+      const cleanName = String(body.name ?? "").trim();
+      data.name = cleanName ? cleanName : null;
+    }
+
+    // email (troca segura)
+    if ("email" in body) {
+      const newEmail = normEmail(body.email ?? "");
+      if (!newEmail) return reply.code(400).send({ message: "Email inválido" });
+
+      // se mudou, valida duplicidade
+      if (newEmail !== me.email) {
+        const exists = await prisma.user.findUnique({ where: { email: newEmail } });
+        if (exists) return reply.code(409).send({ message: "Email já está em uso" });
+        data.email = newEmail;
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: me.id },
+      data,
+      select: { email: true, name: true, active: true, role: true },
+    });
+
+    return { ok: true, user: updated };
+  });
+  app.patch(`${API_PREFIX}/me/password`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    const payload = req.user as JwtPayload;
+  
+    const schema = z.object({ password: z.string().min(6) });
+    const { password } = schema.parse(req.body);
+  
+    const me = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!me) return reply.code(404).send({ message: "Usuário não encontrado" });
+  
+    const passwordHash = await bcrypt.hash(password, 10);
+  
+    await prisma.user.update({
+      where: { id: me.id },
+      data: { passwordHash },
+    });
+  
+    return { ok: true };
+  });
+  
   // ✅ update profile (name)
   app.patch(`${API_PREFIX}/admin/users/:email/profile`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;

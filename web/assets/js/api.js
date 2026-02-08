@@ -1,6 +1,4 @@
-const API = location.hostname === "localhost"
-  ? "http://localhost:3333/api"
-  : "/api";
+const API = location.hostname === "localhost" ? "http://localhost:3333/api" : "/api";
 
 async function readJson(res) {
   const data = await res.json().catch(() => ({}));
@@ -26,6 +24,34 @@ export async function apiMe(token) {
   return readJson(
     await fetch(`${API}/me`, {
       headers: { Authorization: `Bearer ${token}` },
+    })
+  );
+}
+
+// Atualiza perfil do próprio usuário
+export async function apiUpdateMe(token, data) {
+  return readJson(
+    await fetch(`${API}/me`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    })
+  );
+}
+
+// Atualiza senha do próprio usuário
+export async function apiUpdateMyPassword(token, password) {
+  return readJson(
+    await fetch(`${API}/me/password`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ password }),
     })
   );
 }
@@ -64,7 +90,6 @@ export async function apiAdminCreateUser(token, email, password, active = true, 
   );
 }
 
-// ✅ novo: atualizar nome
 export async function apiAdminUpdateProfile(token, email, data) {
   return readJson(
     await fetch(`${API}/admin/users/${encodeURIComponent(email)}/profile`, {

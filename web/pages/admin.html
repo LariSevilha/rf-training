@@ -13,11 +13,7 @@
     <aside class="sidebarFixed">
       <div class="sideTop">
         <div class="logoBadge">
-          <img
-            src="../img/logoapp.png"
-            alt="RF Fitness"
-            class="logoImg"
-          />
+          <img src="../img/logoapp.png" alt="RF Fitness" class="logoImg" />
         </div>
         <div class="brandBlock">
           <div class="brand">RF FITNESS</div>
@@ -26,7 +22,17 @@
       </div>
 
       <nav class="nav">
-        <!-- ✅ NOVO: DASHBOARD -->
+        <button class="navBtn" data-route="me" type="button">
+          <div class="navLeft">
+            <div class="navIcon">⚙️</div>
+            <div class="navTxt">
+              <p class="h">Meu Admin</p>
+              <p class="s">Perfil e segurança</p>
+            </div>
+          </div>
+          <div class="navChev">›</div>
+        </button>
+
         <button class="navBtn" data-route="dash" type="button">
           <div class="navLeft">
             <div class="navIcon">📊</div>
@@ -78,8 +84,13 @@
     </aside>
 
     <!-- MAIN -->
-    <main class="mainArea"> 
-        
+    <main class="mainArea">
+
+      <header class="topbar">
+        <div class="topLeft">
+          <div class="hello" id="pageTitle">Admin</div>
+          <div class="meta">Olá, <span id="mName" style="font-weight:950;color:var(--gold2)"></span></div>
+        </div>
 
         <div class="topRight">
           <!-- aparece no LIST -->
@@ -87,12 +98,67 @@
             <span>🔎</span>
             <input id="search" type="text" placeholder="Buscar por email..." />
           </div>
- 
-        </div> 
+
+          <!-- aparece no LIST e DASH -->
+          <button class="pill" id="refreshBtn" type="button" style="display:none;">Atualizar</button>
+        </div>
+      </header>
 
       <section class="viewWrap">
 
-        <!-- ✅ VIEW: DASH -->
+        <!-- VIEW: ME -->
+        <section class="view" id="view-me">
+          <div class="card">
+            <div class="dashHead">
+              <div>
+                <h2 style="margin:0;">Meu Admin</h2>
+                <p class="muted" style="margin:6px 0 0;">Gerencie suas informações e segurança da conta.</p>
+              </div>
+
+              <div class="admin-btn"> 
+                <button class="btn" id="meSaveBtn" type="button">Salvar</button>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="grid2">
+              <div>
+                <div class="label">Nome</div>
+                <input id="meName" type="text" placeholder="Seu nome" />
+              </div>
+
+              <div>
+                <div class="label">Email</div>
+                <input id="meEmail" type="email" placeholder="Seu email" />
+                <div class="smallHint">Se você alterar o email, será necessário logar novamente.</div>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <h3 style="margin:0 0 10px;">Segurança</h3>
+            <p class="muted" style="margin:0 0 12px;">Para trocar a senha, preencha os campos abaixo.</p>
+
+            <div class="grid2">
+              <div>
+                <div class="label">Nova senha</div>
+                <input id="mePass1" type="password" placeholder="mín. 6 caracteres" />
+              </div>
+
+              <div>
+                <div class="label">Confirmar nova senha</div>
+                <input id="mePass2" type="password" placeholder="repita a senha" />
+              </div>
+            </div>
+
+            <div class="smallHint" style="margin-top:10px;">
+              Dica: use uma senha forte (mín. 10 caracteres, com letras e números).
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: DASH -->
         <section class="view" id="view-dash">
           <div class="card">
             <div class="dashHead">
@@ -100,54 +166,54 @@
                 <h2 style="margin:0;">Dashboard</h2>
                 <p class="muted" style="margin:6px 0 0;">Visão geral e relatório mensal de alunos.</p>
               </div>
-        
+
               <div class="dashActions">
                 <button class="btnGhost" id="dashRefreshBtn" type="button">Atualizar</button>
                 <button class="btn" id="dashPdfBtn" type="button">Gerar PDF</button>
               </div>
             </div>
-        
+
             <div class="dashFilters">
               <div class="fItem">
                 <div class="label">De</div>
                 <select id="dashFrom"></select>
               </div>
-        
+
               <div class="fItem">
                 <div class="label">Até</div>
                 <select id="dashTo"></select>
               </div>
-        
+
               <button class="btnGhost" id="dashApplyBtn" type="button">Aplicar</button>
             </div>
-        
+
             <div class="dashStats">
               <div class="statCard">
                 <div class="label">Total de alunos</div>
                 <div class="statVal" id="dashTotal">—</div>
               </div>
-        
+
               <div class="statCard">
                 <div class="label">Ativos</div>
                 <div class="statVal" id="dashActive">—</div>
                 <div class="smallHint" id="dashActivePct">—</div>
               </div>
-        
+
               <div class="statCard">
                 <div class="label">Inativos</div>
                 <div class="statVal" id="dashInactive">—</div>
                 <div class="smallHint" id="dashInactivePct">—</div>
               </div>
-        
+
               <div class="statCard">
                 <div class="label">Cadastros no período</div>
                 <div class="statVal" id="dashPeriodNew">—</div>
                 <div class="smallHint" id="dashPeriodLabel">—</div>
               </div>
             </div>
-        
+
             <div class="hr"></div>
-        
+
             <div class="tableWrap" style="margin-top:10px;">
               <table>
                 <thead>
@@ -162,10 +228,9 @@
                   <tr><td colspan="4" style="opacity:.7;padding:12px;">—</td></tr>
                 </tbody>
               </table>
-            </div> 
+            </div>
           </div>
         </section>
-        
 
         <!-- VIEW: CREATE -->
         <section class="view active" id="view-create">
@@ -279,10 +344,8 @@
     </main>
   </div>
 
-  <!-- Toast -->
   <div class="toastWrap" id="toastWrap"></div>
 
-  <!-- Modal -->
   <div class="modalMask" id="modalMask" aria-hidden="true">
     <div class="modal">
       <h3 id="modalTitle">Confirmação</h3>

@@ -7,7 +7,10 @@ import {
   apiAdminSetActive,
   apiAdminSaveDocs,
   apiAdminResetPassword,
-  apiAdminDeleteUser
+  apiAdminDeleteUser,
+  apiMe,
+  apiUpdateMe,
+  apiUpdateMyPassword,
 } from "./api.js";
 import { clearSession } from "./state.js";
 import { toast, openModal } from "./ui.js";
@@ -16,16 +19,19 @@ import { toast, openModal } from "./ui.js";
 const who = document.getElementById("who");
 const logoutBtn = document.getElementById("logoutBtn");
 
+// Create
 const newName = document.getElementById("newName");
 const newEmail = document.getElementById("newEmail");
 const newPass = document.getElementById("newPass");
 const newActive = document.getElementById("newActive");
 const createBtn = document.getElementById("createBtn");
 
+// List
 const search = document.getElementById("search");
 const refreshBtn = document.getElementById("refreshBtn");
 const userList = document.getElementById("userList");
 
+// Edit
 const studentName = document.getElementById("studentName");
 const studentEmail = document.getElementById("studentEmail");
 const active = document.getElementById("active");
@@ -57,8 +63,17 @@ const dashPdfBtn = document.getElementById("dashPdfBtn");
 const dashPeriodNew = document.getElementById("dashPeriodNew");
 const dashPeriodLabel = document.getElementById("dashPeriodLabel");
 
+// ===== ME (Admin Profile) =====
+const meName = document.getElementById("meName");
+const meEmail = document.getElementById("meEmail");
+const mePass1 = document.getElementById("mePass1");
+const mePass2 = document.getElementById("mePass2");
+const meSaveBtn = document.getElementById("meSaveBtn");
+const meRefreshBtn = document.getElementById("meRefreshBtn");
+
 let token = null;
 let selectedRow = null;
+let meSessionUser = null;
 
 // ===== Helpers =====
 function clearEditFields() {
@@ -82,7 +97,6 @@ async function selectUser(email, isActive, name = "") {
   clearEditFields();
 
   const docs = await apiAdminGetDocs(token, email);
-
   if (training) training.value = docs.training || "";
   if (diet) diet.value = docs.diet || "";
   if (supp) supp.value = docs.supp || "";
@@ -100,13 +114,13 @@ function renderUsers(users) {
     return;
   }
 
-  users.forEach(u => {
+  users.forEach((u) => {
     const tr = document.createElement("tr");
     const nm = (u.name || "").trim();
 
     tr.innerHTML = `
       <td style="width:92px;">${u.active ? "🟢" : "🔴"}</td>
-      <td style="opacity:${nm ? 1 : .6};">${nm || "—"}</td>
+      <td style="opacity:${nm ? 1 : 0.6};">${nm || "—"}</td>
       <td>${u.email}</td>
       <td style="width:120px;">
         <div style="display:flex; gap:8px; justify-content:flex-end;">
@@ -120,7 +134,6 @@ function renderUsers(users) {
 
     tr.addEventListener("click", async () => {
       markSelectedRow(tr);
-
       try {
         await selectUser(u.email, u.active, u.name || "");
         toast("ok", "Aluno selecionado", "Dados carregados.");
@@ -142,7 +155,7 @@ function renderUsers(users) {
         title: "Deletar aluno",
         text: `Tem certeza que deseja deletar ${u.email}? Essa ação não pode ser desfeita.`,
         mode: "confirm",
-        okText: "Deletar"
+        okText: "Deletar",
       });
 
       if (!okConfirm) return;
@@ -203,19 +216,18 @@ function buildMonthOptions(n = 24) {
     keys.push(monthKey(cursor));
     cursor.setMonth(cursor.getMonth() - 1);
   }
-  return keys; // mais recente -> mais antigo
+  return keys;
 }
 
 function fillMonthSelects() {
   if (!dashFrom || !dashTo) return;
 
   const keys = buildMonthOptions(24);
-  const opts = keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join("");
+  const opts = keys.map((k) => `<option value="${k}">${monthLabel(k)}</option>`).join("");
 
   dashFrom.innerHTML = opts;
   dashTo.innerHTML = opts;
 
-  // default: últimos 6 meses (do mais antigo -> mais recente)
   const defaultTo = keys[0];
   const defaultFrom = keys[Math.min(5, keys.length - 1)];
 
@@ -239,7 +251,7 @@ function monthsBetween(fromKey, toKey) {
     out.push(monthKey(cur));
     cur.setMonth(cur.getMonth() + 1);
   }
-  return out; // crescente
+  return out;
 }
 
 function renderMonthly(rows) {
@@ -250,14 +262,18 @@ function renderMonthly(rows) {
     return;
   }
 
-  dashMonthlyBody.innerHTML = rows.map(r => `
+  dashMonthlyBody.innerHTML = rows
+    .map(
+      (r) => `
     <tr>
       <td>${monthLabel(r.key)}</td>
       <td>${r.total}</td>
       <td>${r.active}</td>
       <td>${r.inactive}</td>
     </tr>
-  `).join("");
+  `
+    )
+    .join("");
 }
 
 async function loadDashboard() {
@@ -278,7 +294,7 @@ async function loadDashboard() {
     const users = data?.users || [];
 
     const total = users.length;
-    const activeCount = users.filter(u => !!u.active).length;
+    const activeCount = users.filter((u) => !!u.active).length;
     const inactiveCount = total - activeCount;
 
     dashTotal.textContent = String(total);
@@ -296,7 +312,7 @@ async function loadDashboard() {
       dashPeriodLabel.textContent = `Período: ${monthLabel(keys[0])} → ${monthLabel(keys[keys.length - 1])}`;
     }
 
-    const periodNew = users.filter(u => {
+    const periodNew = users.filter((u) => {
       const d = pickDate(u);
       if (!d) return false;
       return keys.includes(monthKey(d));
@@ -304,15 +320,15 @@ async function loadDashboard() {
 
     if (dashPeriodNew) dashPeriodNew.textContent = String(periodNew);
 
-    const monthly = keys.map(key => {
-      const inMonth = users.filter(u => {
+    const monthly = keys.map((key) => {
+      const inMonth = users.filter((u) => {
         const d = pickDate(u);
         if (!d) return false;
         return monthKey(d) === key;
       });
 
       const t = inMonth.length;
-      const a = inMonth.filter(u => !!u.active).length;
+      const a = inMonth.filter((u) => !!u.active).length;
       return { key, total: t, active: a, inactive: t - a };
     });
 
@@ -332,7 +348,6 @@ function buildDashboardPrintHTML() {
   const inact = dashInactive?.textContent || "—";
   const newp = dashPeriodNew?.textContent || "—";
   const now = new Date().toLocaleString("pt-BR");
-
   const bodyRows = dashMonthlyBody?.innerHTML || "";
 
   return `
@@ -352,7 +367,6 @@ function buildDashboardPrintHTML() {
     table{ width:100%; border-collapse:collapse; }
     th, td{ border:1px solid #ddd; padding:8px; text-align:left; }
     th{ background:#f6f6f6; }
-    @media print { button{display:none;} }
   </style>
 </head>
 <body>
@@ -380,6 +394,113 @@ function buildDashboardPrintHTML() {
 </html>`;
 }
 
+// ===== ME (Admin) =====
+async function loadMe() {
+  try {
+    const data = await apiMe(token);
+
+    // ✅ NÃO sobrescreve se veio vazio / inválido
+    if (!data?.user?.email) {
+      toast("error", "Erro", "API /me não retornou um usuário válido.");
+      return;
+    }
+
+    meSessionUser = data.user;
+
+    if (meName) meName.value = (data.user.name || "").trim();
+    if (meEmail) meEmail.value = (data.user.email || "").trim();
+    if (who) who.textContent = data.user.email;
+    if (mName) mName.textContent = data.user.name;
+
+    if (mePass1) mePass1.value = "";
+    if (mePass2) mePass2.value = "";
+  } catch (e) {
+    toast("error", "Erro", e.message || "Erro ao carregar admin.");
+  }
+}
+
+
+async function saveMe() {
+  try {
+    // garante que temos o "me" carregado
+    if (!meSessionUser) {
+      await loadMe();
+      if (!meSessionUser) {
+        toast("error", "Erro", "Não foi possível carregar seu perfil para salvar.");
+        return;
+      }
+    }
+
+    const oldName = (meSessionUser.name || "").trim();
+    const oldEmail = (meSessionUser.email || "").trim().toLowerCase();
+
+    const name = (meName?.value || "").trim();
+    const email = (meEmail?.value || "").trim().toLowerCase();
+
+    const p1 = (mePass1?.value || "").trim();
+    const p2 = (mePass2?.value || "").trim();
+
+    // validações básicas
+    if (!name || name.length < 2) {
+      return toast("error", "Atenção", "Nome precisa ter no mínimo 2 caracteres.");
+    }
+    if (!email) {
+      return toast("error", "Atenção", "Email inválido.");
+    }
+
+    // monta PATCH somente com o que mudou (✅ não exige preencher tudo)
+    const patch = {};
+    if (name !== oldName) patch.name = name;
+    if (email !== oldEmail) patch.email = email;
+
+    const passwordChanged = !!(p1 || p2);
+    if (passwordChanged) {
+      if (p1.length < 6) return toast("error", "Senha fraca", "Use no mínimo 6 caracteres.");
+      if (p1 !== p2) return toast("error", "Senha não confere", "Digite a mesma senha nos 2 campos.");
+    }
+
+    if (Object.keys(patch).length === 0 && !passwordChanged) {
+      return toast("info", "Nada mudou", "Nenhuma alteração detectada.");
+    }
+
+    // 1) Atualiza perfil (nome/email) somente se mudou
+    let updatedUser = meSessionUser;
+    if (Object.keys(patch).length > 0) {
+      const resp = await apiUpdateMe(token, patch); // ✅ PATCH /api/me
+      updatedUser = resp?.user || updatedUser;
+
+      // atualiza topo
+      if (who) who.textContent = updatedUser.email || oldEmail;
+      toast("ok", "Salvo", "Perfil atualizado.");
+    }
+
+    // 2) Atualiza senha (opcional)
+    if (passwordChanged) {
+      await apiUpdateMyPassword(token, p1); // ✅ PATCH /api/me/password
+      toast("ok", "Salvo", "Senha atualizada.");
+
+      if (mePass1) mePass1.value = "";
+      if (mePass2) mePass2.value = "";
+    }
+
+    // 3) recarrega do servidor para confirmar e não ficar com cache
+    await loadMe();
+
+    // Se mudou email, seu token antigo pode ficar “inconsistente” (depende da sua política)
+    // Aqui eu só AVISO. Se quiser deslogar automaticamente, eu adapto.
+    if (email !== oldEmail) {
+      toast("info", "Atenção", "Email alterado. Se der problema depois, faça login novamente.");
+    }
+  } catch (e) {
+    // mostra status/payload se vier do readJson com debug
+    const status = e?.status ? ` (HTTP ${e.status})` : "";
+    const extra = e?.payload ? ` | ${JSON.stringify(e.payload)}` : "";
+    toast("error", "Erro ao salvar", (e?.message || "Erro desconhecido") + status);
+    console.error("saveMe error:", e, extra);
+  }
+}
+
+
 // ===== Events =====
 logoutBtn?.addEventListener("click", () => {
   clearSession();
@@ -402,7 +523,7 @@ createBtn?.addEventListener("click", async () => {
     if (newEmail) newEmail.value = "";
     if (newPass) newPass.value = "";
 
-    await refreshList().catch(()=>{});
+    await refreshList().catch(() => {});
   } catch (e) {
     toast("error", "Erro ao criar", e.message || "Erro ao criar.");
   }
@@ -414,6 +535,9 @@ refreshBtn?.addEventListener("click", async () => {
     if (r === "dash") {
       await loadDashboard();
       toast("ok", "Atualizado", "Dashboard carregado.");
+    } else if (r === "me") {
+      await loadMe();
+      toast("ok", "Atualizado", "Dados do admin carregados.");
     } else {
       await refreshList();
       toast("ok", "Atualizado", "Lista carregada.");
@@ -437,7 +561,7 @@ saveBtn?.addEventListener("click", async () => {
     training: (training?.value || "").trim(),
     diet: (diet?.value || "").trim(),
     supp: (supp?.value || "").trim(),
-    stretch: (stretch?.value || "").trim()
+    stretch: (stretch?.value || "").trim(),
   };
 
   try {
@@ -452,7 +576,7 @@ saveBtn?.addEventListener("click", async () => {
     if (stretch) stretch.value = saved.stretch || "";
 
     toast("ok", "Salvo", "Alterações aplicadas com sucesso.");
-    await refreshList().catch(()=>{});
+    await refreshList().catch(() => {});
   } catch (e) {
     toast("error", "Erro ao salvar", e.message || "Erro ao salvar.");
   }
@@ -467,7 +591,7 @@ resetBtn?.addEventListener("click", async () => {
     text: `Defina uma nova senha para ${em}.`,
     mode: "prompt",
     placeholder: "Mínimo 6 caracteres",
-    okText: "Resetar"
+    okText: "Resetar",
   });
 
   if (!val) return;
@@ -489,7 +613,7 @@ deleteBtn?.addEventListener("click", async () => {
     title: "Deletar aluno",
     text: `Tem certeza que deseja deletar ${em}? Essa ação não pode ser desfeita.`,
     mode: "confirm",
-    okText: "Deletar"
+    okText: "Deletar",
   });
 
   if (!okConfirm) return;
@@ -502,7 +626,7 @@ deleteBtn?.addEventListener("click", async () => {
     if (studentName) studentName.value = "";
     clearEditFields();
 
-    await refreshList().catch(()=>{});
+    await refreshList().catch(() => {});
     if (window.__setRoute) window.__setRoute("list");
   } catch (e) {
     toast("error", "Erro", e.message || "Erro ao deletar.");
@@ -530,16 +654,42 @@ dashPdfBtn?.addEventListener("click", () => {
   w.print();
 });
 
-// ✅ Route change: carrega o que precisa
+// ME events
+meRefreshBtn?.addEventListener("click", async () => {
+  await loadMe();
+  toast("ok", "Atualizado", "Dados do admin carregados.");
+});
+
+meSaveBtn?.addEventListener("click", async () => {
+  await saveMe();
+});
+
+// ✅ Route change
 window.addEventListener("routechange", async (e) => {
-  if (e?.detail?.route === "list") {
-    try { await refreshList(); }
-    catch (err) { toast("error", "Erro", err?.message || "Erro ao listar."); }
+  const r = e?.detail?.route;
+
+  if (r === "list") {
+    try {
+      await refreshList();
+    } catch (err) {
+      toast("error", "Erro", err?.message || "Erro ao listar.");
+    }
   }
 
-  if (e?.detail?.route === "dash") {
-    try { await loadDashboard(); }
-    catch (err) { toast("error", "Erro", err?.message || "Erro ao carregar dashboard."); }
+  if (r === "dash") {
+    try {
+      await loadDashboard();
+    } catch (err) {
+      toast("error", "Erro", err?.message || "Erro ao carregar dashboard.");
+    }
+  }
+
+  if (r === "me") {
+    try {
+      await loadMe();
+    } catch (err) {
+      toast("error", "Erro", err?.message || "Erro ao carregar admin.");
+    }
   }
 });
 
@@ -551,9 +701,11 @@ window.addEventListener("routechange", async (e) => {
   token = session.token;
   if (who) who.textContent = session.user.email;
 
-  // prepara selects do dashboard
   fillMonthSelects();
 
-  // carrega lista inicialmente
-  await refreshList().catch(()=>{});
+  // ✅ ESSA LINHA RESOLVE o "fica em branco ao recarregar"
+  await loadMe().catch(() => {});
+
+  await refreshList().catch(() => {});
 })();
+
