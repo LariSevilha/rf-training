@@ -19,9 +19,7 @@
 html,body{height:100%}
 body{
   margin:0;
-  background:
-    radial-gradient(1200px 600px at 15% 0%, rgba(206,172,94,.12), transparent 60%),
-    radial-gradient(900px 500px at 85% 10%, rgba(206,172,94,.08), transparent 60%),
+  background: 
     var(--bg);
   color:var(--text);
   font-family:var(--font);
@@ -157,8 +155,7 @@ a{color:inherit}
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 18px;
-  background: linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.22));
+  padding:0 18px; 
   border:1px solid var(--stroke);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -1694,4 +1691,76 @@ iframe{width:100%;height:100%;border:0;background:#000;}
   body{ background:#fff !important; color:#000 !important; }
   .card{ box-shadow:none !important; border:1px solid #ddd !important; }
   table{ width:100% !important; }
+}
+
+@media (max-width: 780px){
+
+  /* ========= 1) DASHBOARD: mantém formato de tabela ========= */
+  #view-dash .tableWrap{
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.20);
+  }
+
+  #view-dash table{
+    width: 100% !important;
+    min-width: 620px; /* garante scroll em telas pequenas */
+    border-collapse: collapse !important;
+  }
+
+  /* desfaz o “modo cards” */
+  #view-dash table,
+  #view-dash thead,
+  #view-dash tbody,
+  #view-dash tr,
+  #view-dash th,
+  #view-dash td{
+    display: table-row-group !important; /* base */
+  }
+  #view-dash table{ display: table !important; }
+  #view-dash thead{ display: table-header-group !important; }
+  #view-dash tbody{ display: table-row-group !important; }
+  #view-dash tr{ display: table-row !important; }
+  #view-dash th,
+  #view-dash td{ display: table-cell !important; }
+
+  /* deixa compacto e legível */
+  #view-dash th,
+  #view-dash td{
+    padding: 12px 12px !important;
+    font-size: 13px !important;
+    white-space: nowrap;
+  }
+
+  #view-dash th{
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,.06) !important;
+    z-index: 1;
+  }
+
+  /* ========= 2) LISTA (Alunos): aplica “modo cards” só nela ========= */
+  #view-list .tableWrap{ border-radius: 18px !important; }
+
+  #view-list table thead{ display:none !important; }
+
+  #view-list table,
+  #view-list tbody,
+  #view-list tr,
+  #view-list td{
+    display:block !important;
+    width:100% !important;
+  }
+
+  #view-list tbody tr{
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    padding: 10px 10px;
+    cursor: pointer;
+  }
+
+  #view-list tbody td{
+    padding: 8px 10px !important;
+  }
 }
