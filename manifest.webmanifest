@@ -1,9 +1,9 @@
 {
     "name": "RF App",
     "short_name": "RF App",
-    "start_url": "web/pages/aluno.html",
+    "start_url": "/pages/aluno.html?fullscreen=true",
     "scope": "/",
-    "display": "standalone",
+    "display": "fullscreen",
     "background_color": "#000000",
     "theme_color": "#000000",
     "icons": [

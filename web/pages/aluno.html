@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css" />
 
   <!-- PWA Manifest -->
-  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#000000" />
 
   <!-- iOS: abre em modo fullscreen quando adicionado à tela inicial -->
@@ -109,9 +109,9 @@
 
             </div>
 
-            <!-- Seção de instalação PWA – aparece condicionalmente via JS -->
+            <!-- Seção de instalação PWA -->
             <div class="install-section" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #333;">
-              <h4 style="text-align: center; margin-bottom: 12px;">Quer uma experiência melhor?</h4>
+              <h4 style="text-align: center; margin-bottom: 12px;">Melhor experiência</h4>
               
               <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
                 <button class="pill" id="installBtn" type="button" style="flex: 1; min-width: 220px; display: none;">
@@ -123,7 +123,7 @@
               </div>
 
               <div class="smallHint" style="margin-top: 12px; text-align: center; opacity: 0.85; font-size: 0.9rem;">
-                Adicione o RF App à tela inicial para abrir mais rápido, em tela cheia e sem barra do navegador.
+                Adicione o RF App à tela inicial para abrir em tela cheia, mais rápido e sem barra do navegador.
               </div>
             </div>
 
@@ -152,8 +152,18 @@
     </div>
   </div>
 
-  <!-- Área para toasts/mensagens -->
   <div class="toastWrap" id="toastWrap"></div>
+
+  <!-- Registro do Service Worker (essencial para PWA) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('Service Worker registrado!', reg))
+          .catch(err => console.error('Erro no SW:', err));
+      });
+    }
+  </script>
 
   <script type="module" src="../assets/js/aluno.js"></script>
 </body>

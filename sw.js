@@ -6,6 +6,12 @@ self.addEventListener("install", () => {
     event.waitUntil(self.clients.claim());
   });
   
-  // Sem cache agressivo por enquanto (seguro).
-  self.addEventListener("fetch", () => {});
-  
+  // Intercepta fetch (obrigatório para PWA ser considerado instalável)
+  self.addEventListener("fetch", (event) => {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        // Fallback simples se offline (opcional)
+        return new Response("Offline", { status: 503 });
+      })
+    );
+  });
