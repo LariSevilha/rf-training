@@ -17,8 +17,15 @@ const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
 const loadingLayer = document.getElementById("loadingLayer");
 
-// links
+// Install buttons
+const installBtn = document.getElementById("installBtn");
+const installHelpBtn = document.getElementById("installHelpBtn");
+
+// links dos PDFs
 const urls = { training: "", diet: "", supp: "", stretch: "" };
+
+// Variável para guardar o evento de install prompt (Android/Chrome)
+let deferredPrompt = null;
 
 // loading helpers
 let fallbackTimer = null;
@@ -35,6 +42,15 @@ function hideLoading() {
 
 pdfFrame?.addEventListener("load", hideLoading);
 
+// Detecta se o app já está instalado (PWA standalone)
+function isInstalled() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true ||
+    window.matchMedia("(display-mode: fullscreen)").matches
+  );
+}
+
 // esconde botões sem link
 function applyVisibility() {
   const buttons = Array.from(document.querySelectorAll(".menuBtn"));
@@ -48,8 +64,6 @@ function applyVisibility() {
     btn.style.display = hasLink ? "" : "none";
     if (hasLink) available++;
   });
-
-  
 }
 
 // abrir PDF
@@ -101,7 +115,7 @@ function closePdf() {
 
 pdfBack?.addEventListener("click", closePdf);
 
-// clique nos itens
+// clique nos itens do menu
 document.querySelectorAll(".menuBtn").forEach((btn) => {
   btn.addEventListener("click", () => openPdf(btn.dataset.open));
 });
@@ -112,15 +126,82 @@ logoutBtn?.addEventListener("click", () => {
   window.location.href = "/pages/index.html";
 });
 
-// init
+// ====================
+//     INSTALAÇÃO PWA
+// ====================
+
+// Detecta iOS
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+// Intercepta o prompt de instalação (Android/Chrome/Edge)
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault(); // impede o mini-infobar automático
+  deferredPrompt = e;
+
+  // Mostra botão de instalar se ainda não estiver instalado
+  if (!isInstalled() && installBtn) {
+    installBtn.style.display = "block";
+  }
+});
+
+// Clique no botão "Adicionar à tela inicial" (Android)
+installBtn?.addEventListener("click", async () => {
+  if (!deferredPrompt) {
+    setMsg(err || document.createElement("div"), "Não foi possível abrir o instalador agora. Tente pelo menu do navegador (3 pontinhos) → Adicionar à tela inicial.", "error");
+    return;
+  }
+
+  deferredPrompt.prompt();
+
+  const { outcome } = await deferredPrompt.userChoice;
+
+  if (outcome === "accepted") {
+    setMsg(ok, "RF App adicionado à tela inicial! 🎉 Abra pelo ícone na tela inicial.", "ok");
+  } else {
+    setMsg(err || document.createElement("div"), "Instalação cancelada.", "error");
+  }
+
+  deferredPrompt = null;
+  installBtn.style.display = "none";
+});
+
+// Evento quando o app é realmente instalado
+window.addEventListener("appinstalled", () => {
+  setMsg(ok, "RF App instalado com sucesso! Abra pela tela inicial.", "ok");
+  if (installBtn) installBtn.style.display = "none";
+  deferredPrompt = null;
+});
+
+// Botão de ajuda para iPhone
+if (isIOS && !isInstalled() && installHelpBtn) {
+  installHelpBtn.style.display = "block";
+
+  installHelpBtn.addEventListener("click", () => {
+    const instructions = `
+Para adicionar o RF App na tela inicial do iPhone:
+1. Toque no ícone de Compartilhar (quadrado com seta para cima) na parte inferior da tela
+2. Role a lista e selecione "Adicionar à Tela de Início"
+3. Você pode mudar o nome se quiser (ex: RF App)
+4. Toque em "Adicionar" no canto superior direito
+
+Depois disso o app abre em tela cheia, sem barra do navegador.
+    `;
+
+    // Você pode melhorar isso com um modal bonito no futuro
+    alert(instructions.trim());
+    // Ou usar seu sistema de mensagens (se suportar texto longo):
+    // setMsg(ok, instructions.trim(), "ok");
+  });
+}
+
+// Init principal
 (async function init() {
   const session = await requireAuth("student");
   if (!session) return;
 
-  // 1) tenta usar name vindo do login
+  // Nome do aluno
   let displayName = (session?.user?.name || "").trim();
 
-  // 2) fallback: busca /me se name não veio
   if (!displayName) {
     try {
       const me = await apiMe(session.token);
@@ -128,11 +209,10 @@ logoutBtn?.addEventListener("click", () => {
     } catch {}
   }
 
-  // 3) fallback final: “Aluno”
   if (!displayName) displayName = "Aluno";
-
   if (nameEl) nameEl.textContent = displayName;
 
+  // Carrega documentos
   try {
     const docs = await apiDocuments(session.token);
 
@@ -145,10 +225,16 @@ logoutBtn?.addEventListener("click", () => {
 
     if (ok) {
       setMsg(ok, "Toque em um item disponível para abrir.", "ok");
-      setTimeout(() => clearMsg(ok), 1200);
+      setTimeout(() => clearMsg(ok), 1800);
     }
   } catch (e) {
     if (statusEl) statusEl.textContent = "Erro ao carregar documentos ❌";
     if (err) setMsg(err, e.message || "Erro ao carregar.", "error");
+  }
+
+  // Verifica se já está instalado → esconde botões desnecessários
+  if (isInstalled()) {
+    if (installBtn) installBtn.style.display = "none";
+    if (installHelpBtn) installHelpBtn.style.display = "none";
   }
 })();
