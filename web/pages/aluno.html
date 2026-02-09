@@ -8,14 +8,14 @@
   <link rel="stylesheet" href="../assets/css/styles.css" />
 
   <!-- PWA Manifest -->
-  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#000000" />
 
-  <!-- iOS: abre em modo fullscreen quando adicionado à tela inicial -->
+  <!-- iOS: abre em modo standalone quando adicionado à tela inicial -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RF App" />
-  <link rel="apple-touch-icon" href="../img/logoapp.png" />
+  <link rel="apple-touch-icon" href="/assets/img/icons/icon-192.png" />
 </head>
 <body>
 
@@ -29,12 +29,11 @@
             <h1 class="heroTitle">
               Olá, <span id="studentName" class="heroName">—</span>
             </h1>
+            <div id="status" class="smallHint" style="margin-top:6px;opacity:.85;"></div>
           </div>
 
           <div class="heroActions">
-            <button class="pill pillExit" id="logoutBtn" type="button">
-              Sair
-            </button>
+            <button class="pill pillExit" id="logoutBtn" type="button">Sair</button>
           </div>
         </div>
       </header>
@@ -55,9 +54,7 @@
                       <path d="M3 10h2V7h2v10H5v-3H3v-4Zm14-3h2v3h2v4h-2v3h-2V7ZM9 11h6v2H9v-2Z"/>
                     </svg>
                   </div>
-                  <div class="navTxt">
-                    <p class="h">Treino</p>
-                  </div>
+                  <div class="navTxt"><p class="h">Treino</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
@@ -70,9 +67,7 @@
                       <path d="M7 2h2v8a2 2 0 0 1-2 2H6v10H4V12H3a2 2 0 0 1-2-2V2h2v8h1V2h2v8h1V2Zm11 0h2v7a4 4 0 0 1-4 4h-1v9h-2V2h2v9h1a2 2 0 0 0 2-2V2Z"/>
                     </svg>
                   </div>
-                  <div class="navTxt">
-                    <p class="h">Alimentação</p>
-                  </div>
+                  <div class="navTxt"><p class="h">Alimentação</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
@@ -85,14 +80,12 @@
                       <path d="M8.5 3A5.5 5.5 0 0 0 3 8.5v7A5.5 5.5 0 0 0 8.5 21h7A5.5 5.5 0 0 0 21 15.5v-7A5.5 5.5 0 0 0 15.5 3h-7Zm0 2h7A3.5 3.5 0 0 1 19 8.5V10H5V8.5A3.5 3.5 0 0 1 8.5 5Zm-3.5 7h14v3.5A3.5 3.5 0 0 1 15.5 19h-7A3.5 3.5 0 0 1 5 15.5V12Z"/>
                     </svg>
                   </div>
-                  <div class="navTxt">
-                    <p class="h">Suplementação</p>
-                  </div>
+                  <div class="navTxt"><p class="h">Suplementação</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
 
-              <!-- ALONGAMENTOS / MOBILIDADE -->
+              <!-- ALONGAMENTOS -->
               <button class="navBtn menuBtn" data-open="stretch" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
@@ -100,31 +93,33 @@
                       <path d="M13 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM7 21h2l1-5 3 2v3h2v-4.2l-4-2.6.6-3.2 2.4 2h3v-2h-2.2l-2.7-2.6c-.7-.7-1.8-.8-2.6-.3L7 8.8V13h2V10l2-1.4-.7 3.9L7.7 21Z"/>
                     </svg>
                   </div>
-                  <div class="navTxt">
-                    <p class="h">Alongamentos</p>
-                  </div>
+                  <div class="navTxt"><p class="h">Alongamentos</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
 
             </div>
 
-            <!-- Seção de instalação PWA – aparece condicionalmente via JS -->
-            <div class="install-section" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #333;">
-              <h4 style="text-align: center; margin-bottom: 12px;">Quer uma experiência melhor?</h4>
-              
-              <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
-                <button class="pill" id="installBtn" type="button" style="flex: 1; min-width: 220px; display: none;">
-                  + Adicionar à tela inicial
+            <!-- Instalação (Android/iOS) -->
+            <div class="install-section" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.10);">
+              <h4 style="text-align:center; margin:0 0 10px;">Adicionar à tela inicial</h4>
+
+              <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                <button class="pill" id="installBtn" type="button" style="flex:1; min-width:220px; display:none;">
+                  + Instalar / Adicionar à tela inicial
                 </button>
-                <button class="pill" id="installHelpBtn" type="button" style="flex: 1; min-width: 220px; display: none;">
+
+                <button class="pill" id="installHelpBtn" type="button" style="flex:1; min-width:220px; display:none;">
                   Como adicionar no iPhone
                 </button>
               </div>
 
-              <div class="smallHint" style="margin-top: 12px; text-align: center; opacity: 0.85; font-size: 0.9rem;">
-                Adicione o RF App à tela inicial para abrir mais rápido, em tela cheia e sem barra do navegador.
+              <div class="smallHint" style="margin-top:10px; text-align:center; opacity:.85;">
+                Ao instalar, o RF App abre em tela cheia e sem barra do navegador.
               </div>
+
+              <div class="msg ok" id="ok" style="display:none;"></div>
+              <div class="msg error" id="err" style="display:none;"></div>
             </div>
 
           </div>
@@ -143,6 +138,7 @@
             <div class="loadingLayer" id="loadingLayer">
               <div class="spinner"></div>
               <div class="loadingText">Carregando PDF…</div>
+              <div class="loadingSub">Se demorar, verifique sua conexão.</div>
             </div>
           </div>
         </div>
@@ -152,7 +148,6 @@
     </div>
   </div>
 
-  <!-- Área para toasts/mensagens -->
   <div class="toastWrap" id="toastWrap"></div>
 
   <script type="module" src="../assets/js/aluno.js"></script>
