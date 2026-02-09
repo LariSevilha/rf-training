@@ -193,8 +193,15 @@ Depois disso o app abre em tela cheia, sem barra do navegador.
     // setMsg(ok, instructions.trim(), "ok");
   });
 }
+// Tenta fullscreen após carregar (só funciona se o usuário interagir antes, ex: após clique)
+function tryFullscreen() {
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(err => console.log('Fullscreen erro:', err));
+  }
+}
 
-// Init principal
+// Exemplo: chama após abrir PDF ou no load
+pdfFrame?.addEventListener("load", tryFullscreen);  
 (async function init() {
   const session = await requireAuth("student");
   if (!session) return;
