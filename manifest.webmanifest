@@ -1,23 +1,25 @@
 {
     "name": "RF App",
     "short_name": "RF App",
-    "start_url": "/pages/aluno.html?fullscreen=true",
+    "start_url": "web/pages/aluno.html",
     "scope": "/",
     "display": "fullscreen",
     "background_color": "#000000",
     "theme_color": "#000000",
+    "orientation": "portrait",
     "icons": [
       {
-        "src": "/img/logoapp.png",
+        "src": "web/img/logoapp.png",
         "sizes": "192x192",
         "type": "image/png",
         "purpose": "any maskable"
       },
       {
-        "src": "/img/logoapp.png",
+        "src": "web/img/logoapp.png",
         "sizes": "512x512",
         "type": "image/png",
         "purpose": "any maskable"
       }
     ]
   }
+  
