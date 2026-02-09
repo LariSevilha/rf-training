@@ -6,5 +6,6 @@ self.addEventListener("install", () => {
     event.waitUntil(self.clients.claim());
   });
   
+  // Sem cache agressivo por enquanto (seguro).
   self.addEventListener("fetch", () => {});
   

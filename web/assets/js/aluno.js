@@ -4,7 +4,6 @@ import { clearSession } from "./state.js";
 import { setMsg, clearMsg } from "./ui.js";
 import { driveToPreview, placeholderHtml } from "./pdf.js";
 
-// ===== Elements =====
 const logoutBtn = document.getElementById("logoutBtn");
 const statusEl = document.getElementById("status");
 const nameEl = document.getElementById("studentName");
@@ -25,22 +24,15 @@ const installHelpBtn = document.getElementById("installHelpBtn");
 // links dos PDFs
 const urls = { training: "", diet: "", supp: "", stretch: "" };
 
-// Android install prompt
+// Variável para guardar o evento de install prompt (Android/Chrome)
 let deferredPrompt = null;
 
-// ===== Service Worker register (ESSENCIAL pro Android) =====
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
-  });
-}
-
-// ===== helpers =====
+// loading helpers
 let fallbackTimer = null;
 function showLoading() {
   loadingLayer?.classList.add("show");
   clearTimeout(fallbackTimer);
-  fallbackTimer = setTimeout(() => loadingLayer?.classList.remove("show"), 12000);
+  fallbackTimer = setTimeout(() => loadingLayer?.classList.remove("show"), 10000);
 }
 function hideLoading() {
   loadingLayer?.classList.remove("show");
@@ -50,24 +42,31 @@ function hideLoading() {
 
 pdfFrame?.addEventListener("load", hideLoading);
 
+// Detecta se o app já está instalado (PWA standalone)
 function isInstalled() {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
-    window.matchMedia("(display-mode: fullscreen)").matches ||
-    window.navigator.standalone === true
+    window.navigator.standalone === true ||
+    window.matchMedia("(display-mode: fullscreen)").matches
   );
 }
 
+// esconde botões sem link
 function applyVisibility() {
   const buttons = Array.from(document.querySelectorAll(".menuBtn"));
+  let available = 0;
+
   buttons.forEach((btn) => {
     const type = btn?.dataset?.open;
     if (!type) return;
+
     const hasLink = !!(urls[type] || "").trim();
     btn.style.display = hasLink ? "" : "none";
+    if (hasLink) available++;
   });
 }
 
+// abrir PDF
 function openPdf(type) {
   const titles = {
     training: "TREINO",
@@ -84,7 +83,7 @@ function openPdf(type) {
   if (!rawUrl) {
     const html = placeholderHtml("PDF não configurado", "Entre em contato com o personal.");
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
-    setTimeout(hideLoading, 250);
+    setTimeout(hideLoading, 300);
 
     pdfOverlay?.classList.add("show");
     pdfOverlay?.setAttribute("aria-hidden", "false");
@@ -94,9 +93,9 @@ function openPdf(type) {
   const preview = driveToPreview(rawUrl);
 
   if (!preview) {
-    const html = placeholderHtml("Link inválido", "Envie um link do Drive compatível.");
+    const html = placeholderHtml("Link inválido ou não suportado", "Envie o link do Drive no formato correto.");
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
-    setTimeout(hideLoading, 250);
+    setTimeout(hideLoading, 300);
   } else {
     pdfFrame.src = preview;
   }
@@ -111,15 +110,17 @@ function closePdf() {
   hideLoading();
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";
-  }, 200);
+  }, 220);
 }
 
 pdfBack?.addEventListener("click", closePdf);
 
+// clique nos itens do menu
 document.querySelectorAll(".menuBtn").forEach((btn) => {
   btn.addEventListener("click", () => openPdf(btn.dataset.open));
 });
 
+// logout
 logoutBtn?.addEventListener("click", () => {
   clearSession();
   window.location.href = "/pages/index.html";
@@ -129,83 +130,99 @@ logoutBtn?.addEventListener("click", () => {
 //     INSTALAÇÃO PWA
 // ====================
 
+// Detecta iOS
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
+// Intercepta o prompt de instalação (Android/Chrome/Edge)
 window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
+  e.preventDefault(); // impede o mini-infobar automático
   deferredPrompt = e;
 
+  // Mostra botão de instalar se ainda não estiver instalado
   if (!isInstalled() && installBtn) {
-    installBtn.style.display = "inline-flex";
+    installBtn.style.display = "block";
   }
 });
 
+// Clique no botão "Adicionar à tela inicial" (Android)
 installBtn?.addEventListener("click", async () => {
-  clearMsg(ok);
-  clearMsg(err);
-
   if (!deferredPrompt) {
-    setMsg(err, "No Android: abra o menu (⋮) do Chrome e toque em “Adicionar à tela inicial”.", "error");
+    setMsg(err || document.createElement("div"), "Não foi possível abrir o instalador agora. Tente pelo menu do navegador (3 pontinhos) → Adicionar à tela inicial.", "error");
     return;
   }
 
   deferredPrompt.prompt();
+
   const { outcome } = await deferredPrompt.userChoice;
 
   if (outcome === "accepted") {
-    setMsg(ok, "RF App adicionado! Abra pelo ícone na tela inicial.", "ok");
+    setMsg(ok, "RF App adicionado à tela inicial! 🎉 Abra pelo ícone na tela inicial.", "ok");
   } else {
-    setMsg(err, "Instalação cancelada.", "error");
+    setMsg(err || document.createElement("div"), "Instalação cancelada.", "error");
   }
 
   deferredPrompt = null;
-  if (installBtn) installBtn.style.display = "none";
+  installBtn.style.display = "none";
 });
 
+// Evento quando o app é realmente instalado
 window.addEventListener("appinstalled", () => {
-  setMsg(ok, "RF App instalado com sucesso! 🎉", "ok");
+  setMsg(ok, "RF App instalado com sucesso! Abra pela tela inicial.", "ok");
   if (installBtn) installBtn.style.display = "none";
-  if (installHelpBtn) installHelpBtn.style.display = "none";
   deferredPrompt = null;
 });
 
+// Botão de ajuda para iPhone
 if (isIOS && !isInstalled() && installHelpBtn) {
-  installHelpBtn.style.display = "inline-flex";
+  installHelpBtn.style.display = "block";
+
   installHelpBtn.addEventListener("click", () => {
-    alert(
-`Para adicionar o RF App no iPhone:
-1) Abra no Safari
-2) Toque em Compartilhar (quadrado com seta)
-3) “Adicionar à Tela de Início”
-4) Toque em “Adicionar”
-Depois disso o app abre em tela cheia.`
-    );
+    const instructions = `
+Para adicionar o RF App na tela inicial do iPhone:
+1. Toque no ícone de Compartilhar (quadrado com seta para cima) na parte inferior da tela
+2. Role a lista e selecione "Adicionar à Tela de Início"
+3. Você pode mudar o nome se quiser (ex: RF App)
+4. Toque em "Adicionar" no canto superior direito
+
+Depois disso o app abre em tela cheia, sem barra do navegador.
+    `;
+
+    // Você pode melhorar isso com um modal bonito no futuro
+    alert(instructions.trim());
+    // Ou usar seu sistema de mensagens (se suportar texto longo):
+    // setMsg(ok, instructions.trim(), "ok");
   });
 }
+// Tenta fullscreen após carregar (só funciona se o usuário interagir antes, ex: após clique)
+function tryFullscreen() {
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(err => console.log('Fullscreen erro:', err));
+  }
+}
 
-// ====================
-//        INIT
-// ====================
+// Exemplo: chama após abrir PDF ou no load
+pdfFrame?.addEventListener("load", tryFullscreen);  
 (async function init() {
   const session = await requireAuth("student");
   if (!session) return;
 
-  if (statusEl) statusEl.textContent = "Carregando seus documentos…";
-
   // Nome do aluno
   let displayName = (session?.user?.name || "").trim();
+
   if (!displayName) {
     try {
       const me = await apiMe(session.token);
       displayName = (me?.user?.name || "").trim();
     } catch {}
   }
+
   if (!displayName) displayName = "Aluno";
   if (nameEl) nameEl.textContent = displayName;
 
-  // Docs
+  // Carrega documentos
   try {
     const docs = await apiDocuments(session.token);
+
     urls.training = (docs.training || "").trim();
     urls.diet = (docs.diet || "").trim();
     urls.supp = (docs.supp || "").trim();
@@ -213,15 +230,16 @@ Depois disso o app abre em tela cheia.`
 
     applyVisibility();
 
-    if (statusEl) statusEl.textContent = "Toque em um item disponível para abrir.";
-    setMsg(ok, "Pronto ✅", "ok");
-    setTimeout(() => clearMsg(ok), 1400);
+    if (ok) {
+      setMsg(ok, "Toque em um item disponível para abrir.", "ok");
+      setTimeout(() => clearMsg(ok), 1800);
+    }
   } catch (e) {
     if (statusEl) statusEl.textContent = "Erro ao carregar documentos ❌";
-    setMsg(err, e?.message || "Erro ao carregar.", "error");
+    if (err) setMsg(err, e.message || "Erro ao carregar.", "error");
   }
 
-  // já instalado? esconde botões
+  // Verifica se já está instalado → esconde botões desnecessários
   if (isInstalled()) {
     if (installBtn) installBtn.style.display = "none";
     if (installHelpBtn) installHelpBtn.style.display = "none";
