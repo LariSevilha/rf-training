@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "img/logoapp.png",
+      "src": "/assets/img/logoapp.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "img/logoapp.png",
+      "src": "/assets/img/logoapp.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
