@@ -184,6 +184,68 @@ Depois disso o app abre em tela cheia.`
 }
 
 // ====================
+// iOS Install Modal (premium)
+// ====================
+function isIOSDevice() {
+  // cobre iPhone/iPad + iPadOS que se identifica como Mac
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandaloneMode() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
+(function iosInstallModalInit() {
+  const modal = document.getElementById("iosInstallModal");
+  if (!modal) return;
+
+  const closeBtn = document.getElementById("iosInstallClose");
+  const laterBtn = document.getElementById("iosLaterBtn");
+  const okBtn = document.getElementById("iosOkBtn");
+  const dontShowChk = document.getElementById("iosDontShowChk");
+
+  // só no iOS e só se NÃO estiver instalado
+  if (!isIOSDevice() || isStandaloneMode()) return;
+
+  // se o usuário pediu para não mostrar por 7 dias
+  const key = "rf_ios_install_hide_until";
+  const hideUntil = Number(localStorage.getItem(key) || "0");
+  if (hideUntil && Date.now() < hideUntil) return;
+
+  function open() {
+    modal.classList.add("show");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  function close() {
+    if (dontShowChk?.checked) {
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      localStorage.setItem(key, String(Date.now() + sevenDays));
+    }
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  // abre com pequeno atraso (não “assusta”)
+  setTimeout(open, 900);
+
+  modal.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.dataset && t.dataset.close) close();
+  });
+
+  closeBtn?.addEventListener("click", close);
+  laterBtn?.addEventListener("click", close);
+  okBtn?.addEventListener("click", close);
+})();
+
+
+// ====================
 //        INIT
 // ====================
 (async function init() {

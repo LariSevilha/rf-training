@@ -103,28 +103,6 @@
 
             </div>
 
-            <!-- Seção de instalação PWA – aparece condicionalmente via JS -->
-            <div class="install-section" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #333;">
-              <h4 style="text-align: center; margin-bottom: 12px;">Quer uma experiência melhor?</h4>
-              
-              <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
-                <button class="pill" id="installBtn" type="button" style="flex: 1; min-width: 220px; display: none;">
-                  + Adicionar à tela inicial
-                </button>
-
-                <button class="pill" id="installHelpBtn" type="button" style="flex:1; min-width:220px; display:none;">
-                  Como adicionar no iPhone
-                </button>
-              </div>
-
-              <div class="smallHint" style="margin-top: 12px; text-align: center; opacity: 0.85; font-size: 0.9rem;">
-                Adicione o RF App à tela inicial para abrir mais rápido, em tela cheia e sem barra do navegador.
-              </div>
-
-              <div class="msg ok" id="ok" style="display:none;"></div>
-              <div class="msg error" id="err" style="display:none;"></div>
-            </div>
-
           </div>
         </div>
 
@@ -152,6 +130,64 @@
   </div>
 
   <div class="toastWrap" id="toastWrap"></div>
+  <!-- iOS Install Modal -->
+  <div class="iosInstallModal" id="iosInstallModal" aria-hidden="true">
+    <div class="iosInstallBackdrop" data-close="1"></div>
+
+    <div class="iosInstallCard" role="dialog" aria-modal="true" aria-labelledby="iosInstallTitle">
+      <div class="iosInstallTop">
+        <div class="iosBadge">
+          <img src="/img/logoapp-192.png" alt="RF App" />
+        </div>
+
+        <div class="iosInstallHead">
+          <div class="iosInstallTitle" id="iosInstallTitle">Adicionar o RF App</div>
+          <div class="iosInstallSub">Abra em tela cheia, sem barra do Safari.</div>
+        </div>
+
+        <button class="iosInstallClose" id="iosInstallClose" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="iosInstallSteps">
+        <div class="step">
+          <div class="stepNum">1</div>
+          <div class="stepTxt">
+            No <b>Safari</b>, toque em <b>Compartilhar</b>
+            <span class="pillIcon">□↑</span>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="stepNum">2</div>
+          <div class="stepTxt">
+            Toque em <b>Adicionar à Tela de Início</b>
+            <span class="pillIcon">＋</span>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="stepNum">3</div>
+          <div class="stepTxt">
+            Confirme em <b>Adicionar</b> ✅
+          </div>
+        </div>
+
+        <div class="iosInstallNote">
+          Dica: depois de instalado, abra sempre pelo ícone na tela inicial.
+        </div>
+      </div>
+
+      <div class="iosInstallActions">
+        <button class="iosGhost" id="iosLaterBtn" type="button">Agora não</button>
+        <button class="iosPrimary" id="iosOkBtn" type="button">Entendi</button>
+      </div>
+
+      <label class="iosDontShow">
+        <input type="checkbox" id="iosDontShowChk" />
+        Não mostrar por 7 dias
+      </label>
+    </div>
+  </div>
 
    <!-- Service Worker (precisa existir em /sw.js) -->
    <script>
