@@ -1,5 +1,3 @@
-// /assets/js/aluno.js
-
 import { requireAuth } from "./guard.js";
 import { apiDocuments, apiMe } from "./api.js";
 import { clearSession } from "./state.js";
@@ -39,18 +37,18 @@ if ("serviceWorker" in navigator) {
 
 // ===== helpers =====
 let fallbackTimer = null;
-
 function showLoading() {
   loadingLayer?.classList.add("show");
   clearTimeout(fallbackTimer);
   fallbackTimer = setTimeout(() => loadingLayer?.classList.remove("show"), 12000);
 }
-
 function hideLoading() {
   loadingLayer?.classList.remove("show");
   clearTimeout(fallbackTimer);
   fallbackTimer = null;
 }
+
+pdfFrame?.addEventListener("load", hideLoading);
 
 function isInstalled() {
   return (
@@ -70,25 +68,6 @@ function applyVisibility() {
   });
 }
 
-// ===========================
-// PDF OPEN/CLOSE (organizado)
-// ===========================
-let pdfTimeout = null;
-let pendingLoadHandler = null;
-
-function setFrameSrcDoc(html) {
-  if (!pdfFrame) return;
-  // srcdoc é mais estável que data: no iOS
-  pdfFrame.removeAttribute("src");
-  pdfFrame.srcdoc = html;
-}
-
-function setFrameSrc(url) {
-  if (!pdfFrame) return;
-  pdfFrame.srcdoc = "";
-  pdfFrame.src = url;
-}
-
 function openPdf(type) {
   const titles = {
     training: "TREINO",
@@ -97,88 +76,41 @@ function openPdf(type) {
     stretch: "ALONGAMENTOS E MOBILIDADE",
   };
 
-  // abre overlay já
-  pdfOverlay?.classList.add("show");
-  pdfOverlay?.setAttribute("aria-hidden", "false");
-
   if (pdfTitle) pdfTitle.textContent = titles[type] || "PDF";
-
-  // placeholder imediato (evita branco)
-  setFrameSrcDoc(
-    placeholderHtml("Carregando…", "Preparando a visualização do seu PDF.")
-  );
-
   showLoading();
 
   const rawUrl = (urls[type] || "").trim();
 
-  // sem link
   if (!rawUrl) {
-    hideLoading();
-    setFrameSrcDoc(
-      placeholderHtml("PDF não configurado", "Entre em contato com o personal.")
-    );
+    const html = placeholderHtml("PDF não configurado", "Entre em contato com o personal.");
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+    setTimeout(hideLoading, 250);
+
+    pdfOverlay?.classList.add("show");
+    pdfOverlay?.setAttribute("aria-hidden", "false");
     return;
   }
 
   const preview = driveToPreview(rawUrl);
 
-  // link inválido
   if (!preview) {
-    hideLoading();
-    setFrameSrcDoc(
-      placeholderHtml("Link inválido", "Envie um link do Google Drive compatível.")
-    );
-    return;
+    const html = placeholderHtml("Link inválido", "Envie um link do Drive compatível.");
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+    setTimeout(hideLoading, 250);
+  } else {
+    pdfFrame.src = preview;
   }
 
-  // limpa handlers antigos
-  if (pendingLoadHandler && pdfFrame) {
-    pdfFrame.removeEventListener("load", pendingLoadHandler);
-    pendingLoadHandler = null;
-  }
-  clearTimeout(pdfTimeout);
-
-  // quando carregar: tira loading
-  pendingLoadHandler = () => {
-    hideLoading();
-    clearTimeout(pdfTimeout);
-  };
-  pdfFrame?.addEventListener("load", pendingLoadHandler, { once: true });
-
-  // timeout: Drive pode travar/ficar em branco
-  pdfTimeout = setTimeout(() => {
-    hideLoading();
-    setFrameSrcDoc(
-      placeholderHtml(
-        "Demorando para carregar",
-        "Se estiver no iPhone, tente abrir pelo Safari ou verifique sua conexão."
-      )
-    );
-  }, 12000);
-
-  // seta o src depois do placeholder
-  // (pequeno delay ajuda a evitar flash/bug no iOS)
-  setTimeout(() => setFrameSrc(preview), 60);
+  pdfOverlay?.classList.add("show");
+  pdfOverlay?.setAttribute("aria-hidden", "false");
 }
 
 function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
-
   hideLoading();
-  clearTimeout(pdfTimeout);
-  pdfTimeout = null;
-
-  // iOS: libera memória e evita travar a próxima abertura
   setTimeout(() => {
-    if (!pdfFrame) return;
-    if (pendingLoadHandler) {
-      pdfFrame.removeEventListener("load", pendingLoadHandler);
-      pendingLoadHandler = null;
-    }
-    pdfFrame.src = "about:blank";
-    pdfFrame.srcdoc = "";
+    if (pdfFrame) pdfFrame.src = "about:blank";
   }, 200);
 }
 
@@ -196,6 +128,7 @@ logoutBtn?.addEventListener("click", () => {
 // ====================
 //     INSTALAÇÃO PWA
 // ====================
+
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 window.addEventListener("beforeinstallprompt", (e) => {
@@ -212,11 +145,7 @@ installBtn?.addEventListener("click", async () => {
   clearMsg(err);
 
   if (!deferredPrompt) {
-    setMsg(
-      err,
-      "No Android: abra o menu (⋮) do Chrome e toque em “Adicionar à tela inicial”.",
-      "error"
-    );
+    setMsg(err, "No Android: abra o menu (⋮) do Chrome e toque em “Adicionar à tela inicial”.", "error");
     return;
   }
 
@@ -258,6 +187,7 @@ Depois disso o app abre em tela cheia.`
 // iOS Install Modal (premium)
 // ====================
 function isIOSDevice() {
+  // cobre iPhone/iPad + iPadOS que se identifica como Mac
   return /iPad|iPhone|iPod/.test(navigator.userAgent)
     || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
@@ -279,8 +209,10 @@ function isStandaloneMode() {
   const okBtn = document.getElementById("iosOkBtn");
   const dontShowChk = document.getElementById("iosDontShowChk");
 
+  // só no iOS e só se NÃO estiver instalado
   if (!isIOSDevice() || isStandaloneMode()) return;
 
+  // se o usuário pediu para não mostrar por 7 dias
   const key = "rf_ios_install_hide_until";
   const hideUntil = Number(localStorage.getItem(key) || "0");
   if (hideUntil && Date.now() < hideUntil) return;
@@ -299,6 +231,7 @@ function isStandaloneMode() {
     modal.setAttribute("aria-hidden", "true");
   }
 
+  // abre com pequeno atraso (não “assusta”)
   setTimeout(open, 900);
 
   modal.addEventListener("click", (e) => {
@@ -310,6 +243,7 @@ function isStandaloneMode() {
   laterBtn?.addEventListener("click", close);
   okBtn?.addEventListener("click", close);
 })();
+
 
 // ====================
 //        INIT
