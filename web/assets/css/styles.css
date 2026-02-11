@@ -605,15 +605,6 @@ tbody tr.selected{background: rgba(206,172,94,.10)}
   transition: opacity .22s ease, transform .22s ease;
 }
 .pdfOverlay.show{opacity:1;transform: translateY(0);pointer-events:auto;}
-.pdfBar{
-  height:54px;
-  display:flex;
-  align-items:center;
-  padding:0 12px;
-  background: rgba(0,0,0,.75);
-  border-bottom:1px solid rgba(255,255,255,.08);
-  backdrop-filter: blur(10px);
-}
 .backBtn{
   display:flex;align-items:center;gap:8px;
   background: rgba(255,255,255,.06);
