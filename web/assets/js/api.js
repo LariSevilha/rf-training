@@ -13,7 +13,7 @@ export async function apiHealth() {
 export async function apiLogin(email, password) {
   return readJson(
     await fetch(`${API}/auth/login`, {
-      method: "POST",
+      method: "POST", 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     })

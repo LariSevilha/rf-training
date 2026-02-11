@@ -1,25 +1,35 @@
-const CACHE = "rfapp-v1";
+const CACHE = "rfapp-v3";  // ← mude para v3 ou v4
+
 const ASSETS = [
   "/manifest.webmanifest",
   "/assets/css/styles.css",
   "/assets/js/aluno.js",
-  "/assets/img/logoapp.png",
-  "/pages/aluno.html"
+  "/web/img/logoapp-192.png",
+  "/web/img/logoapp-512.png",
+  "/web/img/logoapp-maskable-512.png",
+  "/pages/aluno.html", 
 ];
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  event.waitUntil(
+    caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
+  );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
 
-  // Navegação: tenta rede, cai pro cache
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req).catch(() => caches.match("/pages/aluno.html"))
@@ -27,8 +37,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Assets: cache-first
   event.respondWith(
-    caches.match(req).then((hit) => hit || fetch(req))
+    caches.match(req).then((cached) => cached || fetch(req))
   );
 });
