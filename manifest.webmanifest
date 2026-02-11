@@ -1,27 +1,29 @@
 {
   "name": "RF App",
   "short_name": "RF App",
+  "description": "Treino, Alimentação e Suplementação",
   "start_url": "/pages/aluno.html",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone"],
   "background_color": "#000000",
   "theme_color": "#000000",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/web/img/logoapp.png",
+      "src": "/web/img/logoapp-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/web/img/logoapp.png",
+      "src": "/web/img/logoapp-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/web/img/logoapp.png",
+      "src": "/web/img/logoapp-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
