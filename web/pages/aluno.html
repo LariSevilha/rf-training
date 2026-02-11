@@ -1,26 +1,25 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>RF App – Aluno</title>
-  
-    <link rel="stylesheet" href="/assets/css/styles.css" />
-  
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#000000">
-    <link rel="icon" href="/img/logoapp-192.png" type="image/png">
-  
-    <!-- iOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="RF App">
-    <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png">
-    <link rel="icon" href="/img/logoapp-192.png" type="image/png">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>RF App – Aluno</title>
 
-  </head>
-<body>
+  <link rel="stylesheet" href="/assets/css/aluno.css?v=20260211-1" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="/img/logoapp-192.png" type="image/png">
+
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RF App">
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png">
+</head>
+
+<body class="pageAluno">
 
   <div class="wrap">
     <div class="studentApp">
@@ -29,10 +28,9 @@
       <header class="studentHero" id="studentHero">
         <div class="heroInner">
           <div class="heroLeft">
-            <h1 class="heroTitle">
-              Olá, <span id="studentName" class="heroName">—</span>
-            </h1>
-            <div id="status" class="smallHint" style="margin-top:6px;opacity:.85;"></div>
+            <div class="heroKicker">RF FITNESS</div>
+            <h1 class="heroTitle">Olá, <span id="studentName" class="heroName">—</span></h1>
+            <div id="status" class="heroHint"></div>
           </div>
 
           <div class="heroActions">
@@ -44,57 +42,48 @@
       <!-- CONTENT -->
       <main class="studentMain">
         <div class="content">
-          <div class="card" id="menuCard">
-            <h3>Documentos disponíveis</h3>
+          <section class="card" id="menuCard">
+            <div class="cardHead">
+              <h3 class="cardTitle">Documentos disponíveis</h3>
+              <p class="cardSub">Toque para abrir em tela cheia.</p>
+            </div>
 
             <div class="menuGrid">
 
-              <!-- TREINO -->
               <button class="navBtn menuBtn" data-open="training" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" class="ico">
-                      <path d="M3 10h2V7h2v10H5v-3H3v-4Zm14-3h2v3h2v4h-2v3h-2V7ZM9 11h6v2H9v-2Z"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="ico"><path d="M3 10h2V7h2v10H5v-3H3v-4Zm14-3h2v3h2v4h-2v3h-2V7ZM9 11h6v2H9v-2Z"/></svg>
                   </div>
                   <div class="navTxt"><p class="h">Treino</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
 
-              <!-- ALIMENTAÇÃO -->
               <button class="navBtn menuBtn" data-open="diet" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" class="ico">
-                      <path d="M7 2h2v8a2 2 0 0 1-2 2H6v10H4V12H3a2 2 0 0 1-2-2V2h2v8h1V2h2v8h1V2Zm11 0h2v7a4 4 0 0 1-4 4h-1v9h-2V2h2v9h1a2 2 0 0 0 2-2V2Z"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="ico"><path d="M7 2h2v8a2 2 0 0 1-2 2H6v10H4V12H3a2 2 0 0 1-2-2V2h2v8h1V2h2v8h1V2Zm11 0h2v7a4 4 0 0 1-4 4h-1v9h-2V2h2v9h1a2 2 0 0 0 2-2V2Z"/></svg>
                   </div>
                   <div class="navTxt"><p class="h">Alimentação</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
 
-              <!-- SUPLEMENTAÇÃO -->
               <button class="navBtn menuBtn" data-open="supp" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" class="ico">
-                      <path d="M8.5 3A5.5 5.5 0 0 0 3 8.5v7A5.5 5.5 0 0 0 8.5 21h7A5.5 5.5 0 0 0 21 15.5v-7A5.5 5.5 0 0 0 15.5 3h-7Zm0 2h7A3.5 3.5 0 0 1 19 8.5V10H5V8.5A3.5 3.5 0 0 1 8.5 5Zm-3.5 7h14v3.5A3.5 3.5 0 0 1 15.5 19h-7A3.5 3.5 0 0 1 5 15.5V12Z"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="ico"><path d="M8.5 3A5.5 5.5 0 0 0 3 8.5v7A5.5 5.5 0 0 0 8.5 21h7A5.5 5.5 0 0 0 21 15.5v-7A5.5 5.5 0 0 0 15.5 3h-7Zm0 2h7A3.5 3.5 0 0 1 19 8.5V10H5V8.5A3.5 3.5 0 0 1 8.5 5Zm-3.5 7h14v3.5A3.5 3.5 0 0 1 15.5 19h-7A3.5 3.5 0 0 1 5 15.5V12Z"/></svg>
                   </div>
                   <div class="navTxt"><p class="h">Suplementação</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
 
-              <!-- ALONGAMENTOS -->
               <button class="navBtn menuBtn" data-open="stretch" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" class="ico">
-                      <path d="M13 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM7 21h2l1-5 3 2v3h2v-4.2l-4-2.6.6-3.2 2.4 2h3v-2h-2.2l-2.7-2.6c-.7-.7-1.8-.8-2.6-.3L7 8.8V13h2V10l2-1.4-.7 3.9L7.7 21Z"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="ico"><path d="M13 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM7 21h2l1-5 3 2v3h2v-4.2l-4-2.6.6-3.2 2.4 2h3v-2h-2.2l-2.7-2.6c-.7-.7-1.8-.8-2.6-.3L7 8.8V13h2V10l2-1.4-.7 3.9L7.7 21Z"/></svg>
                   </div>
                   <div class="navTxt"><p class="h">Alongamentos</p></div>
                 </div>
@@ -102,8 +91,7 @@
               </button>
 
             </div>
-
-          </div>
+          </section>
         </div>
 
         <!-- PDF OVERLAY -->
@@ -125,80 +113,21 @@
         </div>
 
       </main>
-
     </div>
   </div>
 
   <div class="toastWrap" id="toastWrap"></div>
-  <!-- iOS Install Modal -->
-  <div class="iosInstallModal" id="iosInstallModal" aria-hidden="true">
-    <div class="iosInstallBackdrop" data-close="1"></div>
 
-    <div class="iosInstallCard" role="dialog" aria-modal="true" aria-labelledby="iosInstallTitle">
-      <div class="iosInstallTop">
-        <div class="iosBadge">
-          <img src="/img/logoapp-192.png" alt="RF App" />
-        </div>
-
-        <div class="iosInstallHead">
-          <div class="iosInstallTitle" id="iosInstallTitle">Adicionar o RF App</div>
-          <div class="iosInstallSub">Abra em tela cheia, sem barra do Safari.</div>
-        </div>
-
-        <button class="iosInstallClose" id="iosInstallClose" type="button" aria-label="Fechar">✕</button>
-      </div>
-
-      <div class="iosInstallSteps">
-        <div class="step">
-          <div class="stepNum">1</div>
-          <div class="stepTxt">
-            No <b>Safari</b>, toque em <b>Compartilhar</b>
-            <span class="pillIcon">□↑</span>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="stepNum">2</div>
-          <div class="stepTxt">
-            Toque em <b>Adicionar à Tela de Início</b>
-            <span class="pillIcon">＋</span>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="stepNum">3</div>
-          <div class="stepTxt">
-            Confirme em <b>Adicionar</b> ✅
-          </div>
-        </div>
-
-        <div class="iosInstallNote">
-          Dica: depois de instalado, abra sempre pelo ícone na tela inicial.
-        </div>
-      </div>
-
-      <div class="iosInstallActions">
-        <button class="iosGhost" id="iosLaterBtn" type="button">Agora não</button>
-        <button class="iosPrimary" id="iosOkBtn" type="button">Entendi</button>
-      </div>
-
-      <label class="iosDontShow">
-        <input type="checkbox" id="iosDontShowChk" />
-        Não mostrar por 7 dias
-      </label>
-    </div>
-  </div>
-
-   <!-- Service Worker (precisa existir em /sw.js) -->
-   <script>
+  <!-- Service Worker -->
+  <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js").catch(() => {});
       });
     }
   </script>
-  
 
-  <script type="module" src="../assets/js/aluno.js"></script>
+  <script type="module" src="/assets/js/aluno.js"></script>
 </body>
 </html>
+

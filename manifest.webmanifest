@@ -1,6 +1,6 @@
 {
-  "name": "RF App",
-  "short_name": "RF App",
+  "name": "RF Fitness",
+  "short_name": "RF Fitness",
   "description": "Treino, Alimentação e Suplementação",
   "start_url": "/pages/aluno.html",
   "scope": "/",
