@@ -1,22 +1,23 @@
 <!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>RF App – Aluno</title>
-
-  <link rel="stylesheet" href="../assets/css/styles.css" />
- 
-  <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#000000">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>RF App – Aluno</title>
   
-  <!-- iOS -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="RF App"> 
-  <link rel="apple-touch-icon" href="/web/img/logoapp.png">
-
-</head>
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+  
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" href="/img/logoapp-192.png" type="image/png">
+  
+    <!-- iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RF App">
+    <link rel="apple-touch-icon" href="/img/logoapp.png">
+  </head>
 <body>
 
   <div class="wrap">
@@ -150,11 +151,11 @@
 
   <div class="toastWrap" id="toastWrap"></div>
 
-  <!-- Registro do Service Worker (essencial para PWA) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
+   <!-- Service Worker (precisa existir em /sw.js) -->
+   <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
       });
     }
   </script>
