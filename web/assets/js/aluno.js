@@ -166,7 +166,7 @@ logoutBtn?.addEventListener("click", () => {
 });
 
 // ====================
-// ANDROID INSTALL (sempre aparece no Android mobile)
+// ANDROID INSTALL (clicou = prompt nativo)
 // ====================
 function hideInstallUI() {
   if (installBtn) installBtn.style.display = "none";
@@ -175,32 +175,37 @@ function showInstallUI() {
   if (installBtn) installBtn.style.display = "inline-flex";
 }
 
-function openAndroidHowTo() {
-  alert(
-    "Para instalar:\n\n" +
-    "1) Toque nos 3 pontinhos (⋮) do Chrome\n" +
-    "2) 'Instalar app' / 'Adicionar à tela inicial'\n\n" +
-    "Se essa opção não aparecer, verifique se você está online e usando o Chrome."
-  );
-}
-
 if (installBtn) {
+  // começa escondido
+  hideInstallUI();
+
+  // iOS não tem prompt nativo; standalone não precisa instalar
   if (!isAndroidDevice() || isStandaloneMode()) {
     hideInstallUI();
-  } else {
-    // fallback: mostra mesmo sem beforeinstallprompt
-    showInstallUI();
-    installBtn.textContent = "Instalar";
   }
 
   window.addEventListener("beforeinstallprompt", (e) => {
+    // só Android e fora do standalone
     if (!isAndroidDevice() || isStandaloneMode()) return;
 
     e.preventDefault();
     deferredPrompt = e;
 
-    showInstallUI();
-    installBtn.textContent = "Instalar";
+    showInstallUI(); // ✅ agora SIM dá pra instalar
+  });
+
+  installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return; // segurança
+
+    deferredPrompt.prompt(); // ✅ abre o popup nativo
+    await deferredPrompt.userChoice.catch(() => {});
+    deferredPrompt = null;
+    hideInstallUI();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    hideInstallUI();
   });
 
   installBtn.addEventListener("click", async () => {
