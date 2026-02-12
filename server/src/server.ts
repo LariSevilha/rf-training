@@ -1,9 +1,11 @@
 import "dotenv/config";
+import path from "node:path";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import bcrypt from "bcrypt";
 import { z } from "zod";
+import fastifyStatic from "@fastify/static";
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -16,7 +18,6 @@ type JwtPayload = { sub: string; role: "admin" | "student" };
 function normEmail(v: string) {
   return String(v || "").trim().toLowerCase();
 }
-
 function normKey(v: string) {
   return String(v || "").trim().toLowerCase();
 }
@@ -31,6 +32,14 @@ async function main() {
   });
 
   await app.register(jwt, { secret: process.env.JWT_SECRET! });
+
+  // ✅ SERVE O WEB/ COMO SITE (PWA)
+  // Assim /manifest.webmanifest e /service-worker.js deixam de dar 404
+  app.register(fastifyStatic, {
+    root: path.join(__dirname, "../../web"),
+    prefix: "/", // serve em /
+    index: false, // não forçar index.html (você usa /pages/*)
+  });
 
   app.decorate("auth", async (req: any, reply: any) => {
     try {
@@ -79,9 +88,9 @@ async function main() {
       token,
       user: {
         email: user.email,
-        name: user.name,          // ✅
+        name: user.name,
         active: user.active,
-        role: user.role
+        role: user.role,
       },
     };
   });
@@ -93,10 +102,10 @@ async function main() {
     return {
       user: {
         email: user.email,
-        name: user.name,          // ✅
+        name: user.name,
         active: user.active,
-        role: user.role
-      }
+        role: user.role,
+      },
     };
   });
 
@@ -111,16 +120,13 @@ async function main() {
     const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
 
     const out: Record<string, string> = { training: "", diet: "", supp: "", stretch: "" };
-    for (const d of docs) {
-      out[normKey(d.docType)] = d.url;
-    }
+    for (const d of docs) out[normKey(d.docType)] = d.url;
 
     return out;
   });
 
   // ===== ADMIN =====
 
-  // list users (✅ inclui name)
   app.get(`${API_PREFIX}/admin/users`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -133,13 +139,12 @@ async function main() {
       },
       orderBy: { createdAt: "desc" },
       take: 50,
-      select: { email: true, name: true, active: true, createdAt: true }, // ✅
+      select: { email: true, name: true, active: true, createdAt: true },
     });
 
     return { users };
   });
 
-  // create user (✅ aceita name)
   app.post(`${API_PREFIX}/admin/users`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -147,7 +152,7 @@ async function main() {
       email: z.string().email(),
       password: z.string().min(6),
       active: z.boolean().optional(),
-      name: z.string().min(2).max(80).optional(), // ✅
+      name: z.string().min(2).max(80).optional(),
     });
 
     const { email, password, active, name } = schema.parse(req.body);
@@ -161,16 +166,17 @@ async function main() {
     const user = await prisma.user.create({
       data: {
         email: normalized,
-        name: name?.trim() || null, // ✅
+        name: name?.trim() || null,
         passwordHash,
         role: "student",
-        active: active ?? true
+        active: active ?? true,
       },
-      select: { email: true, name: true, active: true, role: true, createdAt: true }, // ✅
+      select: { email: true, name: true, active: true, role: true, createdAt: true },
     });
 
     return { ok: true, user };
   });
+
   // ===== ME (UPDATE) =====
   app.patch(`${API_PREFIX}/me`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     const payload = req.user as JwtPayload;
@@ -187,18 +193,15 @@ async function main() {
 
     const data: any = {};
 
-    // nome
     if ("name" in body) {
       const cleanName = String(body.name ?? "").trim();
       data.name = cleanName ? cleanName : null;
     }
 
-    // email (troca segura)
     if ("email" in body) {
       const newEmail = normEmail(body.email ?? "");
       if (!newEmail) return reply.code(400).send({ message: "Email inválido" });
 
-      // se mudou, valida duplicidade
       if (newEmail !== me.email) {
         const exists = await prisma.user.findUnique({ where: { email: newEmail } });
         if (exists) return reply.code(409).send({ message: "Email já está em uso" });
@@ -214,26 +217,26 @@ async function main() {
 
     return { ok: true, user: updated };
   });
+
   app.patch(`${API_PREFIX}/me/password`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     const payload = req.user as JwtPayload;
-  
+
     const schema = z.object({ password: z.string().min(6) });
     const { password } = schema.parse(req.body);
-  
+
     const me = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!me) return reply.code(404).send({ message: "Usuário não encontrado" });
-  
+
     const passwordHash = await bcrypt.hash(password, 10);
-  
+
     await prisma.user.update({
       where: { id: me.id },
       data: { passwordHash },
     });
-  
+
     return { ok: true };
   });
-  
-  // ✅ update profile (name)
+
   app.patch(`${API_PREFIX}/admin/users/:email/profile`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -258,7 +261,6 @@ async function main() {
     return { ok: true, user: updated };
   });
 
-  // set active
   app.patch(`${API_PREFIX}/admin/users/:email`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -274,7 +276,6 @@ async function main() {
     return { ok: true, user: { email: updated.email, active: updated.active } };
   });
 
-  // GET docs admin
   app.get(`${API_PREFIX}/admin/users/:email/documents`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -286,14 +287,11 @@ async function main() {
     const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
 
     const out: Record<string, string> = { training: "", diet: "", supp: "", stretch: "" };
-    for (const d of docs) {
-      out[normKey(d.docType)] = d.url;
-    }
+    for (const d of docs) out[normKey(d.docType)] = d.url;
 
     return out;
   });
 
-  // PUT docs admin (salva e devolve os docs do banco)
   app.put(`${API_PREFIX}/admin/users/:email/documents`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -345,7 +343,6 @@ async function main() {
     return out;
   });
 
-  // reset password
   app.patch(`${API_PREFIX}/admin/users/:email/password`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
@@ -363,7 +360,6 @@ async function main() {
     return { ok: true };
   });
 
-  // delete user
   app.delete(`${API_PREFIX}/admin/users/:email`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
 
