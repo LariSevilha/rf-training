@@ -1,12 +1,26 @@
 <!doctype html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>RF Fitness – Login</title>
+  <title>RF Fitness</title>
 
-  <!-- CSS só do login -->
+  <!-- CSS  -->
   <link rel="stylesheet" href="../assets/css/main.css" />
+
+  <!-- PWA (ANDROID) -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#000000" />
+
+  <!-- Favicon (atalho simples / desktop / fallback) -->
+  <link rel="icon" href="/img/logoapp-192.png" type="image/png" />
+
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RF Fitness" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png" />
 
   <meta name="theme-color" content="#000000" />
 </head>
@@ -17,12 +31,7 @@
 
       <div class="loginTop">
         <div class="logoBadge" aria-hidden="true">
-          <img
-            src="/img/logoapp.png"
-            alt="RF Fitness"
-            class="logoImg"
-            draggable="false"
-          />
+          <img src="/img/logoapp.png" alt="RF Fitness" class="logoImg" draggable="false" />
         </div>
 
         <div class="loginHead">
@@ -33,25 +42,14 @@
 
       <div class="field">
         <div class="label">Email</div>
-        <input
-          type="email"
-          id="email"
-          placeholder="ex: aluno@email.com"
-          autocomplete="username"
-          inputmode="email"
-        />
+        <input type="email" id="email" placeholder="ex: aluno@email.com" autocomplete="username" inputmode="email" />
       </div>
 
       <div class="field">
         <div class="label">Senha</div>
 
         <div class="inputWrap">
-          <input
-            type="password"
-            id="pass"
-            placeholder="••••••••"
-            autocomplete="current-password"
-          />
+          <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password" />
           <button class="eyeBtn" id="togglePass" type="button" aria-label="Mostrar senha">
             👁
           </button>
@@ -70,7 +68,38 @@
 
     </div>
   </div>
+  <!-- Service Worker -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").then((reg) => {
+
+          // Detecta nova versão
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            if (!newWorker) return;
+
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "installed") {
+
+                // Se já existia SW ativo, então é update
+                if (navigator.serviceWorker.controller) {
+                  console.log("Nova versão detectada. Recarregando...");
+                  window.location.reload();
+                }
+              }
+            });
+          });
+
+        }).catch(() => { });
+      });
+    }
+  </script>
+
+
 
   <script type="module" src="/assets/js/index.js"></script>
+
 </body>
+
 </html>
