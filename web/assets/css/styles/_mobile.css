@@ -1,7 +1,7 @@
 @media (max-width: 780px){
 
     /* base */
-    .wrap{ padding:14px; }
+    .wrap{ padding:14px; margin: 55px auto;}
     .content{ padding:14px; }
   
     /* login */
@@ -16,7 +16,7 @@
     .navBtn{ padding:16px 14px; border-radius:18px; }
     .navIcon{ width:44px; height:44px; border-radius:16px; } 
     .menuGrid{ grid-template-columns: 1fr; } 
-    
+
     /* pdf */
     :root{ --pdfBarH: 60px; } 
     .pdfFrameWrap{ height: calc(100dvh - 60px); } 
