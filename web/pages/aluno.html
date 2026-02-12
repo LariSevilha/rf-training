@@ -17,20 +17,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="RF Fitness">
   <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png">
-
-  <button class="btnGhost" id="installBtn" type="button" style="display:none;">
-    Instalar
-  </button>
-  
 </head>
 
 <body class="pageAluno">
-
-  <!-- Badge de status (online/offline)
-  <div class="netBadge" id="netBadge" aria-live="polite">
-    <span class="dot" aria-hidden="true"></span>
-    <span class="txt" id="netText">Online</span>
-  </div> -->
 
   <!-- Tela offline bonita -->
   <div class="offlineMask" id="offlineMask" aria-hidden="true">
@@ -54,7 +43,6 @@
         <div class="heroInner">
 
           <div class="heroLeft">
-            <!-- ÍCONE ao lado do RF FITNESS (como você pediu) -->
             <div class="heroLogo" aria-hidden="true">
               <img src="/img/logoapp.png" alt="RF" draggable="false" />
             </div>
@@ -64,11 +52,8 @@
               <h1 class="heroTitle">Olá, <span id="studentName" class="heroName">—</span></h1>
               <div id="status" class="heroHint">Carregando…</div>
 
-              <!-- Instalação (Android) -->
-              <div class="installRow">
-                <button class="btnGhost" id="installHelpBtn" type="button" style="display:none;">Como instalar</button>
-                <button class="btn" id="installBtn" type="button" style="display:none;">Instalar</button>
-              </div>
+              <!-- ✅ SÓ 1 BOTÃO, AQUI -->
+              <button class="btn" id="installBtn" type="button" style="display:none;">Instalar</button>
             </div>
           </div>
 
@@ -85,8 +70,8 @@
               <p class="cardSub">Toque para abrir em tela cheia.</p>
             </div>
 
-            <!-- Grid começa oculto pra não dar “flash” -->
             <div class="menuGrid" id="menuGrid">
+              <!-- ✅ NÃO ALTEREI SEUS ÍCONES -->
               <button class="navBtn menuBtn" data-open="training" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
@@ -172,8 +157,8 @@
 
       <div class="iosSteps">
         <div class="iosStep"><span class="n">1</span> Abra no <b>Safari</b></div>
-        <div class="iosStep"><span class="n">2</span> Toque em <b>Compartilhar</b> (quadrado com seta)</div>
-        <div class="iosStep"><span class="n">3</span> Selecione <b>“Adicionar à Tela de Início”</b></div>
+        <div class="iosStep"><span class="n">2</span> Toque em <b>Compartilhar</b></div>
+        <div class="iosStep"><span class="n">3</span> “Adicionar à Tela de Início”</div>
         <div class="iosStep"><span class="n">4</span> Toque em <b>Adicionar</b></div>
       </div>
 
@@ -195,11 +180,8 @@
       window.addEventListener("load", async () => {
         try {
           const reg = await navigator.serviceWorker.register("/sw.js");
-
-          // Se já tem SW e tem update baixando, força atualização do SW
           reg.update?.();
 
-          // Recarrega quando o novo SW assumir (evita aluno ter que “limpar cache”)
           let refreshing = false;
           navigator.serviceWorker.addEventListener("controllerchange", () => {
             if (refreshing) return;
@@ -214,5 +196,3 @@
   <script type="module" src="/assets/js/aluno.js"></script>
 </body>
 </html>
-
-

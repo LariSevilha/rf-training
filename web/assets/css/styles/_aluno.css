@@ -236,25 +236,7 @@
   transform: translateY(0);
   pointer-events:auto;
 }
-
-/* PDF bar: sem margin quebrando — usa safe area e padding */
-.pdfBar{
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display:flex;
-  align-items:center;
-  gap:10px;
-
-  padding-top: calc(10px + env(safe-area-inset-top));
-  padding-left: 12px;
-  padding-right: 12px;
-  padding-bottom: 10px;
-
-  background: rgba(0,0,0,.75);
-  border-bottom:1px solid rgba(255,255,255,.08);
-  backdrop-filter: blur(10px);
-}
+ 
 .backBtn{
   display:flex;
   align-items:center;

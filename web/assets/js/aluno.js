@@ -10,33 +10,27 @@ const statusEl = document.getElementById("status");
 const nameEl = document.getElementById("studentName");
 const ok = document.getElementById("ok");
 const err = document.getElementById("err");
-
 const menuGrid = document.getElementById("menuGrid");
 
-// PDF elements
+// PDF
 const pdfOverlay = document.getElementById("pdfOverlay");
 const pdfFrame = document.getElementById("pdfFrame");
 const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
 const loadingLayer = document.getElementById("loadingLayer");
 
-// Install UI (só Android nativo + iOS modal)
+// Offline
+const offlineMask = document.getElementById("offlineMask");
+const offlineTryBtn = document.getElementById("offlineTryBtn");
+
+// Install (Android)
 const installBtn = document.getElementById("installBtn");
 let deferredPrompt = null;
 
 // links dos PDFs
 const urls = { training: "", diet: "", supp: "", stretch: "" };
 
-// ===== Service Worker register =====
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
-  });
-}
-
-// ====================
-// Helpers
-// ====================
+// ===== helpers =====
 let fallbackTimer = null;
 function showLoading() {
   loadingLayer?.classList.add("show");
@@ -54,24 +48,41 @@ function isIOSDevice() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
-
+function isAndroidDevice() {
+  return /Android/i.test(navigator.userAgent);
+}
 function isStandaloneMode() {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
     window.navigator.standalone === true
   );
 }
+
+// ====================
+// OFFLINE UI
+// ====================
+function setOfflineUI() {
+  const online = navigator.onLine;
+  if (!offlineMask) return;
+  offlineMask.classList.toggle("show", !online);
+  offlineMask.setAttribute("aria-hidden", online ? "true" : "false");
+}
+
+window.addEventListener("online", setOfflineUI);
+window.addEventListener("offline", setOfflineUI);
+offlineTryBtn?.addEventListener("click", setOfflineUI);
 
 // ====================
 // Menu sem flash
 // ====================
 function lockMenu() {
   document.body.classList.remove("ready");
-  if (menuGrid) menuGrid.classList.add("menuLocked");
+  menuGrid?.classList.add("menuLocked");
 }
 function unlockMenu() {
   document.body.classList.add("ready");
-  if (menuGrid) menuGrid.classList.remove("menuLocked");
+  menuGrid?.classList.remove("menuLocked");
 }
 
 function applyVisibility() {
@@ -104,32 +115,32 @@ function openPdf(type) {
     const html = placeholderHtml("PDF não configurado", "Entre em contato com o personal.");
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
     setTimeout(hideLoading, 250);
-    pdfOverlay?.classList.add("show");
-    pdfOverlay?.setAttribute("aria-hidden", "false");
-    return;
-  }
-
-  const preview = driveToPreview(rawUrl);
-
-  if (!preview) {
-    const html = placeholderHtml("Link inválido", "Envie um link do Drive compatível.");
+  } else if (!navigator.onLine) {
+    const html = placeholderHtml("Você está offline", "Conecte-se para abrir este PDF.");
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
     setTimeout(hideLoading, 250);
   } else {
-    pdfFrame.src = preview;
+    const preview = driveToPreview(rawUrl);
+    if (!preview) {
+      const html = placeholderHtml("Link inválido", "Envie um link do Drive compatível.");
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+      setTimeout(hideLoading, 250);
+    } else {
+      pdfFrame.src = preview;
+    }
   }
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
+  document.body.classList.add("pdfOpen"); // ajuda iOS
 }
 
 function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("pdfOpen");
   hideLoading();
-  setTimeout(() => {
-    if (pdfFrame) pdfFrame.src = "about:blank";
-  }, 200);
+  setTimeout(() => { if (pdfFrame) pdfFrame.src = "about:blank"; }, 200);
 }
 
 pdfBack?.addEventListener("click", closePdf);
@@ -144,40 +155,45 @@ logoutBtn?.addEventListener("click", () => {
 });
 
 // ====================
-// Instalação PWA – Android nativo + iOS modal
+// ANDROID INSTALL (só botão instalar)
 // ====================
 function hideInstallUI() {
   if (installBtn) installBtn.style.display = "none";
 }
 
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
+if (installBtn) {
+  // iOS não tem prompt nativo
+  if (!isAndroidDevice() || isStandaloneMode()) {
+    hideInstallUI();
+  }
 
-  if (!isStandaloneMode() && installBtn) {
+  window.addEventListener("beforeinstallprompt", (e) => {
+    // só Android
+    if (!isAndroidDevice() || isStandaloneMode()) return;
+
+    e.preventDefault();
+    deferredPrompt = e;
+
     installBtn.style.display = "inline-flex";
-  }
-});
+  });
 
-installBtn?.addEventListener("click", async () => {
-  if (!deferredPrompt) {
-    // Sem fallback manual — deixa o navegador decidir
-    installBtn.style.display = "none";
-    return;
-  }
+  installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return; // se não disparou, não tem como forçar
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice.catch(() => {});
+    deferredPrompt = null;
+    hideInstallUI();
+  });
 
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice.catch(() => {});
-  deferredPrompt = null;
-  hideInstallUI();
-});
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    hideInstallUI();
+  });
+}
 
-window.addEventListener("appinstalled", () => {
-  deferredPrompt = null;
-  hideInstallUI();
-});
-
-// iOS modal (mantido)
+// ====================
+// iOS modal (premium)
+// ====================
 (function iosInstallModalInit() {
   const modal = document.getElementById("iosInstallModal");
   if (!modal) return;
@@ -206,10 +222,6 @@ window.addEventListener("appinstalled", () => {
     modal.setAttribute("aria-hidden", "true");
   }
 
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) close();
-  });
-
   closeBtn?.addEventListener("click", close);
   laterBtn?.addEventListener("click", close);
   okBtn?.addEventListener("click", close);
@@ -226,8 +238,7 @@ async function syncDocuments() {
   if (!session?.token) return;
 
   lockMenu();
-
-  if (statusEl) statusEl.textContent = "Sincronizando documentos…";
+  if (statusEl) statusEl.textContent = navigator.onLine ? "Sincronizando documentos…" : "Você está offline.";
 
   try {
     const docs = await apiDocuments(session.token);
@@ -240,9 +251,9 @@ async function syncDocuments() {
 
     if (statusEl) statusEl.textContent = "Toque em um item disponível para abrir.";
     clearMsg(err);
-    setMsg(ok, "Sincronizado ✅", "ok");
+    setMsg(ok, "Pronto ✅", "ok");
     setTimeout(() => clearMsg(ok), 1200);
-  } catch (e) {
+  } catch {
     if (statusEl) statusEl.textContent = "Erro ao sincronizar";
   } finally {
     unlockMenu();
@@ -253,6 +264,8 @@ async function syncDocuments() {
 // INIT
 // ====================
 (async function init() {
+  setOfflineUI();
+
   session = await requireAuth("student");
   if (!session) return;
 
@@ -270,14 +283,4 @@ async function syncDocuments() {
   if (nameEl) nameEl.textContent = displayName;
 
   await syncDocuments().catch(() => {});
-
-  // Instalação UI
-  if (isStandaloneMode()) {
-    hideInstallUI();
-  }
 })();
-
-// Limpeza extra Android install (opcional – pode remover se preferir)
-if (installBtn && isStandaloneMode()) {
-  installBtn.style.display = "none";
-}

@@ -63,3 +63,5 @@ self.addEventListener("fetch", (event) => {
   // Outros → network first
   event.respondWith(fetch(req));
 });
+
+
