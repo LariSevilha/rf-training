@@ -1,0 +1,644 @@
+/* /web/assets/css/styles/_admin.css
+   Admin Premium – RF (sidebar fixa + main)
+   Requer: _variables.css e _reset.css antes no main.css
+*/
+
+/* =========================================================
+  01) SHELL
+========================================================= */
+
+.appShell{
+    min-height: 100dvh;
+    display:flex;
+  }
+  
+  /* Sidebar fixa (desktop) */
+  .sidebarFixed{
+    width: 280px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+  
+    padding: 16px 14px;
+    background:
+      radial-gradient(900px 420px at 20% 0%, rgba(206,172,94,.10), transparent 60%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.18));
+    border-right: 1px solid var(--stroke);
+    box-shadow: 0 18px 70px rgba(0,0,0,.55);
+    overflow: auto;
+  }
+  
+  /* Área principal com offset da sidebar fixa */
+  .mainArea{
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    min-height: 100dvh;
+    padding: 18px;
+  }
+  
+  /* =========================================================
+    02) SIDEBAR HEADER / BRAND
+  ========================================================= */
+  
+  .sideTop{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 8px 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  
+  .logoBadge{
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  
+    background: rgba(0,0,0,.35);
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow: 0 16px 40px rgba(0,0,0,.35);
+    overflow:hidden;
+  }
+  
+  .logoImg{
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+  }
+  
+  .brandBlock{
+    min-width: 0;
+  }
+  
+  .brandBlock .brand{
+    font-weight: 950;
+    color: var(--gold2);
+    letter-spacing: .6px;
+    font-size: 13px;
+  }
+  
+  .brandBlock .sub{
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgba(255,255,255,.62);
+  }
+  
+  /* =========================================================
+    03) NAV (SIDEBAR)
+  ========================================================= */
+  
+  .nav{
+    padding: 12px 6px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  
+  .navBtn{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  
+    padding: 12px 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.08);
+  
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.035), rgba(0,0,0,.18));
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  
+    cursor:pointer;
+    transition: transform .08s ease, border-color .2s ease, background .2s ease;
+  }
+  
+  .navBtn:hover{
+    border-color: rgba(206,172,94,.26);
+    background:
+      linear-gradient(180deg, rgba(206,172,94,.10), rgba(0,0,0,.18));
+  }
+  
+  .navBtn:active{
+    transform: translateY(1px);
+  }
+  
+  .navBtn.active{
+    border-color: rgba(206,172,94,.38);
+    background:
+      radial-gradient(900px 420px at 20% 0%, rgba(206,172,94,.14), transparent 55%),
+      linear-gradient(180deg, rgba(0,0,0,.40), rgba(0,0,0,.14));
+  }
+  
+  .navLeft{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width: 0;
+  }
+  
+  .navIcon{
+    width: 40px;
+    height: 40px;
+    border-radius: 16px;
+  
+    display:grid;
+    place-items:center;
+  
+    border: 1px solid rgba(206,172,94,.22);
+    background: rgba(206,172,94,.10);
+    color: var(--gold2);
+  
+    font-weight: 950;
+    font-size: 13px;
+    flex: 0 0 auto;
+  }
+  
+  .navTxt{
+    min-width: 0;
+  }
+  
+  .navTxt .h{
+    margin:0;
+    font-weight: 950;
+    font-size: 13px;
+    color: rgba(255,255,255,.92);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .navTxt .s{
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: rgba(255,255,255,.62);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .navChev{
+    opacity:.55;
+    font-weight: 950;
+    font-size: 18px;
+  }
+  
+  /* Footer sidebar */
+  .sideFooter{
+    margin-top: 10px;
+    padding: 10px 6px 0;
+    border-top: 1px solid rgba(255,255,255,.06);
+  }
+  
+  .sideFooter .pill{
+    width:100%;
+  }
+  
+  /* =========================================================
+    04) TOPBAR
+  ========================================================= */
+  
+  .topbar{
+    height: 74px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+  
+    padding: 0 18px;
+    border-radius: var(--radius);
+  
+    border: 1px solid rgba(255,255,255,.10);
+    background:
+      radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.10), transparent 58%),
+      linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.18));
+  
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  
+  .topLeft{
+    display:flex;
+    flex-direction:column;
+    gap: 4px;
+  }
+  
+  .topLeft .hello{
+    font-weight: 950;
+    letter-spacing: .2px;
+    color: rgba(255,255,255,.92);
+  }
+  
+  .topRight{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  
+  .searchWrap{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  
+    padding: 10px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.28);
+    min-width: 320px;
+  }
+  
+  .searchWrap span{ opacity:.7; }
+  
+  .searchWrap input{
+    border:0;
+    outline:none;
+    background:transparent;
+    color: var(--text);
+    width:100%;
+    font-size: 13px;
+  }
+  
+  /* =========================================================
+    05) VIEWS / CARDS (ADMIN)
+  ========================================================= */
+  
+  .viewWrap{
+    margin-top: 14px;
+  }
+  
+  .view{
+    display:none;
+    animation: fadeUp .18s ease both;
+  }
+  
+  .view.active{
+    display:block;
+  }
+  
+  @keyframes fadeUp{
+    from{ opacity:0; transform: translateY(8px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  
+  /* Card base do admin */
+  .card{
+    border-radius: var(--radius);
+    border: 1px solid rgba(255,255,255,.10);
+    background:
+      radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.09), transparent 58%),
+      linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.20));
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+  
+  .card h2{
+    margin:0 0 6px;
+    font-size: 16px;
+    color: var(--gold2);
+    letter-spacing: .4px;
+  }
+  
+  .card p{
+    margin:0 0 14px;
+    color: rgba(255,255,255,.70);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  
+  .hr{
+    height: 1px;
+    background: rgba(255,255,255,.08);
+    margin: 14px 0;
+  }
+  
+  .smallHint{
+    opacity: .72;
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  
+  /* Cabeçalho tipo “dashboard” */
+  .dashHead{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  
+  /* =========================================================
+    06) FORMS / INPUTS (ADMIN)
+  ========================================================= */
+  
+  .label{
+    font-size: 12px;
+    color: rgba(255,255,255,.72);
+    margin: 0 0 6px;
+  }
+  
+  .grid2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  input[type="email"],
+  input[type="password"],
+  input[type="text"],
+  select{
+    width:100%;
+    min-height: 48px;
+  
+    padding: 14px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.35);
+    color: var(--text);
+    outline: none;
+  }
+  
+  input:focus,
+  select:focus{
+    border-color: rgba(206,172,94,.45);
+    box-shadow: 0 0 0 4px rgba(206,172,94,.10);
+  }
+  
+  .check{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    color: rgba(255,255,255,.78);
+    font-size: 13px;
+    user-select:none;
+  }
+  
+  .check input{ accent-color: var(--gold); }
+  
+  .actionsRow{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  
+  .actionsRow > *{
+    flex: 1;
+    min-width: 160px;
+  }
+  
+  /* Botões base (se já existir em _components.css, aqui só garante) */
+  .btn{
+    border:0;
+    cursor:pointer;
+    border-radius: 18px;
+    padding: 14px 14px;
+    font-weight: 950;
+    letter-spacing: .3px;
+    background: linear-gradient(135deg, rgba(206,172,94,.98), rgba(206,172,94,.55));
+    color: #1b1407;
+    box-shadow: 0 14px 40px rgba(206,172,94,.18);
+  }
+  
+  .btn:hover{ filter: brightness(1.05); }
+  .btn:active{ transform: translateY(1px); }
+  
+  .btnGhost{
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.35);
+    padding: 13px 14px;
+    cursor:pointer;
+    color: rgba(255,255,255,.92);
+    font-weight: 900;
+  }
+  
+  .btnGhost:hover{
+    border-color: rgba(206,172,94,.25);
+    background: rgba(206,172,94,.06);
+  }
+  .btnGhost:active{ transform: translateY(1px); }
+  
+  .btnFull{ width:100%; }
+  
+  /* =========================================================
+    07) DASH FILTERS / STATS
+  ========================================================= */
+  
+  .dashActions{
+    display:flex;
+    gap: 10px;
+    align-items:center;
+    flex-wrap: wrap;
+  }
+  
+  .dashFilters{
+    display:flex;
+    gap: 12px;
+    align-items:flex-end;
+    flex-wrap: wrap;
+  
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(255,255,255,.03);
+    border-radius: 18px;
+    margin-bottom: 14px;
+  }
+  
+  .dashFilters .fItem{
+    min-width: 200px;
+    flex: 1;
+  }
+  
+  .dashStats{
+    display:grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+  
+  .statCard{
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(255,255,255,.03);
+    border-radius: 18px;
+    padding: 14px;
+  }
+  
+  .statVal{
+    font-size: 30px;
+    font-weight: 950;
+    margin-top: 6px;
+    color: var(--gold2);
+    line-height: 1.1;
+  }
+  
+  /* =========================================================
+    08) TABELA (ADMIN)
+  ========================================================= */
+  
+  .tableWrap{
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.20);
+  }
+  
+  table{
+    width:100%;
+    border-collapse: collapse;
+  }
+  
+  th, td{
+    padding: 12px 12px;
+    font-size: 13px;
+  }
+  
+  th{
+    text-align:left;
+    background: rgba(255,255,255,.05);
+    color: rgba(255,255,255,.72);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  
+  tbody tr{
+    cursor:pointer;
+    transition: background .15s ease;
+  }
+  
+  tbody tr:hover{
+    background: rgba(206,172,94,.06);
+  }
+  
+  tbody tr.selected{
+    background: rgba(206,172,94,.10);
+  }
+  
+  /* =========================================================
+    09) MODAL (CONFIRMAÇÃO)
+  ========================================================= */
+  
+  .modalMask{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.62);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding: 18px;
+    z-index: 10000;
+  }
+  
+  .modalMask.show{ display:flex; }
+  
+  .modal{
+    width: min(520px, 100%);
+    border-radius: 22px;
+    background:
+      radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.12), transparent 58%),
+      linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.22));
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+  
+  .modal h3{
+    margin: 0 0 6px;
+    color: rgba(255,255,255,.95);
+  }
+  
+  .modal p{
+    margin: 0 0 12px;
+    color: rgba(255,255,255,.74);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  
+  .modalActions{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .modalActions > *{
+    flex: 1;
+    min-width: 160px;
+  }
+  
+  /* =========================================================
+    10) RESPONSIVO (ADMIN)
+  ========================================================= */
+  
+  @media (max-width: 980px){
+    .sidebarFixed{
+      position: sticky;
+      top: 0;
+      width: 100%;
+      height: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--stroke);
+      box-shadow: none;
+      z-index: 20;
+    }
+  
+    .mainArea{
+      margin-left: 0;
+      width: 100%;
+      padding: 12px;
+    }
+  
+    .searchWrap{
+      min-width: 0;
+      width: 100%;
+    }
+  
+    .grid2{
+      grid-template-columns: 1fr;
+    }
+  
+    .dashStats{
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  
+  @media (max-width: 560px){
+    .topbar{
+      height: auto;
+      padding: 14px;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .topRight{
+      width: 100%;
+    }
+  
+    .dashFilters{
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+  
+    .dashFilters .fItem{
+      min-width: 100%;
+    }
+  
+    .dashStats{
+      grid-template-columns: 1fr;
+    }
+  
+    .actionsRow{
+      flex-direction: column;
+    }
+  
+    .actionsRow > *{
+      min-width: 100%;
+      flex: none;
+    }
+  }
+  

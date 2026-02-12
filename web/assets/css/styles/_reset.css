@@ -1,0 +1,15 @@
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:
+    radial-gradient(900px 420px at 20% 0%, rgba(206,172,94,.07), transparent 60%),
+    radial-gradient(700px 360px at 85% 10%, rgba(206,172,94,.05), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  letter-spacing:.2px;
+  font-size: 12px;
+}
+button,input{ font-family:inherit; }
+a{ color:inherit; }

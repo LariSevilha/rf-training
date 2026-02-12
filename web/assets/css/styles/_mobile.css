@@ -1,0 +1,39 @@
+@media (max-width: 780px){
+
+    /* base */
+    .wrap{ padding:14px; }
+    .content{ padding:14px; }
+  
+    /* login */
+    .loginWrap{ padding:14px; }
+    .loginCard{ padding:14px; border-radius:22px; }
+    .loginLogo{ width:52px; height:52px; border-radius:16px; }
+  
+    /* aluno */
+    .studentHero{ border-radius:22px; }
+    .studentMain{ border-radius:22px; }
+    .heroInner{ padding:14px; }
+    .navBtn{ padding:16px 14px; border-radius:18px; }
+    .navIcon{ width:44px; height:44px; border-radius:16px; } 
+    .menuGrid{ grid-template-columns: 1fr; } 
+    
+    /* pdf */
+    :root{ --pdfBarH: 60px; } 
+    .pdfFrameWrap{ height: calc(100dvh - 60px); } 
+
+    .backBtn{
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+    }
+    .pdfTitle{
+      font-size: 12px;
+      max-width: calc(100vw - 170px);
+    }
+  }
+  
+  /* telas bem pequenas */
+  @media (max-width: 420px){
+    .loginCard{ padding:13px; }
+    .loginLogo{ width:48px; height:48px; }
+  }

@@ -26,3 +26,6 @@ export function saveEmail(email) {
 export function loadEmail() {
   return localStorage.getItem(KEY_EMAIL) || "";
 }
+
+
+

@@ -4,41 +4,52 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>RF Fitness – Login</title>
-  <link rel="stylesheet" href="/assets/css/styles.css?v=20260206-2" />
+
+  <!-- CSS só do login -->
+  <link rel="stylesheet" href="../assets/css/main.css" />
+
+  <meta name="theme-color" content="#000000" />
 </head>
+
 <body>
   <div class="loginWrap">
     <div class="loginCard">
 
       <div class="loginTop">
-        <div class="logoBadge">
-          <img 
-            src="../img/logoapp.png" 
+        <div class="logoBadge" aria-hidden="true">
+          <img
+            src="/img/logoapp.png"
             alt="RF Fitness"
             class="logoImg"
+            draggable="false"
           />
         </div>
-      
+
         <div class="loginHead">
           <div class="loginTitle">RF FITNESS</div>
           <div class="loginSub">Acesso ao painel</div>
         </div>
       </div>
-      
 
       <div class="field">
         <div class="label">Email</div>
-        <input type="email" id="email" placeholder="ex: aluno@email.com" autocomplete="username" />
+        <input
+          type="email"
+          id="email"
+          placeholder="ex: aluno@email.com"
+          autocomplete="username"
+          inputmode="email"
+        />
       </div>
 
       <div class="field">
         <div class="label">Senha</div>
-      
+
         <div class="inputWrap">
-          <input 
-            type="password" 
-            id="pass" 
-            placeholder="••••••••" 
+          <input
+            type="password"
+            id="pass"
+            placeholder="••••••••"
             autocomplete="current-password"
           />
           <button class="eyeBtn" id="togglePass" type="button" aria-label="Mostrar senha">
@@ -46,22 +57,16 @@
           </button>
         </div>
       </div>
-      
 
       <label class="check">
         <input id="remember" type="checkbox" />
-        Lembrar login?
+        <span>Lembrar login?</span>
       </label>
-      
 
-      <button class="btn btnFull" id="loginBtn" type="button" style="margin-top:12px;">Entrar</button>
+      <button class="btn btnFull" id="loginBtn" type="button">Entrar</button>
 
       <div class="msgBox error" id="err"></div>
       <div class="msgBox ok" id="ok"></div>
-
-      <!-- <div class="loginStatus">
-        Status: <span id="status">Checando API…</span>
-      </div> -->
 
     </div>
   </div>

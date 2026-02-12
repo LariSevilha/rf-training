@@ -116,3 +116,5 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   // 👉 continua teu fluxo normal de login aqui
 }); 
+
+

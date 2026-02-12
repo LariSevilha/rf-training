@@ -1,0 +1,23 @@
+.iosInstallModal{ position: fixed; inset: 0; display: none; z-index: 9999; }
+.iosInstallModal.show{ display:block; }
+
+.iosInstallBackdrop{
+  position:absolute; inset:0;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(8px);
+}
+
+.iosInstallCard{
+  position:absolute;
+  left:50%;
+  transform: translateX(-50%);
+  bottom: 16px;
+  width: min(520px, calc(100% - 24px));
+  border-radius: 18px;
+  background:
+    radial-gradient(1200px 600px at 20% 0%, rgba(206,172,94,.18), transparent 55%),
+    linear-gradient(180deg, rgba(18,18,18,.98), rgba(10,10,10,.98));
+  border: 1px solid rgba(206,172,94,.22);
+  box-shadow: 0 20px 60px rgba(0,0,0,.55);
+  overflow:hidden;
+}

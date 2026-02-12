@@ -1,0 +1,120 @@
+/* =========================
+   PDF OVERLAY — iOS SAFE ✅
+========================= */
+
+:root{
+  --pdfBarH: 56px; /* altura base (sem safe area) */
+}
+
+.pdfOverlay{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  background: #000;
+  z-index: 9999;
+
+  opacity:0;
+  transform: translateY(14px);
+  pointer-events:none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+.pdfOverlay.show{
+  opacity:1;
+  transform: translateY(0);
+  pointer-events:auto;
+}
+
+/* AQUI: sem margin. padding interno + safe-area */
+.pdfBar{
+  /* a altura VISUAL vira: base + safe area */
+  min-height: calc(var(--pdfBarH) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+
+  display:flex;
+  align-items:center;
+
+  padding-left: 12px;
+  padding-right: 12px;
+
+  background: rgba(0,0,0,.78);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter: blur(10px);
+}
+
+/* garante que a barra não “achate” no iOS */
+.pdfBar > *{ flex: 0 0 auto; }
+
+.backBtn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background: rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  color: rgba(255,255,255,.92);
+  border-radius:16px;
+  padding:12px 14px;
+  cursor:pointer;
+  font-weight:900;
+}
+
+.pdfTitle{
+  margin-left:10px;
+  font-weight:950;
+  color: var(--gold2);
+  font-size:12px;
+  letter-spacing:.8px;
+  opacity:.95;
+  user-select:none;
+
+  /* evita quebrar no Pro Max */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100vw - 170px);
+}
+
+/* iframe ocupa o resto certinho */
+.pdfFrameWrap{
+  width:100%;
+  height: calc(100dvh - (var(--pdfBarH) + env(safe-area-inset-top)));
+  position:relative;
+}
+
+#pdfFrame{
+  width:100%;
+  height:100%;
+  border:0;
+  background:#000;
+}
+
+/* loading */
+.loadingLayer{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:10px;
+  background:
+    radial-gradient(900px 420px at 30% 10%, rgba(206,172,94,.12), transparent 55%),
+    rgba(0,0,0,.55);
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .18s ease;
+}
+.loadingLayer.show{ opacity:1; pointer-events:auto; }
+
+.spinner{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  border:3px solid rgba(255,255,255,.18);
+  border-top-color: rgba(206,172,94,.95);
+  animation: spin .9s linear infinite;
+}
+@keyframes spin{to{transform: rotate(360deg)}}
+.loadingText{ font-weight:950; color: rgba(255,255,255,.92); font-size:13px; }
+.loadingSub{ color: rgba(255,255,255,.68); font-size:12px; text-align:center; max-width:260px; line-height:1.45; }
+ 

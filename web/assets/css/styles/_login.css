@@ -1,0 +1,241 @@
+
+/* evita “zoom” do iOS no input */
+input, button { font-family:inherit; }
+input{ font-size:16px; }
+
+/* ====== LAYOUT (igual a imagem) ====== */
+.loginWrap{
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding: 22px;
+  padding-top: calc(22px + env(safe-area-inset-top));
+  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+}
+
+/* Card mais “baixo” igual na print (não no topo) */
+.loginCard{
+  width: min(560px, 100%);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 460px at 18% 0%, rgba(206,172,94,.16), transparent 58%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.22));
+  box-shadow: var(--shadow);
+  padding: 18px;
+  position: relative;
+  overflow:hidden;
+
+  /* ajuda a parecer “abaixo” */
+  transform: translateY(10px);
+}
+
+.loginCard::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background: radial-gradient(900px 480px at 30% -10%, rgba(206,172,94,.14), transparent 60%);
+  opacity:.65;
+  pointer-events:none;
+}
+
+/* topo */
+.loginTop{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding: 10px 10px 14px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  margin-bottom:14px;
+}
+
+.logoBadge{
+  width:56px;
+  height:56px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.30);
+  box-shadow: 0 16px 40px rgba(0,0,0,.35);
+  overflow:hidden;
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+}
+
+.logoImg{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.loginHead{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+}
+
+.loginTitle{
+  font-weight: 950;
+  letter-spacing:.8px;
+  font-size: 14px;
+  color: rgba(255,255,255,.92);
+}
+
+.loginSub{
+  font-size: 13px;
+  color: rgba(255,255,255,.66);
+}
+
+/* campos */
+.field{ margin: 10px 0 12px; }
+.label{
+  font-size: 13px;
+  color: rgba(255,255,255,.70);
+  margin: 0 0 10px;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"]{
+  width:100%;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.35);
+  color: rgba(255,255,255,.92);
+  outline:none;
+  padding: 16px 16px;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+input::placeholder{ color: rgba(255,255,255,.45); }
+
+input:focus{
+  border-color: rgba(206,172,94,.45);
+  box-shadow: 0 0 0 4px rgba(206,172,94,.10);
+  background: rgba(0,0,0,.42);
+}
+
+/* iOS autofill (tira “branco amarelo”) */
+input:-webkit-autofill{
+  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(0,0,0,.45) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* senha + olhinho */
+.inputWrap{
+  position:relative;
+  display:flex;
+  align-items:center;
+}
+
+.inputWrap input{
+  padding-right: 58px;
+}
+
+.eyeBtn{
+  position:absolute;
+  right:10px;
+  top:50%;
+  transform: translateY(-50%);
+  width:44px;
+  height:44px;
+  border-radius: 16px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  cursor:pointer;
+  font-size: 18px;
+  opacity:.9;
+  color:#fff;
+  display:grid;
+  place-items:center;
+  transition: transform .08s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+}
+.eyeBtn:hover{
+  opacity:1;
+  border-color: rgba(206,172,94,.25);
+  background: rgba(206,172,94,.06);
+}
+.eyeBtn:active{ transform: translateY(-50%) scale(.98); }
+
+/* checkbox */
+.check{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin: 8px 0 12px;
+  font-size: 14px;
+  color: rgba(255,255,255,.78);
+  user-select:none;
+}
+.check input{
+  width:22px;
+  height:22px;
+  accent-color: var(--gold);
+}
+
+/* botão */
+.btn{
+  border:0;
+  cursor:pointer;
+  width:100%;
+  border-radius: 20px;
+  padding: 16px 16px;
+  font-weight: 950;
+  letter-spacing:.3px;
+  color:#1b1407;
+  background: linear-gradient(135deg, rgba(206,172,94,.98), rgba(206,172,94,.58));
+  box-shadow: 0 18px 50px rgba(206,172,94,.16);
+  transition: transform .08s ease, filter .2s ease;
+}
+.btn:hover{ filter: brightness(1.03); }
+.btn:active{ transform: translateY(1px) scale(.995); }
+
+/* mensagens */
+.msgBox{
+  margin-top: 12px;
+  border-radius: 18px;
+  padding: 12px 12px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.35);
+  color: rgba(255,255,255,.86);
+  font-size: 13px;
+  display:none;
+}
+.msgBox.show{ display:block; }
+.msgBox.error{
+  border-color: rgba(255,95,95,.25);
+  background: rgba(255,95,95,.07);
+  color:#ffdada;
+}
+.msgBox.ok{
+  border-color: rgba(57,217,138,.25);
+  background: rgba(57,217,138,.07);
+  color:#dfffee;
+}
+
+/* ===== MOBILE (igual ao print) ===== */
+@media (max-width: 560px){
+  .loginWrap{ padding: 16px; padding-top: calc(16px + env(safe-area-inset-top)); }
+  .loginCard{
+    padding: 16px;
+    border-radius: 24px;
+    transform: translateY(6px);
+  }
+  .logoBadge{ width:54px; height:54px; border-radius:18px; }
+  .label{ margin-bottom: 8px; }
+  input[type="email"], input[type="password"], input[type="text"]{
+    padding: 16px 16px;
+    border-radius: 18px;
+  }
+  .btn{ padding: 16px; border-radius: 20px; }
+}
+
+@media (max-width: 420px){
+  .loginCard{ padding: 14px; border-radius: 22px; }
+  .logoBadge{ width:52px; height:52px; }
+}

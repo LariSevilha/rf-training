@@ -252,6 +252,8 @@ function isStandaloneMode() {
   const session = await requireAuth("student");
   if (!session) return;
 
+  document.body.classList.remove("ready");  
+
   if (statusEl) statusEl.textContent = "Carregando seus documentos…";
 
   // Nome do aluno
@@ -268,6 +270,7 @@ function isStandaloneMode() {
   // Docs
   try {
     const docs = await apiDocuments(session.token);
+
     urls.training = (docs.training || "").trim();
     urls.diet = (docs.diet || "").trim();
     urls.supp = (docs.supp || "").trim();
@@ -275,15 +278,18 @@ function isStandaloneMode() {
 
     applyVisibility();
 
+    // ✅ libera os botões só agora (sem flash)
+    document.body.classList.add("ready");
+
     if (statusEl) statusEl.textContent = "Toque em um item disponível para abrir.";
     setMsg(ok, "Pronto ✅", "ok");
     setTimeout(() => clearMsg(ok), 1400);
   } catch (e) {
+    document.body.classList.add("ready");  
     if (statusEl) statusEl.textContent = "Erro ao carregar documentos ❌";
     setMsg(err, e?.message || "Erro ao carregar.", "error");
   }
 
-  // já instalado? esconde botões
   if (isInstalled()) {
     if (installBtn) installBtn.style.display = "none";
     if (installHelpBtn) installHelpBtn.style.display = "none";
