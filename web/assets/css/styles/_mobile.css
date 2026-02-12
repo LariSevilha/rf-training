@@ -1,39 +1,213 @@
-@media (max-width: 780px){
+@media (max-width: 780px) {
 
-    /* base */
-    .wrap{ padding:14px; margin: 55px auto;}
-    .content{ padding:14px; }
-  
-    /* login */
-    .loginWrap{ padding:14px; }
-    .loginCard{ padding:14px; border-radius:22px; }
-    .loginLogo{ width:52px; height:52px; border-radius:16px; }
-  
-    /* aluno */
-    .studentHero{ border-radius:22px; }
-    .studentMain{ border-radius:22px; }
-    .heroInner{ padding:14px; }
-    .navBtn{ padding:16px 14px; border-radius:18px; }
-    .navIcon{ width:44px; height:44px; border-radius:16px; } 
-    .menuGrid{ grid-template-columns: 1fr; } 
-
-    /* pdf */
-    :root{ --pdfBarH: 60px; } 
-    .pdfFrameWrap{ height: calc(100dvh - 60px); } 
-
-    .backBtn{
-      padding: 12px 14px;
-      border-radius: 16px;
-      font-size: 14px;
-    }
-    .pdfTitle{
-      font-size: 12px;
-      max-width: calc(100vw - 170px);
-    }
+  /* base */
+  .wrap {
+    padding: 14px;
+    margin: 55px auto;
   }
-  
-  /* telas bem pequenas */
-  @media (max-width: 420px){
-    .loginCard{ padding:13px; }
-    .loginLogo{ width:48px; height:48px; }
+
+  .content {
+    padding: 14px;
   }
+
+  /* login */
+  .loginWrap {
+    padding: 14px;
+  }
+
+  .loginCard {
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  .loginLogo {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+  }
+
+  /* aluno */
+  .studentHero {
+    border-radius: 22px;
+  }
+
+  .studentMain {
+    border-radius: 22px;
+  }
+
+  .heroInner {
+    padding: 14px;
+  }
+
+  .navBtn {
+    padding: 16px 14px;
+    border-radius: 18px;
+  }
+
+  .navIcon {
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+  }
+
+  .menuGrid {
+    grid-template-columns: 1fr;
+  }
+
+
+  /* pdf */
+  :root {
+    --pdfBarH: 60px;
+  }
+
+  .pdfFrameWrap {
+    height: calc(100dvh - 60px);
+  }
+
+  .backBtn {
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+  }
+
+  .pdfTitle {
+    font-size: 12px;
+    max-width: calc(100vw - 170px);
+  }
+}
+
+/* telas bem pequenas */
+@media (max-width: 420px) {
+  .loginCard {
+    padding: 13px;
+  }
+
+  .loginLogo {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+
+/* ===== HERO (RESPONSIVO) ===== */
+.studentHero {
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, .10);
+  background:
+    radial-gradient(900px 420px at 15% 0%, rgba(206, 172, 94, .16), transparent 60%),
+    linear-gradient(180deg, rgba(0, 0, 0, .72), rgba(0, 0, 0, .20));
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.heroInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  flex-wrap: wrap;
+  /* ✅ permite quebrar no mobile */
+}
+
+.heroLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  /* ✅ deixa texto “encolher” */
+  flex: 1 1 260px;
+  /* ✅ cresce/encolhe */
+}
+
+.heroLogo {
+  width: 56px;
+  /* ✅ um pouco menor pro XR */
+  height: 56px;
+  border-radius: 18px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
+  border: 1px solid rgba(255, 255, 255, .08);
+}
+
+.heroLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroText {
+  min-width: 0;
+  /* ✅ essencial */
+  flex: 1;
+}
+
+.heroBrand {
+  font-size: 12px;
+  letter-spacing: .9px;
+  font-weight: 800;
+  opacity: .7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.heroTitle {
+  margin: 4px 0 2px;
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* ✅ “Olá, larissa...” não estoura */
+}
+
+.heroName {
+  color: var(--gold2);
+}
+
+#status {
+  margin: 0;
+  font-size: 12px;
+  opacity: .8;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; 
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* botão sair não “espreme” o conteúdo */
+.pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ===== MOBILE AJUSTE FINO ===== */
+@media (max-width: 520px) {
+  .heroInner {
+    padding: 14px;
+  }
+
+  .heroLogo {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+  }
+
+  .heroTitle {
+    font-size: 17px;
+  }
+
+  #status {
+    -webkit-line-clamp: 2;
+  }
+
+  /* botão vai pra próxima linha, alinhado à direita */
+  #logoutBtn {
+    margin-left: auto;
+  }
+}

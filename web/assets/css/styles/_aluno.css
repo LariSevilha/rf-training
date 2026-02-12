@@ -1,153 +1,382 @@
-.pageAluno .studentApp{
-  width: min(820px, 100%);
+/* =========================
+   ALUNO — PROFISSIONAL
+========================= */
+
+.pageAluno .wrap{
+  min-height: 100vh;
+  padding: 18px;
   display:flex;
-  flex-direction:column;
-  gap: 14px;
+  justify-content:center;
 }
 
-/* “Dashboard container” central com mais presença */
-.pageAluno .studentShell{
-  padding: 14px;
+.pageAluno .studentApp{
+  width: min(980px, 100%);
 }
 
-/* HERO mais clean (sem parecer “bloco grande” no topo) */
-.pageAluno .studentHero{
-  padding: 16px;
-  border-radius: var(--r-xl);
-  border: 1px solid var(--stroke);
+/* Badge online/offline */
+.netBadge{
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top));
+  right: 12px;
+  z-index: 9999;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius: 999px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+  color: rgba(255,255,255,.92);
+  font-weight: 900;
+  font-size: 12px;
+}
+.netBadge .dot{
+  width:10px;height:10px;border-radius:999px;
+  background: #2ee59d;
+  box-shadow: 0 0 0 3px rgba(46,229,157,.15);
+}
+.netBadge.offline .dot{
+  background: #ff5b5b;
+  box-shadow: 0 0 0 3px rgba(255,91,91,.15);
+}
+
+/* Offline overlay */
+.offlineMask{
+  position: fixed;
+  inset:0;
+  z-index: 9998;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(8px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding: 22px;
+}
+.offlineMask.show{ display:flex; }
+.offlineCard{
+  width: min(520px, 100%);
+  border-radius: 26px;
+  border:1px solid rgba(255,255,255,.10);
   background:
-    radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.12), transparent 58%),
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.18));
+    radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.14), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.35));
+  padding: 18px;
   box-shadow: var(--shadow);
 }
+.offlineIcon{ font-size: 28px; margin-bottom: 6px; }
+.offlineTitle{ font-weight: 950; font-size: 18px; margin:0 0 6px; color: rgba(255,255,255,.95); }
+.offlineSub{ opacity:.75; line-height:1.5; margin:0 0 12px; }
+.offlineHint{ opacity:.6; font-size: 12px; margin-top: 10px; }
 
-.pageAluno .heroInner{
+/* HERO */
+.studentHero{
+  border-radius: 26px;
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 420px at 15% 0%, rgba(206,172,94,.16), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.20));
+  box-shadow: var(--shadow);
+  overflow:hidden;
+  margin-bottom: 12px;
+}
+
+.heroInner{
   display:flex;
   align-items:center;
   justify-content:space-between;
+  gap:14px;
+  padding: 16px;
+}
+
+.heroLeft{
+  display:flex;
+  align-items:center;
   gap: 12px;
+  min-width: 0;
 }
 
-.pageAluno .heroKicker{
+.heroLogo{
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  border:1px solid rgba(206,172,94,.22);
+  background: rgba(0,0,0,.30);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  flex: 0 0 auto;
+  box-shadow: 0 16px 40px rgba(0,0,0,.35);
+}
+.heroLogo img{ width:100%; height:100%; object-fit:cover; }
+
+.heroText{ min-width:0; }
+.heroBrand{
+  font-weight: 950;
   font-size: 12px;
-  letter-spacing: .9px;
-  opacity: .78;
-  margin-bottom: 4px;
+  letter-spacing: .8px;
+  color: var(--gold2);
+  opacity: .95;
 }
-
-.pageAluno .heroTitle{
-  margin:0;
+.heroTitle{
+  margin: 4px 0 0;
   font-size: 18px;
   font-weight: 950;
+  letter-spacing:.2px;
 }
-.pageAluno .heroName{ color: var(--gold2); }
-
-.pageAluno .heroHint{
-  margin-top:6px;
-  font-size: 12.5px;
-  color: rgba(255,255,255,.78);
+.heroName{ color: var(--gold2); }
+.heroHint{
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: .75;
 }
 
-.pageAluno .heroActions .pillExit{
-  border-radius: 999px;
-  padding: 10px 14px;
+/* Instalar */
+.installRow{
+  display:flex;
+  gap:10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 /* MAIN */
-.pageAluno .studentMain{
-  border-radius: var(--r-xl);
+.studentMain{
+  border-radius: 28px;
   border: 1px solid var(--stroke);
-  background: rgba(255,255,255,.02);
+  background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
   box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.content{ padding: 16px; }
+
+.card{
+  border-radius: var(--radius);
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.10), transparent 58%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.18));
+  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  padding: 16px;
   overflow:hidden;
 }
 
-.pageAluno .content{
-  padding: 16px;
+/* grid */
+.menuGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+  margin-top: 10px;
+}
+@media (max-width: 680px){
+  .menuGrid{ grid-template-columns: 1fr; }
 }
 
-/* Card do menu com “list design” */
-.pageAluno #menuCard{
-  padding: 16px;
-}
+/* trava pra evitar flash */
+.menuLocked .menuBtn{ display:none !important; }
 
-.pageAluno .cardHead{
-  display:flex;
-  flex-direction:column;
-  gap: 4px;
-  margin-bottom: 12px;
-}
-.pageAluno .cardTitle{
-  margin:0;
-  font-size: 14px;
-  font-weight: 950;
-  letter-spacing: .2px;
-}
-.pageAluno .cardSub{
-  margin:0;
-  font-size: 12.5px;
-  color: rgba(255,255,255,.68);
-}
-
-/* MENU como lista elegante */
-.pageAluno .menuGrid{
-  display:flex;
-  flex-direction:column;
-  gap: 10px;
-}
-
-/* botão */
-.pageAluno .navBtn{
+/* botão menu */
+.navBtn{
   width:100%;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.28);
-  padding: 14px 14px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap: 10px;
+  gap:10px;
+  padding:16px 14px;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,.10);
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.15));
   cursor:pointer;
+  box-shadow: 0 14px 40px rgba(0,0,0,.30);
   transition: transform .08s ease, border-color .2s ease, background .2s ease;
 }
-.pageAluno .navBtn:hover{
-  border-color: rgba(206,172,94,.25);
-  background: rgba(206,172,94,.06);
+.navBtn:hover{
+  border-color: rgba(206,172,94,.28);
+  background: linear-gradient(180deg, rgba(206,172,94,.10), rgba(0,0,0,.18));
 }
-.pageAluno .navBtn:active{ transform: translateY(1px) scale(.995); }
+.navBtn:active{ transform: translateY(1px) scale(.995); }
 
-.pageAluno .navLeft{
-  display:flex;
-  align-items:center;
-  gap: 12px;
-  min-width:0;
-}
-
-.pageAluno .navIcon{
-  width:46px; height:46px;
-  border-radius: 16px;
-  border: 1px solid rgba(206,172,94,.25);
-  background: rgba(206,172,94,.10);
+.navLeft{ display:flex; align-items:center; gap:12px; min-width:0; }
+.navIcon{
+  width:46px;
+  height:46px;
+  border-radius:16px;
+  border:1px solid rgba(206,172,94,.28);
+  background: rgba(206,172,94,.12);
   display:grid;
   place-items:center;
   color: var(--gold2);
   flex:0 0 auto;
 }
-
-.pageAluno .ico{ width:22px; height:22px; fill: currentColor; opacity:.95; }
-
-.pageAluno .navTxt .h{
+.ico{ width:22px; height:22px; fill: currentColor; opacity:.95; }
+.navTxt{ min-width:0; }
+.navTxt .h{
   margin:0;
-  font-weight: 950;
-  font-size: 14.5px;
+  font-size:14.5px;
+  font-weight:950;
   color: rgba(255,255,255,.94);
-  white-space: nowrap;
-  overflow:hidden;
-  text-overflow: ellipsis;
+}
+.navChev{ font-size:20px; opacity:.65; font-weight:900; }
+
+/* PDF overlay (safe-area correto em iPhone grande) */
+.pdfOverlay{
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  background: #000;
+  z-index: 9999;
+  opacity:0;
+  transform: translateY(14px);
+  pointer-events:none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+.pdfOverlay.show{
+  opacity:1;
+  transform: translateY(0);
+  pointer-events:auto;
 }
 
-.pageAluno .navChev{
-  font-size: 20px;
-  opacity: .6;
-  font-weight: 900;
+/* PDF bar: sem margin quebrando — usa safe area e padding */
+.pdfBar{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  padding-top: calc(10px + env(safe-area-inset-top));
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 10px;
+
+  background: rgba(0,0,0,.75);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter: blur(10px);
 }
+.backBtn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background: rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  color: rgba(255,255,255,.92);
+  border-radius:16px;
+  padding:12px 14px;
+  cursor:pointer;
+  font-weight:900;
+}
+.pdfTitle{
+  font-weight:950;
+  color: var(--gold2);
+  font-size:12px;
+  letter-spacing:.8px;
+  opacity:.95;
+  user-select:none;
+}
+
+.pdfFrameWrap{
+  height: calc(100dvh - 72px);
+  width:100%;
+  position:relative;
+}
+.pdfFrameWrap iframe{
+  width:100%;
+  height:100%;
+  border:0;
+  background:#000;
+}
+
+/* Loading layer */
+.loadingLayer{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:10px;
+  background:
+    radial-gradient(900px 420px at 30% 10%, rgba(206,172,94,.12), transparent 55%),
+    rgba(0,0,0,.55);
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .18s ease;
+}
+.loadingLayer.show{ opacity:1; pointer-events:auto; }
+.spinner{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  border:3px solid rgba(255,255,255,.18);
+  border-top-color: rgba(206,172,94,.95);
+  animation: spin .9s linear infinite;
+}
+@keyframes spin{to{transform: rotate(360deg)}}
+.loadingText{ font-weight:950; color: rgba(255,255,255,.92); font-size:13px; }
+.loadingSub{ color: rgba(255,255,255,.68); font-size:12px; text-align:center; max-width:260px; line-height:1.45; }
+
+/* iOS modal premium */
+.iosInstallMask{
+  position: fixed;
+  inset:0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+}
+.iosInstallMask.show{ display:flex; }
+
+.iosInstallCard{
+  width: min(520px, 100%);
+  border-radius: 26px;
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.14), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.35));
+  padding: 16px;
+  box-shadow: var(--shadow);
+  position:relative;
+}
+.iosX{
+  position:absolute;
+  top: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  font-weight: 950;
+  font-size: 20px;
+  cursor:pointer;
+}
+.iosHead{ display:flex; align-items:center; gap:12px; padding: 6px 6px 12px; }
+.iosIcon{
+  width: 52px; height: 52px;
+  border-radius: 18px;
+  border:1px solid rgba(206,172,94,.22);
+  background: rgba(0,0,0,.30);
+  overflow:hidden;
+}
+.iosIcon img{ width:100%; height:100%; object-fit:cover; }
+.iosBrand{ font-weight: 950; color: var(--gold2); letter-spacing:.8px; font-size: 12px; }
+.iosTitle{ font-weight: 950; font-size: 16px; margin-top: 2px; }
+.iosSteps{ display:flex; flex-direction:column; gap:10px; padding: 6px; }
+.iosStep{ display:flex; align-items:center; gap:10px; opacity:.9; }
+.iosStep .n{
+  width: 26px; height: 26px;
+  border-radius: 12px;
+  display:grid; place-items:center;
+  border:1px solid rgba(206,172,94,.22);
+  background: rgba(206,172,94,.10);
+  font-weight: 950;
+  color: var(--gold2);
+}
+.iosDont{ display:flex; gap:10px; align-items:center; opacity:.8; margin: 12px 6px 6px; font-size: 12px; }
+.iosActions{ display:flex; gap:10px; margin-top: 12px; padding: 6px; }

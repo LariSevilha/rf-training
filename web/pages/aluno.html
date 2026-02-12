@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -16,27 +15,59 @@
   <!-- iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="RF App">
+  <meta name="apple-mobile-web-app-title" content="RF Fitness">
   <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png">
 </head>
 
 <body class="pageAluno">
 
+  <!-- Badge de status (online/offline)
+  <div class="netBadge" id="netBadge" aria-live="polite">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="txt" id="netText">Online</span>
+  </div> -->
+
+  <!-- Tela offline bonita -->
+  <div class="offlineMask" id="offlineMask" aria-hidden="true">
+    <div class="offlineCard">
+      <div class="offlineIcon" aria-hidden="true">📡</div>
+      <div class="offlineTitle">Você está offline</div>
+      <div class="offlineSub">
+        Sem internet no momento. Você ainda pode abrir o app e navegar.
+        Alguns PDFs podem depender de conexão.
+      </div>
+      <button class="btn" id="offlineTryBtn" type="button">Tentar novamente</button>
+      <div class="offlineHint">Dica: quando voltar internet, o app sincroniza automaticamente.</div>
+    </div>
+  </div>
+
   <div class="wrap">
     <div class="studentApp">
 
-      <!-- TOP / HERO -->
+      <!-- HERO / TOP -->
       <header class="studentHero" id="studentHero">
         <div class="heroInner">
+
           <div class="heroLeft">
-            <div class="heroKicker">RF FITNESS</div>
-            <h1 class="heroTitle">Olá, <span id="studentName" class="heroName">—</span></h1>
-            <div id="status" class="heroHint"></div>
+            <!-- ÍCONE ao lado do RF FITNESS (como você pediu) -->
+            <div class="heroLogo" aria-hidden="true">
+              <img src="/img/logoapp.png" alt="RF" draggable="false" />
+            </div>
+
+            <div class="heroText">
+              <div class="heroBrand">RF FITNESS</div>
+              <h1 class="heroTitle">Olá, <span id="studentName" class="heroName">—</span></h1>
+              <div id="status" class="heroHint">Carregando…</div>
+
+              <!-- Instalação (Android) -->
+              <div class="installRow">
+                <button class="btnGhost" id="installHelpBtn" type="button" style="display:none;">Como instalar</button>
+                <button class="btn" id="installBtn" type="button" style="display:none;">Instalar</button>
+              </div>
+            </div>
           </div>
 
-          <div class="heroActions">
-            <button class="pill pillExit" id="logoutBtn" type="button">Sair</button>
-          </div>
+          <button class="pill" id="logoutBtn" type="button">Sair</button>
         </div>
       </header>
 
@@ -49,18 +80,14 @@
               <p class="cardSub">Toque para abrir em tela cheia.</p>
             </div>
 
-            <div class="menuGrid">
-
+            <!-- Grid começa oculto pra não dar “flash” -->
+            <div class="menuGrid" id="menuGrid">
               <button class="navBtn menuBtn" data-open="training" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" class="ico">
-                      <path d="M3 10h2V7h2v10H5v-3H3v-4Zm14-3h2v3h2v4h-2v3h-2V7ZM9 11h6v2H9v-2Z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="ico"><path d="M3 10h2V7h2v10H5v-3H3v-4Zm14-3h2v3h2v4h-2v3h-2V7ZM9 11h6v2H9v-2Z"/></svg>
                   </div>
-                  <div class="navTxt">
-                    <p class="h">Treino</p>
-                  </div>
+                  <div class="navTxt"><p class="h">Treino</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
@@ -68,14 +95,9 @@
               <button class="navBtn menuBtn" data-open="diet" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" class="ico">
-                      <path
-                        d="M7 2h2v8a2 2 0 0 1-2 2H6v10H4V12H3a2 2 0 0 1-2-2V2h2v8h1V2h2v8h1V2Zm11 0h2v7a4 4 0 0 1-4 4h-1v9h-2V2h2v9h1a2 2 0 0 0 2-2V2Z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="ico"><path d="M7 2h2v8a2 2 0 0 1-2 2H6v10H4V12H3a2 2 0 0 1-2-2V2h2v8h1V2h2v8h1V2Zm11 0h2v7a4 4 0 0 1-4 4h-1v9h-2V2h2v9h1a2 2 0 0 0 2-2V2Z"/></svg>
                   </div>
-                  <div class="navTxt">
-                    <p class="h">Alimentação</p>
-                  </div>
+                  <div class="navTxt"><p class="h">Alimentação</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
@@ -83,14 +105,9 @@
               <button class="navBtn menuBtn" data-open="supp" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" class="ico">
-                      <path
-                        d="M8.5 3A5.5 5.5 0 0 0 3 8.5v7A5.5 5.5 0 0 0 8.5 21h7A5.5 5.5 0 0 0 21 15.5v-7A5.5 5.5 0 0 0 15.5 3h-7Zm0 2h7A3.5 3.5 0 0 1 19 8.5V10H5V8.5A3.5 3.5 0 0 1 8.5 5Zm-3.5 7h14v3.5A3.5 3.5 0 0 1 15.5 19h-7A3.5 3.5 0 0 1 5 15.5V12Z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="ico"><path d="M8.5 3A5.5 5.5 0 0 0 3 8.5v7A5.5 5.5 0 0 0 8.5 21h7A5.5 5.5 0 0 0 21 15.5v-7A5.5 5.5 0 0 0 15.5 3h-7Zm0 2h7A3.5 3.5 0 0 1 19 8.5V10H5V8.5A3.5 3.5 0 0 1 8.5 5Zm-3.5 7h14v3.5A3.5 3.5 0 0 1 15.5 19h-7A3.5 3.5 0 0 1 5 15.5V12Z"/></svg>
                   </div>
-                  <div class="navTxt">
-                    <p class="h">Suplementação</p>
-                  </div>
+                  <div class="navTxt"><p class="h">Suplementação</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
@@ -98,19 +115,16 @@
               <button class="navBtn menuBtn" data-open="stretch" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" class="ico">
-                      <path
-                        d="M13 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM7 21h2l1-5 3 2v3h2v-4.2l-4-2.6.6-3.2 2.4 2h3v-2h-2.2l-2.7-2.6c-.7-.7-1.8-.8-2.6-.3L7 8.8V13h2V10l2-1.4-.7 3.9L7.7 21Z" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" class="ico"><path d="M13 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM7 21h2l1-5 3 2v3h2v-4.2l-4-2.6.6-3.2 2.4 2h3v-2h-2.2l-2.7-2.6c-.7-.7-1.8-.8-2.6-.3L7 8.8V13h2V10l2-1.4-.7 3.9L7.7 21Z"/></svg>
                   </div>
-                  <div class="navTxt">
-                    <p class="h">Alongamentos</p>
-                  </div>
+                  <div class="navTxt"><p class="h">Alongamentos</p></div>
                 </div>
                 <div class="navChev">›</div>
               </button>
-
             </div>
+
+            <div class="msgBox ok" id="ok"></div>
+            <div class="msgBox error" id="err"></div>
           </section>
         </div>
 
@@ -122,7 +136,7 @@
           </div>
 
           <div class="pdfFrameWrap">
-            <iframe id="pdfFrame" title="Visualização de PDF"></iframe>
+            <iframe id="pdfFrame" title="Visualização de PDF" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
 
             <div class="loadingLayer" id="loadingLayer">
               <div class="spinner"></div>
@@ -131,42 +145,67 @@
             </div>
           </div>
         </div>
-
       </main>
+
     </div>
   </div>
 
-  <div class="toastWrap" id="toastWrap"></div>
+  <!-- iOS Install Modal (premium) -->
+  <div class="iosInstallMask" id="iosInstallModal" aria-hidden="true">
+    <div class="iosInstallCard" role="dialog" aria-modal="true" aria-labelledby="iosInstallTitle">
+      <button class="iosX" id="iosInstallClose" type="button" aria-label="Fechar">×</button>
 
-  <!-- Service Worker -->
+      <div class="iosHead">
+        <div class="iosIcon" aria-hidden="true">
+          <img src="/img/logoapp.png" alt="RF" draggable="false">
+        </div>
+        <div>
+          <div class="iosBrand">RF FITNESS</div>
+          <div class="iosTitle" id="iosInstallTitle">Adicionar à Tela de Início</div>
+        </div>
+      </div>
+
+      <div class="iosSteps">
+        <div class="iosStep"><span class="n">1</span> Abra no <b>Safari</b></div>
+        <div class="iosStep"><span class="n">2</span> Toque em <b>Compartilhar</b> (quadrado com seta)</div>
+        <div class="iosStep"><span class="n">3</span> Selecione <b>“Adicionar à Tela de Início”</b></div>
+        <div class="iosStep"><span class="n">4</span> Toque em <b>Adicionar</b></div>
+      </div>
+
+      <label class="iosDont">
+        <input type="checkbox" id="iosDontShowChk">
+        Não mostrar por 7 dias
+      </label>
+
+      <div class="iosActions">
+        <button class="btnGhost" id="iosLaterBtn" type="button">Agora não</button>
+        <button class="btn" id="iosOkBtn" type="button">Entendi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SW register -->
   <script>
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").then((reg) => {
+      window.addEventListener("load", async () => {
+        try {
+          const reg = await navigator.serviceWorker.register("/sw.js");
 
-          // Detecta nova versão
-          reg.addEventListener("updatefound", () => {
-            const newWorker = reg.installing;
-            if (!newWorker) return;
+          // Se já tem SW e tem update baixando, força atualização do SW
+          reg.update?.();
 
-            newWorker.addEventListener("statechange", () => {
-              if (newWorker.state === "installed") {
-
-                // Se já existia SW ativo, então é update
-                if (navigator.serviceWorker.controller) {
-                  console.log("Nova versão detectada. Recarregando...");
-                  window.location.reload();
-                }
-              }
-            });
+          // Recarrega quando o novo SW assumir (evita aluno ter que “limpar cache”)
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
           });
-
-        }).catch(() => {});
+        } catch {}
       });
     }
-  </script> 
+  </script>
 
   <script type="module" src="/assets/js/aluno.js"></script>
 </body>
-
 </html>
