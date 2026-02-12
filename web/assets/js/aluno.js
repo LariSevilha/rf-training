@@ -1,3 +1,14 @@
+// ✅ PWA: registra SW (ajuda o Android liberar "instalar")
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      await navigator.serviceWorker.register("/service-worker.js");
+    } catch (e) {
+      console.warn("SW register falhou:", e);
+    }
+  });
+}
+
 import { requireAuth } from "./guard.js";
 import { apiDocuments, apiMe } from "./api.js";
 import { clearSession } from "./state.js";
@@ -132,7 +143,7 @@ function openPdf(type) {
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
-  document.body.classList.add("pdfOpen"); // ajuda iOS
+  document.body.classList.add("pdfOpen");
 }
 
 function closePdf() {
@@ -155,34 +166,52 @@ logoutBtn?.addEventListener("click", () => {
 });
 
 // ====================
-// ANDROID INSTALL (só botão instalar)
+// ANDROID INSTALL (sempre aparece no Android mobile)
 // ====================
 function hideInstallUI() {
   if (installBtn) installBtn.style.display = "none";
 }
+function showInstallUI() {
+  if (installBtn) installBtn.style.display = "inline-flex";
+}
+
+function openAndroidHowTo() {
+  alert(
+    "Para instalar:\n\n" +
+    "1) Toque nos 3 pontinhos (⋮) do Chrome\n" +
+    "2) 'Instalar app' / 'Adicionar à tela inicial'\n\n" +
+    "Se essa opção não aparecer, verifique se você está online e usando o Chrome."
+  );
+}
 
 if (installBtn) {
-  // iOS não tem prompt nativo
   if (!isAndroidDevice() || isStandaloneMode()) {
     hideInstallUI();
+  } else {
+    // fallback: mostra mesmo sem beforeinstallprompt
+    showInstallUI();
+    installBtn.textContent = "Instalar";
   }
 
   window.addEventListener("beforeinstallprompt", (e) => {
-    // só Android
     if (!isAndroidDevice() || isStandaloneMode()) return;
 
     e.preventDefault();
     deferredPrompt = e;
 
-    installBtn.style.display = "inline-flex";
+    showInstallUI();
+    installBtn.textContent = "Instalar";
   });
 
   installBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return; // se não disparou, não tem como forçar
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice.catch(() => {});
-    deferredPrompt = null;
-    hideInstallUI();
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice.catch(() => {});
+      deferredPrompt = null;
+      hideInstallUI();
+      return;
+    }
+    openAndroidHowTo();
   });
 
   window.addEventListener("appinstalled", () => {
