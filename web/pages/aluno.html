@@ -21,16 +21,24 @@
 
 <body class="pageAluno">
 
-  <!-- Tela offline bonita -->
+  <!-- ✅ OFFLINE OVERLAY -->
   <div class="offlineMask" id="offlineMask" aria-hidden="true">
-    <!-- ✅ NAVBAR (mantido) -->
+    <div class="offlineCard" role="dialog" aria-modal="true">
+      <div class="offlineIcon" aria-hidden="true">📡</div>
+      <div class="offlineTitle">Você está offline</div>
+      <div class="offlineSub">
+        Sem internet no momento. Você ainda pode abrir o app e navegar.
+        Alguns PDFs podem depender de conexão.
+      </div>
+      <button class="btn" id="offlineTryBtn" type="button">Tentar novamente</button>
+      <div class="offlineHint">Dica: quando a internet voltar, o app sincroniza automaticamente.</div>
+    </div>
   </div>
  
   <header class="topNav" role="banner">
     <div class="topNavInner">
       <a class="topBrand" href="/pages/aluno.html" aria-label="Consultoria RF">
         <img class="topLogo" src="../img/logo-consultoria.png" alt="Consultoria RF" draggable="false">
-      
       </a>
 
       <div class="topNavRight">
@@ -42,10 +50,9 @@
   <div class="wrap">
     <div class="studentApp">
 
-      <!-- HERO / TOP -->
+      <!-- HERO -->
       <section class="studentHero" id="studentHero" aria-label="Boas-vindas">
         <div class="heroInner">
-
           <div class="heroLeft">
             <div class="heroLogo" aria-hidden="true">
               <img src="/img/logoapp.png" alt="RF" draggable="false" />
@@ -54,24 +61,22 @@
             <div class="heroText">
               <div class="heroBrand">RF FITNESS</div>
 
-              <!-- ✅ Apenas Bom dia/tarde/noite -->
               <h1 class="heroTitle">
                 <span id="greeting">Olá</span>, <span id="studentName" class="heroName">—</span>
               </h1>
 
               <div id="status" class="heroHint">Carregando…</div>
 
-              <!-- Android: aparece só quando o Chrome liberar -->
               <button class="btn" id="installBtn" type="button" style="display:none;">Instalar</button>
             </div>
           </div>
-
         </div>
       </section>
 
       <!-- CONTENT -->
       <main class="studentMain">
         <div class="content studentShell">
+
           <section class="card" id="menuCard">
             <div class="cardHead">
               <h3 class="cardTitle">Documentos disponíveis</h3>
@@ -123,9 +128,8 @@
             <div class="msgBox ok" id="ok"></div>
             <div class="msgBox error" id="err"></div>
           </section>
- 
+
           <footer class="appFooter" role="contentinfo">
-             
             <div class="footSmall">
               © <span id="yearNow">2026</span> Consultoria RF
               <span class="footSep">·</span>
@@ -135,7 +139,7 @@
 
         </div>
 
-        <!-- PDF OVERLAY -->
+        <!-- ✅ PDF OVERLAY -->
         <div class="pdfOverlay" id="pdfOverlay" aria-hidden="true">
           <div class="pdfBar">
             <button class="backBtn" id="pdfBack" type="button">← Voltar</button>
@@ -152,50 +156,15 @@
             </div>
           </div>
         </div>
+
       </main>
 
     </div>
   </div>
 
-  <!-- iOS Install Modal -->
-  <div class="iosInstallMask" id="iosInstallModal" aria-hidden="true">
-    <div class="iosInstallCard" role="dialog" aria-modal="true" aria-labelledby="iosInstallTitle">
-      <button class="iosX" id="iosInstallClose" type="button" aria-label="Fechar">×</button>
-
-      <div class="iosHead">
-        <div class="iosIcon" aria-hidden="true">
-          <img src="/img/logoapp.png" alt="RF" draggable="false">
-        </div>
-        <div>
-          <div class="iosBrand">RF FITNESS</div>
-          <div class="iosTitle" id="iosInstallTitle">Adicionar à Tela de Início</div>
-        </div>
-      </div>
-
-      <div class="iosSteps">
-        <div class="iosStep"><span class="n">1</span> Abra no <b>Safari</b></div>
-        <div class="iosStep"><span class="n">2</span> Toque em <b>Compartilhar</b></div>
-        <div class="iosStep"><span class="n">3</span> “Adicionar à Tela de Início”</div>
-        <div class="iosStep"><span class="n">4</span> Toque em <b>Adicionar</b></div>
-      </div>
-
-      <label class="iosDont">
-        <input type="checkbox" id="iosDontShowChk">
-        Não mostrar por 7 dias
-      </label>
-
-      <div class="iosActions">
-        <button class="btnGhost" id="iosLaterBtn" type="button">Agora não</button>
-        <button class="btn" id="iosOkBtn" type="button">Entendi</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // Ano do footer
     document.getElementById("yearNow").textContent = String(new Date().getFullYear());
 
-    // ✅ Apenas Bom dia / Boa tarde / Boa noite
     (function(){
       const h = new Date().getHours();
       const t = (h < 12) ? "Bom dia" : (h < 18) ? "Boa tarde" : "Boa noite";
