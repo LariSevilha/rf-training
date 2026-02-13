@@ -1,0 +1,136 @@
+.rf-pol-wrap {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 18px;
+    max-width: 820px;
+    margin: 0 auto;
+    background: #000;
+    color: #eee;
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+  }
+
+  .rf-pol-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .rf-pol-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 2px solid rgba(206,172,94,0.35);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    margin-bottom: 16px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .rf-pol-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .rf-pol-title {
+    font-weight: 950;
+    font-size: 28px;
+    margin: 0 0 8px;
+    color: #ceac5e;
+    letter-spacing: 0.8px;
+  }
+
+  .rf-pol-subtitle {
+    font-size: 15px;
+    opacity: 0.75;
+    margin: 0;
+  }
+
+  .rf-pol-main {
+    background: 
+      radial-gradient(1200px 600px at 20% 0%, rgba(206,172,94,0.12), transparent 60%),
+      linear-gradient(180deg, rgba(18,18,18,0.98), rgba(10,10,10,0.98));
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 24px;
+    padding: 28px 24px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    flex: 1;
+  }
+
+  .rf-pol-h2 {
+    font-weight: 900;
+    font-size: 20px;
+    color: #ceac5e;
+    margin: 32px 0 12px;
+    border-bottom: 1px solid rgba(206,172,94,0.18);
+    padding-bottom: 8px;
+  }
+
+  .rf-pol-p {
+    margin: 0 0 16px;
+    font-size: 15px;
+    opacity: 0.92;
+  }
+
+  .rf-pol-highlight {
+    background: rgba(206,172,94,0.08);
+    border-left: 4px solid #ceac5e;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin: 24px 0;
+    font-weight: 500;
+  }
+
+  .rf-pol-highlight strong {
+    color: #ceac5e;
+  }
+
+  .rf-pol-list {
+    padding-left: 24px;
+    margin: 16px 0;
+    opacity: 0.92;
+  }
+
+  .rf-pol-legal-ref {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-top: 32px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 20px;
+  }
+
+  .rf-pol-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0 40px;
+    padding: 12px 20px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #eee;
+    border-radius: 16px;
+    font-weight: 900;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .rf-pol-back:hover {
+    background: rgba(206,172,94,0.15);
+    border-color: rgba(206,172,94,0.35);
+    color: #ceac5e;
+  }
+
+  @media (max-width: 480px) {
+    .rf-pol-wrap {
+      padding: 16px 14px;
+    }
+    .rf-pol-main {
+      padding: 24px 18px;
+    }
+    .rf-pol-title {
+      font-size: 24px;
+    }
+  }

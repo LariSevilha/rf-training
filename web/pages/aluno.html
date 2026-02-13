@@ -23,23 +23,27 @@
 
   <!-- Tela offline bonita -->
   <div class="offlineMask" id="offlineMask" aria-hidden="true">
-    <div class="offlineCard">
-      <div class="offlineIcon" aria-hidden="true">📡</div>
-      <div class="offlineTitle">Você está offline</div>
-      <div class="offlineSub">
-        Sem internet no momento. Você ainda pode abrir o app e navegar.
-        Alguns PDFs podem depender de conexão.
-      </div>
-      <button class="btn" id="offlineTryBtn" type="button">Tentar novamente</button>
-      <div class="offlineHint">Dica: quando voltar internet, o app sincroniza automaticamente.</div>
-    </div>
+    <!-- ✅ NAVBAR (mantido) -->
   </div>
+ 
+  <header class="topNav" role="banner">
+    <div class="topNavInner">
+      <a class="topBrand" href="/pages/aluno.html" aria-label="Consultoria RF">
+        <img class="topLogo" src="../img/logo-consultoria.png" alt="Consultoria RF" draggable="false">
+      
+      </a>
+
+      <div class="topNavRight">
+        <button class="pill" id="logoutBtn" type="button">Sair</button>
+      </div>
+    </div>
+  </header>
 
   <div class="wrap">
     <div class="studentApp">
 
       <!-- HERO / TOP -->
-      <header class="studentHero" id="studentHero">
+      <section class="studentHero" id="studentHero" aria-label="Boas-vindas">
         <div class="heroInner">
 
           <div class="heroLeft">
@@ -49,17 +53,21 @@
 
             <div class="heroText">
               <div class="heroBrand">RF FITNESS</div>
-              <h1 class="heroTitle">Olá, <span id="studentName" class="heroName">—</span></h1>
+
+              <!-- ✅ Apenas Bom dia/tarde/noite -->
+              <h1 class="heroTitle">
+                <span id="greeting">Olá</span>, <span id="studentName" class="heroName">—</span>
+              </h1>
+
               <div id="status" class="heroHint">Carregando…</div>
 
-              <!-- ✅ Android: botão aparece só quando o Chrome liberar -->
+              <!-- Android: aparece só quando o Chrome liberar -->
               <button class="btn" id="installBtn" type="button" style="display:none;">Instalar</button>
             </div>
           </div>
 
-          <button class="pill" id="logoutBtn" type="button">Sair</button>
         </div>
-      </header>
+      </section>
 
       <!-- CONTENT -->
       <main class="studentMain">
@@ -115,6 +123,21 @@
             <div class="msgBox ok" id="ok"></div>
             <div class="msgBox error" id="err"></div>
           </section>
+ 
+          <footer class="appFooter" role="contentinfo">
+            <div class="footRow"> 
+              <span class="footText">
+                O presente plano personalizado, elaborado de maneira meticulosa e exclusivamente direcionado às suas necessidades
+                específicas, está sujeito às disposições legais vigentes.
+              </span>
+            </div>
+            <div class="footSmall">
+              © <span id="yearNow">2026</span> Consultoria RF
+              <span class="footSep">·</span>
+              <a class="footLink" href="./politica-privacidade.html">Política de Privacidade</a>
+            </div>
+          </footer>
+
         </div>
 
         <!-- PDF OVERLAY -->
@@ -172,6 +195,19 @@
       </div>
     </div>
   </div>
+
+  <script>
+    // Ano do footer
+    document.getElementById("yearNow").textContent = String(new Date().getFullYear());
+
+    // ✅ Apenas Bom dia / Boa tarde / Boa noite
+    (function(){
+      const h = new Date().getHours();
+      const t = (h < 12) ? "Bom dia" : (h < 18) ? "Boa tarde" : "Boa noite";
+      const el = document.getElementById("greeting");
+      if (el) el.textContent = t;
+    })();
+  </script>
 
   <script type="module" src="/assets/js/aluno.js"></script>
 </body>

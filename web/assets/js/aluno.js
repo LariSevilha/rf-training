@@ -284,8 +284,7 @@ async function syncDocuments() {
     applyVisibility();
 
     if (statusEl) statusEl.textContent = "Toque em um item disponível para abrir.";
-    clearMsg(err);
-    setMsg(ok, "Pronto ✅", "ok");
+    clearMsg(err); 
     setTimeout(() => clearMsg(ok), 1200);
   } catch {
     if (statusEl) statusEl.textContent = "Erro ao sincronizar";
