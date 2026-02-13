@@ -52,7 +52,7 @@
               <h1 class="heroTitle">Olá, <span id="studentName" class="heroName">—</span></h1>
               <div id="status" class="heroHint">Carregando…</div>
 
-              <!-- ✅ SÓ 1 BOTÃO, AQUI -->
+              <!-- ✅ Android: botão aparece só quando o Chrome liberar -->
               <button class="btn" id="installBtn" type="button" style="display:none;">Instalar</button>
             </div>
           </div>
@@ -71,7 +71,6 @@
             </div>
 
             <div class="menuGrid" id="menuGrid">
-              <!-- ✅ NÃO ALTEREI SEUS ÍCONES -->
               <button class="navBtn menuBtn" data-open="training" type="button">
                 <div class="navLeft">
                   <div class="navIcon" aria-hidden="true">
@@ -140,7 +139,7 @@
     </div>
   </div>
 
-  <!-- iOS Install Modal (premium) -->
+  <!-- iOS Install Modal -->
   <div class="iosInstallMask" id="iosInstallModal" aria-hidden="true">
     <div class="iosInstallCard" role="dialog" aria-modal="true" aria-labelledby="iosInstallTitle">
       <button class="iosX" id="iosInstallClose" type="button" aria-label="Fechar">×</button>
@@ -173,25 +172,6 @@
       </div>
     </div>
   </div>
-
-  <!-- SW register -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", async () => {
-        try {
-          const reg = await navigator.serviceWorker.register("/service-worker.js.js");
-          reg.update?.();
-
-          let refreshing = false;
-          navigator.serviceWorker.addEventListener("controllerchange", () => {
-            if (refreshing) return;
-            refreshing = true;
-            window.location.reload();
-          });
-        } catch {}
-      });
-    }
-  </script>
 
   <script type="module" src="/assets/js/aluno.js"></script>
 </body>

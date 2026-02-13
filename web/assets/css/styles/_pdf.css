@@ -4,17 +4,18 @@
 
 body.pdfOpen { overflow: hidden; }
 
-/* Overlay */
+/* Overlay (iOS safe + viewport estável) */
 .pdfOverlay{
   position: fixed;
-  inset: 0;
-  width: 100%;
+  top: 0; left: 0; right: 0; bottom: 0;
+
+  /* fallback + iOS */
+  height: 100vh;
   height: 100dvh;
+
+  width: 100%;
   background: #0b0b0b;
   z-index: 99999;
-
-  display: flex;
-  flex-direction: column;
 
   opacity: 0;
   pointer-events: none;
@@ -28,11 +29,11 @@ body.pdfOpen { overflow: hidden; }
   transform: translateY(0);
 }
 
-/* Barra superior */
+/* ✅ Barra FIXA (sticky dá bug no iOS dentro de overlay) */
 .pdfBar{
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100000;
 
   padding-top: env(safe-area-inset-top);
   padding-left: 14px;
@@ -78,12 +79,14 @@ body.pdfOpen { overflow: hidden; }
   max-width: calc(100vw - 170px);
 }
 
-/* Área do iframe */
+/* ✅ Área do iframe começa abaixo da barra (safe-area ok no iOS) */
 .pdfFrameWrap{
-  flex: 1;
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(var(--pdfBarH) + env(safe-area-inset-top));
+  bottom: env(safe-area-inset-bottom);
   min-height: 0;
-  position: relative;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: #000;
 }
 
 #pdfFrame{
