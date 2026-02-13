@@ -1,14 +1,23 @@
 /* =========================
    PAGE WRAP
 ========================= */
-.pageAluno .wrap{
-  min-height: 100vh;
+.pageAluno{
+  overflow: hidden; /* body não rola */
+}
+
+.pageAluno .wrap{ 
+  min-height: unset !important;
+  height: 100dvh;                 /* ocupa a tela certinho */
+  overflow-y: auto;               /* só rola SE precisar */
+  -webkit-overflow-scrolling: touch;
+
   padding: 18px;
   display:flex;
   justify-content:center;
 
   /* espaço da navbar fixa */
   padding-top: calc(18px + 64px + env(safe-area-inset-top));
+  padding-bottom: 18px;           /* garante que não sobra “faixa” */
 }
 
 .pageAluno .studentApp{ width: min(980px, 100%); }
@@ -482,12 +491,16 @@ body.pdfOpen{ overflow:hidden; }
   border-bottom: 1px solid rgba(240,214,144,.18);
 }
 .footLink:hover{ border-bottom-color: rgba(240,214,144,.38); }
-
+@media (max-width: 520px){
+  body.pageAluno{
+    background: var(--bg) !important;
+  }
+}
 /* =========================
    MOBILE FINO
 ========================= */
 @media (max-width: 520px){
-  .pageAluno .wrap{ padding: 14px; padding-top: calc(14px + 60px + env(safe-area-inset-top)); }
+  .pageAluno .wrap{ padding: 14px;  padding-top: calc(14px + 60px + env(safe-area-inset-top)); }
   .content{ padding: 14px; }
 
   .topNavInner{ padding:0 35px; height:60px; }
