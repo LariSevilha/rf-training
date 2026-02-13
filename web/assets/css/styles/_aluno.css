@@ -1,48 +1,154 @@
 /* =========================
-   ALUNO — PROFISSIONAL
+   PAGE WRAP
 ========================= */
-
 .pageAluno .wrap{
   min-height: 100vh;
   padding: 18px;
   display:flex;
   justify-content:center;
+
+  /* espaço da navbar fixa */
+  padding-top: calc(18px + 64px + env(safe-area-inset-top));
 }
 
-.pageAluno .studentApp{
-  width: min(980px, 100%);
-}
+.pageAluno .studentApp{ width: min(980px, 100%); }
 
-/* Badge online/offline */
-.netBadge{
+/* =========================
+   TOP NAVBAR (logo + sair)
+========================= */
+.topNav{
   position: fixed;
-  top: calc(10px + env(safe-area-inset-top));
-  right: 12px;
-  z-index: 9999;
+  top: 0; left: 0; right: 0;
+  z-index: 12000;
+  padding-top: env(safe-area-inset-top);
+  background: rgba(10,10,10,.80);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.topNavInner{
+  max-width: 980px;
+  margin: 0 auto;
+  height: 64px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.topBrand{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 12px;
-  border-radius: 999px;
-  border:1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow);
-  color: rgba(255,255,255,.92);
-  font-weight: 900;
-  font-size: 12px;
-}
-.netBadge .dot{
-  width:10px;height:10px;border-radius:999px;
-  background: #2ee59d;
-  box-shadow: 0 0 0 3px rgba(46,229,157,.15);
-}
-.netBadge.offline .dot{
-  background: #ff5b5b;
-  box-shadow: 0 0 0 3px rgba(255,91,91,.15);
+  gap: 10px;
+  text-decoration:none;
+  min-width:0;
 }
 
-/* Offline overlay */
+/* ✅ AQUI você aumenta a logo do nav */
+.topLogo{
+  height: 48px;  /* aumenta aqui */
+  width: auto;
+  display:block;
+  object-fit: contain;
+}
+
+/* =========================
+   COMPONENTS (inputs/buttons/messages/pill)
+========================= */
+input[type="email"],
+input[type="password"],
+input[type="text"]{
+  width:100%;
+  padding:14px 14px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.35);
+  color: var(--text);
+  outline:none;
+  font-size:14px;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+input::placeholder{ color: rgba(255,255,255,.42); }
+input:focus{
+  border-color: rgba(206,172,94,.45);
+  box-shadow: 0 0 0 4px rgba(206,172,94,.10);
+  background: rgba(0,0,0,.42);
+}
+
+.btn{
+  border:0;
+  cursor:pointer;
+  border-radius:18px;
+  padding:14px 14px;
+  font-weight:950;
+  letter-spacing:.3px;
+  background: linear-gradient(135deg, rgba(206,172,94,.98), rgba(206,172,94,.55));
+  color:#1b1407;
+  box-shadow: 0 14px 40px rgba(206,172,94,.18);
+  transition: transform .08s ease, filter .2s ease;
+}
+.btn:hover{ filter: brightness(1.05); }
+.btn:active{ transform: translateY(1px) scale(.995); }
+.btnFull{ width:100%; }
+
+.btnGhost{
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.35);
+  padding:14px 14px;
+  cursor:pointer;
+  color: rgba(255,255,255,.92);
+  font-weight:900;
+}
+.btnGhost:hover{
+  border-color: rgba(206,172,94,.25);
+  background: rgba(206,172,94,.06);
+}
+
+.pill{
+  border:1px solid rgba(206,172,94,.22);
+  background: rgba(206,172,94,.08);
+  color: var(--gold2);
+  padding:10px 14px;
+  border-radius:999px;
+  font-size:12px;
+  cursor:pointer;
+  transition: transform .08s ease, border-color .2s ease, background .2s ease;
+  white-space: nowrap;
+}
+.pill:hover{
+  background: rgba(206,172,94,.12);
+  border-color: rgba(206,172,94,.30);
+}
+.pill:active{ transform: translateY(1px); }
+
+.msgBox,.msg{
+  margin-top:12px;
+  border-radius:16px;
+  padding:12px 12px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.35);
+  color: rgba(255,255,255,.85);
+  font-size:13px;
+  display:none;
+}
+.msgBox.show,.msg.show{ display:block; }
+.msgBox.error,.msg.error{
+  border-color: rgba(255,95,95,.25);
+  background: rgba(255,95,95,.07);
+  color:#ffdada;
+}
+.msgBox.ok,.msg.ok{
+  border-color: rgba(57,217,138,.25);
+  background: rgba(57,217,138,.07);
+  color:#dfffee;
+}
+
+/* =========================
+   OFFLINE OVERLAY
+========================= */
 .offlineMask{
   position: fixed;
   inset:0;
@@ -55,6 +161,7 @@
   padding: 22px;
 }
 .offlineMask.show{ display:flex; }
+
 .offlineCard{
   width: min(520px, 100%);
   border-radius: 26px;
@@ -70,7 +177,9 @@
 .offlineSub{ opacity:.75; line-height:1.5; margin:0 0 12px; }
 .offlineHint{ opacity:.6; font-size: 12px; margin-top: 10px; }
 
-/* HERO */
+/* =========================
+   HERO
+========================= */
 .studentHero{
   border-radius: 26px;
   border:1px solid rgba(255,255,255,.10);
@@ -88,6 +197,7 @@
   justify-content:space-between;
   gap:14px;
   padding: 16px;
+  flex-wrap: wrap;
 }
 
 .heroLeft{
@@ -95,6 +205,7 @@
   align-items:center;
   gap: 12px;
   min-width: 0;
+  flex: 1 1 260px;
 }
 
 .heroLogo{
@@ -111,7 +222,7 @@
 }
 .heroLogo img{ width:100%; height:100%; object-fit:cover; }
 
-.heroText{ min-width:0; }
+.heroText{ min-width:0; flex:1; }
 .heroBrand{
   font-weight: 950;
   font-size: 12px;
@@ -124,6 +235,9 @@
   font-size: 18px;
   font-weight: 950;
   letter-spacing:.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .heroName{ color: var(--gold2); }
 .heroHint{
@@ -132,15 +246,9 @@
   opacity: .75;
 }
 
-/* Instalar */
-.installRow{
-  display:flex;
-  gap:10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-/* MAIN */
+/* =========================
+   MAIN / CARD / GRID
+========================= */
 .studentMain{
   border-radius: 28px;
   border: 1px solid var(--stroke);
@@ -161,7 +269,6 @@
   overflow:hidden;
 }
 
-/* grid */
 .menuGrid{
   display:grid;
   grid-template-columns: 1fr 1fr;
@@ -172,10 +279,12 @@
   .menuGrid{ grid-template-columns: 1fr; }
 }
 
-/* trava pra evitar flash */
+/* evita flash */
+.pageAluno .menuGrid{ visibility:hidden; }
+.pageAluno.ready .menuGrid{ visibility:visible; }
 .menuLocked .menuBtn{ display:none !important; }
 
-/* botão menu */
+/* botões do menu */
 .navBtn{
   width:100%;
   display:flex;
@@ -218,69 +327,172 @@
 }
 .navChev{ font-size:20px; opacity:.65; font-weight:900; }
 
-/* ✅ Removido daqui: todo o bloco duplicado de PDF Overlay/Bar/Loading.
-   Agora o PDF overlay fica só no pdf.css (evita sumir o botão Voltar no mobile). */
+/* =========================
+   PDF OVERLAY (tela cheia)
+========================= */
+body.pdfOpen{ overflow:hidden; }
 
-/* iOS modal premium (permanece como estava) */
-.iosInstallMask{
+.pdfOverlay{
   position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  background: #0b0b0b;
+  z-index: 99999;
+
+  display: flex;
+  flex-direction: column;
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.pdfOverlay.show{
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* barra superior */
+.pdfBar{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+
+  padding-top: env(safe-area-inset-top);
+  padding-left: 14px;
+  padding-right: 14px;
+
+  height: calc(var(--pdfBarH) + env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: rgba(15,15,15,.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.backBtn{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background: rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  color: rgba(255,255,255,.92);
+  border-radius:16px;
+  padding:12px 14px;
+  cursor:pointer;
+  font-weight:900;
+}
+
+.pdfTitle{
+  margin-left:10px;
+  font-weight:950;
+  color: var(--gold2);
+  font-size:12px;
+  letter-spacing:.8px;
+  opacity:.95;
+  user-select:none;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100vw - 170px);
+}
+
+/* iframe */
+.pdfFrameWrap{
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+#pdfFrame{
+  width:100%;
+  height:100%;
+  border:0;
+  display:block;
+  background:#000;
+}
+
+/* loading */
+.loadingLayer{
+  position:absolute;
   inset:0;
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(8px);
-  z-index: 9999;
-  display:none;
+  display:flex;
   align-items:center;
   justify-content:center;
-  padding: 18px;
-}
-.iosInstallMask.show{ display:flex; }
-
-.iosInstallCard{
-  width: min(520px, 100%);
-  border-radius: 26px;
-  border:1px solid rgba(255,255,255,.10);
+  flex-direction:column;
+  gap:10px;
   background:
-    radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.14), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.35));
-  padding: 16px;
-  box-shadow: var(--shadow);
-  position:relative;
+    radial-gradient(900px 420px at 30% 10%, rgba(206,172,94,.12), transparent 55%),
+    rgba(0,0,0,.55);
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .18s ease;
 }
-.iosX{
-  position:absolute;
-  top: 10px;
-  right: 10px;
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-  border:1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.92);
-  font-weight: 950;
-  font-size: 20px;
-  cursor:pointer;
+.loadingLayer.show{ opacity:1; pointer-events:auto; }
+
+.spinner{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  border:3px solid rgba(255,255,255,.18);
+  border-top-color: rgba(206,172,94,.95);
+  animation: spin .9s linear infinite;
 }
-.iosHead{ display:flex; align-items:center; gap:12px; padding: 6px 6px 12px; }
-.iosIcon{
-  width: 52px; height: 52px;
-  border-radius: 18px;
-  border:1px solid rgba(206,172,94,.22);
-  background: rgba(0,0,0,.30);
-  overflow:hidden;
+@keyframes spin{ to{ transform: rotate(360deg) } }
+.loadingText{ font-weight:950; color: rgba(255,255,255,.92); font-size:13px; }
+.loadingSub{ color: rgba(255,255,255,.68); font-size:12px; text-align:center; max-width:260px; line-height:1.45; }
+
+/* =========================
+   FOOTER (LGPD clean)
+========================= */
+.appFooter{
+  margin-top: 14px;
+  padding: 12px 6px 2px;
+  opacity: .88;
 }
-.iosIcon img{ width:100%; height:100%; object-fit:cover; }
-.iosBrand{ font-weight: 950; color: var(--gold2); letter-spacing:.8px; font-size: 12px; }
-.iosTitle{ font-weight: 950; font-size: 16px; margin-top: 2px; }
-.iosSteps{ display:flex; flex-direction:column; gap:10px; padding: 6px; }
-.iosStep{ display:flex; align-items:center; gap:10px; opacity:.9; }
-.iosStep .n{
-  width: 26px; height: 26px;
-  border-radius: 12px;
-  display:grid; place-items:center;
-  border:1px solid rgba(206,172,94,.22);
-  background: rgba(206,172,94,.10);
-  font-weight: 950;
-  color: var(--gold2);
+
+.footRow{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255,255,255,.78);
+  line-height:1.5;
 }
-.iosDont{ display:flex; gap:10px; align-items:center; opacity:.8; margin: 12px 6px 6px; font-size: 12px; }
-.iosActions{ display:flex; gap:10px; margin-top: 12px; padding: 6px; }
+
+.footTitle{ font-weight: 950; color: rgba(255,255,255,.88); }
+.footSmall{
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+}
+
+.footSep{ margin: 0 8px; opacity: .55; }
+
+.footLink{
+  color: rgba(240,214,144,.85);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(240,214,144,.18);
+}
+.footLink:hover{ border-bottom-color: rgba(240,214,144,.38); }
+
+/* =========================
+   MOBILE FINO
+========================= */
+@media (max-width: 520px){
+  .pageAluno .wrap{ padding: 14px; padding-top: calc(14px + 60px + env(safe-area-inset-top)); }
+  .content{ padding: 14px; }
+
+  .topNavInner{ padding:0 35px; height:60px; }
+  .topLogo{ height:100px; }
+
+  :root{ --pdfBarH: 60px; }
+  .pdfTitle{ max-width: calc(100vw - 170px); }
+}
