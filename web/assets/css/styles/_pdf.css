@@ -2,20 +2,21 @@
   --pdfBarH: 56px;
 }
 
-body.pdfOpen { overflow: hidden; }
+body.pdfOpen{
+  overflow: hidden;
+}
 
-/* Overlay (iOS safe + viewport estável) */
+/* Overlay full-screen real */
 .pdfOverlay{
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
 
-  /* fallback + iOS */
   height: 100vh;
   height: 100dvh;
 
   width: 100%;
   background: #0b0b0b;
-  z-index: 99999;
+  z-index: 999999;
 
   opacity: 0;
   pointer-events: none;
@@ -29,11 +30,11 @@ body.pdfOpen { overflow: hidden; }
   transform: translateY(0);
 }
 
-/* ✅ Barra FIXA (sticky dá bug no iOS dentro de overlay) */
+/* Barra FIXA (sticky dá bug no iOS) */
 .pdfBar{
   position: fixed;
   top: 0; left: 0; right: 0;
-  z-index: 100000;
+  z-index: 1000000;
 
   padding-top: env(safe-area-inset-top);
   padding-left: 14px;
@@ -48,8 +49,6 @@ body.pdfOpen { overflow: hidden; }
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
-
-.pdfBar > * { flex: 0 0 auto; }
 
 .backBtn{
   display:flex;
@@ -79,13 +78,12 @@ body.pdfOpen { overflow: hidden; }
   max-width: calc(100vw - 170px);
 }
 
-/* ✅ Área do iframe começa abaixo da barra (safe-area ok no iOS) */
+/* Área iframe abaixo da barra */
 .pdfFrameWrap{
   position: absolute;
   left: 0; right: 0;
   top: calc(var(--pdfBarH) + env(safe-area-inset-top));
   bottom: env(safe-area-inset-bottom);
-  min-height: 0;
   background: #000;
 }
 
@@ -106,14 +104,19 @@ body.pdfOpen { overflow: hidden; }
   justify-content:center;
   flex-direction:column;
   gap:10px;
+
   background:
     radial-gradient(900px 420px at 30% 10%, rgba(206,172,94,.12), transparent 55%),
     rgba(0,0,0,.55);
+
   opacity:0;
   pointer-events:none;
   transition: opacity .18s ease;
 }
-.loadingLayer.show{ opacity:1; pointer-events:auto; }
+.loadingLayer.show{
+  opacity:1;
+  pointer-events:auto;
+}
 
 .spinner{
   width:42px;
@@ -123,6 +126,19 @@ body.pdfOpen { overflow: hidden; }
   border-top-color: rgba(206,172,94,.95);
   animation: spin .9s linear infinite;
 }
-@keyframes spin{to{transform: rotate(360deg)}}
-.loadingText{ font-weight:950; color: rgba(255,255,255,.92); font-size:13px; }
-.loadingSub{ color: rgba(255,255,255,.68); font-size:12px; text-align:center; max-width:260px; line-height:1.45; }
+@keyframes spin{
+  to{ transform: rotate(360deg) }
+}
+
+.loadingText{
+  font-weight:950;
+  color: rgba(255,255,255,.92);
+  font-size:13px;
+}
+.loadingSub{
+  color: rgba(255,255,255,.68);
+  font-size:12px;
+  text-align:center;
+  max-width:260px;
+  line-height:1.45;
+}
