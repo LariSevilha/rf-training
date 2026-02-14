@@ -1,4 +1,4 @@
-// ✅ PWA: registra SW (ajuda o Android liberar "instalar")
+// ✅ PWA: registra SW
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
@@ -79,7 +79,6 @@ function setOfflineUI() {
   offlineMask.classList.toggle("show", !online);
   offlineMask.setAttribute("aria-hidden", online ? "true" : "false");
 }
-
 window.addEventListener("online", setOfflineUI);
 window.addEventListener("offline", setOfflineUI);
 offlineTryBtn?.addEventListener("click", setOfflineUI);
@@ -166,38 +165,26 @@ logoutBtn?.addEventListener("click", () => {
 });
 
 // ====================
-// ANDROID INSTALL (clicou = prompt nativo)
+// ANDROID INSTALL
 // ====================
-function hideInstallUI() {
-  if (installBtn) installBtn.style.display = "none";
-}
-function showInstallUI() {
-  if (installBtn) installBtn.style.display = "inline-flex";
-}
+function hideInstallUI() { if (installBtn) installBtn.style.display = "none"; }
+function showInstallUI() { if (installBtn) installBtn.style.display = "inline-flex"; }
 
 if (installBtn) {
-  // começa escondido
   hideInstallUI();
 
-  // iOS não tem prompt nativo; standalone não precisa instalar
-  if (!isAndroidDevice() || isStandaloneMode()) {
-    hideInstallUI();
-  }
+  if (!isAndroidDevice() || isStandaloneMode()) hideInstallUI();
 
   window.addEventListener("beforeinstallprompt", (e) => {
-    // só Android e fora do standalone
     if (!isAndroidDevice() || isStandaloneMode()) return;
-
     e.preventDefault();
     deferredPrompt = e;
-
-    showInstallUI(); // ✅ agora SIM dá pra instalar
+    showInstallUI();
   });
 
   installBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return; // segurança
-
-    deferredPrompt.prompt(); // ✅ abre o popup nativo
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
     await deferredPrompt.userChoice.catch(() => {});
     deferredPrompt = null;
     hideInstallUI();
@@ -207,26 +194,10 @@ if (installBtn) {
     deferredPrompt = null;
     hideInstallUI();
   });
-
-  installBtn.addEventListener("click", async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice.catch(() => {});
-      deferredPrompt = null;
-      hideInstallUI();
-      return;
-    }
-    openAndroidHowTo();
-  });
-
-  window.addEventListener("appinstalled", () => {
-    deferredPrompt = null;
-    hideInstallUI();
-  });
 }
 
 // ====================
-// iOS modal (premium)
+// iOS modal (ÚNICO)
 // ====================
 (function iosInstallModalInit() {
   const modal = document.getElementById("iosInstallModal");
@@ -260,7 +231,11 @@ if (installBtn) {
   laterBtn?.addEventListener("click", close);
   okBtn?.addEventListener("click", close);
 
-  setTimeout(open, 900);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close();
+  });
+
+  setTimeout(open, 700);
 })();
 
 // ====================
@@ -276,6 +251,7 @@ async function syncDocuments() {
 
   try {
     const docs = await apiDocuments(session.token);
+
     urls.training = (docs.training || "").trim();
     urls.diet = (docs.diet || "").trim();
     urls.supp = (docs.supp || "").trim();
@@ -284,7 +260,7 @@ async function syncDocuments() {
     applyVisibility();
 
     if (statusEl) statusEl.textContent = "Toque em um item disponível para abrir.";
-    clearMsg(err); 
+    clearMsg(err);
     setTimeout(() => clearMsg(ok), 1200);
   } catch {
     if (statusEl) statusEl.textContent = "Erro ao sincronizar";

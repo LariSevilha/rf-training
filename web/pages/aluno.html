@@ -20,19 +20,22 @@
 </head>
 
 <body class="pageAluno">
+
+  <!-- OFFLINE MASK -->
   <div class="offlineMask" id="offlineMask" aria-hidden="true">
-    <div class="offlineCard" role="dialog" aria-modal="true">
+    <div class="offlineCard" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
       <div class="offlineIcon" aria-hidden="true">📡</div>
-      <div class="offlineTitle">Você está offline</div>
+      <div class="offlineTitle" id="offlineTitle">Você está offline</div>
       <div class="offlineSub">
         Sem internet no momento. Você ainda pode abrir o app e navegar.
         Alguns PDFs podem depender de conexão.
       </div>
       <button class="btn" id="offlineTryBtn" type="button">Tentar novamente</button>
-      <div class="offlineHint">Dica: quando a internet voltar, o app sincroniza automaticamente.</div>
+      <div class="offlineHint">Dica: quando voltar internet, o app sincroniza automaticamente.</div>
     </div>
   </div>
- 
+
+  <!-- NAVBAR -->
   <header class="topNav" role="banner">
     <div class="topNavInner">
       <a class="topBrand" href="/pages/aluno.html" aria-label="Consultoria RF">
@@ -51,7 +54,10 @@
       <!-- HERO -->
       <section class="studentHero" id="studentHero" aria-label="Boas-vindas">
         <div class="heroInner">
-          <div class="heroLeft"> 
+          <div class="heroLeft">
+            <div class="heroLogo" aria-hidden="true">
+              <img src="/img/logoapp.png" alt="RF" draggable="false" />
+            </div>
 
             <div class="heroText">
               <div class="heroBrand">RF FITNESS</div>
@@ -62,6 +68,7 @@
 
               <div id="status" class="heroHint">Carregando…</div>
 
+              <!-- Android: aparece só quando o Chrome liberar -->
               <button class="btn" id="installBtn" type="button" style="display:none;">Instalar</button>
             </div>
           </div>
@@ -134,7 +141,7 @@
 
         </div>
 
-        <!-- ✅ PDF OVERLAY -->
+        <!-- PDF OVERLAY -->
         <div class="pdfOverlay" id="pdfOverlay" aria-hidden="true">
           <div class="pdfBar">
             <button class="backBtn" id="pdfBack" type="button">← Voltar</button>
@@ -157,9 +164,42 @@
     </div>
   </div>
 
+  <!-- iOS Install Modal -->
+  <div class="iosInstallMask" id="iosInstallModal" aria-hidden="true">
+    <div class="iosInstallCard" role="dialog" aria-modal="true" aria-labelledby="iosInstallTitle">
+      <button class="iosX" id="iosInstallClose" type="button" aria-label="Fechar">×</button>
+
+      <div class="iosHead">
+        <div class="iosIcon" aria-hidden="true">
+          <img src="/img/logoapp.png" alt="RF" draggable="false">
+        </div>
+        <div>
+          <div class="iosBrand">RF FITNESS</div>
+          <div class="iosTitle" id="iosInstallTitle">Adicionar à Tela de Início</div>
+        </div>
+      </div>
+
+      <div class="iosSteps">
+        <div class="iosStep"><span class="n">1</span> Abra no <b>Safari</b></div>
+        <div class="iosStep"><span class="n">2</span> Toque em <b>Compartilhar</b></div>
+        <div class="iosStep"><span class="n">3</span> “Adicionar à Tela de Início”</div>
+        <div class="iosStep"><span class="n">4</span> Toque em <b>Adicionar</b></div>
+      </div>
+
+      <label class="iosDont">
+        <input type="checkbox" id="iosDontShowChk">
+        Não mostrar por 7 dias
+      </label>
+
+      <div class="iosActions">
+        <button class="btnGhost" id="iosLaterBtn" type="button">Agora não</button>
+        <button class="btn" id="iosOkBtn" type="button">Entendi</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.getElementById("yearNow").textContent = String(new Date().getFullYear());
-
     (function(){
       const h = new Date().getHours();
       const t = (h < 12) ? "Bom dia" : (h < 18) ? "Boa tarde" : "Boa noite";
