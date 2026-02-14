@@ -167,27 +167,54 @@ logoutBtn?.addEventListener("click", () => {
 // ====================
 // ANDROID INSTALL
 // ====================
+// ====================
+// ANDROID INSTALL (mostra botão + fallback quando não houver prompt)
+// ====================
 function hideInstallUI() { if (installBtn) installBtn.style.display = "none"; }
 function showInstallUI() { if (installBtn) installBtn.style.display = "inline-flex"; }
+
+function openAndroidHowTo() {
+  alert(
+    "Para instalar:\n\n" +
+    "1) Abra o menu do Chrome (⋮)\n" +
+    "2) Toque em “Instalar app” ou “Adicionar à tela inicial”\n\n" +
+    "Se não aparecer, verifique se está no Chrome e com internet."
+  );
+}
 
 if (installBtn) {
   hideInstallUI();
 
-  if (!isAndroidDevice() || isStandaloneMode()) hideInstallUI();
+  const shouldShow = isAndroidDevice() && !isStandaloneMode();
+
+  // ✅ Fallback: mostra o botão mesmo se o evento não disparar
+  if (shouldShow) {
+    setTimeout(() => {
+      if (installBtn.style.display === "none") {
+        installBtn.textContent = "Instalar";
+        showInstallUI();
+      }
+    }, 1200);
+  }
 
   window.addEventListener("beforeinstallprompt", (e) => {
-    if (!isAndroidDevice() || isStandaloneMode()) return;
+    if (!shouldShow) return;
     e.preventDefault();
     deferredPrompt = e;
+
+    installBtn.textContent = "Instalar";
     showInstallUI();
   });
 
   installBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice.catch(() => {});
-    deferredPrompt = null;
-    hideInstallUI();
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice.catch(() => {});
+      deferredPrompt = null;
+      hideInstallUI();
+      return;
+    }
+    openAndroidHowTo();
   });
 
   window.addEventListener("appinstalled", () => {
@@ -195,6 +222,7 @@ if (installBtn) {
     hideInstallUI();
   });
 }
+
 
 // ====================
 // iOS modal (ÚNICO)
