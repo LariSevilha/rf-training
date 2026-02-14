@@ -23,123 +23,128 @@
 }
 /* ===== iOS Install Modal ===== */
 .iosInstallMask{
-  position:fixed;
-  inset:0;
-  padding:18px;
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
+  position: fixed;
+  inset: 0;
+  z-index: 2000000; /* acima de navbar e pdf */
   background: rgba(0,0,0,.55);
   backdrop-filter: blur(10px);
-  opacity:0;
-  pointer-events:none;
-  transform: translateY(10px);
-  transition: opacity .18s ease, transform .18s ease;
-  z-index:99999;
+  -webkit-backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
 }
 
 .iosInstallMask.show{
-  opacity:1;
-  pointer-events:auto;
-  transform: translateY(0);
+  display: flex;
 }
 
+
 .iosInstallCard{
-  width:min(520px, 100%);
-  border-radius:22px;
-  border:1px solid rgba(255,255,255,.12);
+  width: min(520px, 100%);
+  border-radius: 26px;
+  border: 1px solid rgba(255,255,255,.10);
   background:
-    radial-gradient(900px 420px at 25% 0%, rgba(206,172,94,.16), transparent 58%),
-    linear-gradient(180deg, rgba(0,0,0,.92), rgba(0,0,0,.65));
-  box-shadow: 0 26px 70px rgba(0,0,0,.55);
-  padding:16px;
-  position:relative;
+    radial-gradient(900px 420px at 18% 0%, rgba(206,172,94,.14), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.35));
+  box-shadow: 0 18px 70px rgba(0,0,0,.55);
+  padding: 18px;
+  position: relative;
 }
 
 .iosX{
   position:absolute;
-  right:10px; top:10px;
-  width:40px; height:40px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.06);
-  color:#fff;
-  font-size:22px;
-  cursor:pointer;
-  opacity:.9;
+  top: 10px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.35);
+  color: rgba(255,255,255,.92);
+  font-size: 22px;
+  cursor: pointer;
 }
 
 .iosHead{
   display:flex;
-  gap:12px;
+  gap: 12px;
   align-items:center;
-  padding:6px 2px 12px;
+  margin-bottom: 12px;
+  padding-right: 38px; /* espaço do X */
 }
 
 .iosIcon{
-  width:52px; height:52px;
-  border-radius:16px;
-  overflow:hidden;
-  border:1px solid rgba(206,172,94,.25);
-  background: rgba(0,0,0,.25);
-  box-shadow: 0 14px 40px rgba(0,0,0,.45);
-  flex:0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  border:1px solid rgba(206,172,94,.22);
+  background: rgba(0,0,0,.30);
+  overflow: hidden;
+  flex: 0 0 auto;
 }
-.iosIcon img{ width:100%; height:100%; object-fit:cover; }
+.iosIcon img{ width:100%; height:100%; object-fit: cover; }
 
 .iosBrand{
-  font-weight:900;
-  letter-spacing:.9px;
-  font-size:12px;
-  color: rgba(255,255,255,.7);
+  font-weight: 950;
+  font-size: 12px;
+  letter-spacing: .8px;
+  color: var(--gold2, #ceac5e);
+  opacity: .95;
 }
 .iosTitle{
-  font-weight:950;
-  font-size:16px;
-  color: var(--gold2, #ceac5e);
-  margin-top:2px;
+  margin-top: 2px;
+  font-weight: 950;
+  font-size: 16px;
+  color: rgba(255,255,255,.95);
 }
 
 .iosSteps{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  padding:10px 2px 8px;
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 10px;
 }
+
 .iosStep{
   display:flex;
-  gap:10px;
-  align-items:flex-start;
-  color: rgba(255,255,255,.9);
-  font-size:13px;
-  line-height:1.35;
+  align-items:center;
+  gap: 10px;
+  color: rgba(255,255,255,.85);
+  font-size: 13px;
+  line-height: 1.35;
 }
+
 .iosStep .n{
-  width:22px; height:22px;
-  border-radius:10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
   display:grid;
   place-items:center;
-  border:1px solid rgba(255,255,255,.12);
-  background: rgba(206,172,94,.10);
+  background: rgba(206,172,94,.12);
+  border: 1px solid rgba(206,172,94,.25);
   color: var(--gold2, #ceac5e);
-  font-weight:900;
-  flex:0 0 auto;
+  font-weight: 950;
+  flex: 0 0 auto;
 }
 
 .iosDont{
   display:flex;
-  gap:10px;
+  gap: 10px;
   align-items:center;
-  margin:8px 2px 10px;
-  font-size:12px;
+  margin-top: 8px;
   color: rgba(255,255,255,.72);
+  font-size: 12px;
+  user-select: none;
 }
 
 .iosActions{
   display:flex;
-  gap:10px;
-  justify-content:flex-end;
+  gap: 10px;
+  margin-top: 14px;
 }
+
+.iosActions .btn,
+.iosActions .btnGhost{ flex: 1; }
 
 
 
