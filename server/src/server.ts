@@ -257,7 +257,7 @@ async function main() {
       data: { name: clean ? clean : null },
       select: { email: true, name: true },
     });
-
+ 
     return { ok: true, user: updated };
   });
 
