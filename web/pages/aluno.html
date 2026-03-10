@@ -167,17 +167,17 @@
 
           <div class="pdfFrameWrap">
             <iframe
-  id="pdfFrame"
-  title="Visualização de PDF"
-  sandbox="allow-same-origin allow-scripts"
-  referrerpolicy="no-referrer">
-</iframe>
-
-            <div class="loadingLayer" id="loadingLayer">
-              <div class="spinner"></div>
-              <div class="loadingText">Carregando PDF…</div>
-              <div class="loadingSub">Se demorar, verifique sua conexão.</div>
-            </div>
+              id="pdfFrame"
+              title="Visualização de PDF"
+              sandbox="allow-same-origin allow-scripts"
+              referrerpolicy="no-referrer">
+            </iframe>
+          
+            <!-- bloqueia a barra/topo do google -->
+            <div class="pdfTopBlocker" aria-hidden="true"></div>
+          
+            <!-- bloqueia o canto da seta -->
+            <div class="pdfOpenDriveBlocker" aria-hidden="true"></div>
           </div>
         </div>
 

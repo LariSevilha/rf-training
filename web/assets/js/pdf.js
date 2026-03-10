@@ -1,13 +1,13 @@
 export function driveToPreview(url) {
   if (!url) return "";
 
-  // transforma link do drive em preview
-  if (url.includes("drive.google.com")) {
-    return url.includes("/preview")
-      ? url
-      : url.replace(/\/view.*$/, "/preview");
-  }
-  return url;
+  url = url.trim();
+
+  const idMatch = url.match(/[-\w]{25,}/);
+  if (!idMatch) return url;
+
+  const fileId = idMatch[0];
+  return `https://drive.google.com/file/d/${fileId}/preview`;
 }
 
 export function placeholderHtml(title, msg) {
