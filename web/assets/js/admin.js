@@ -546,9 +546,18 @@ refreshBtn?.addEventListener("click", async () => {
     toast("error", "Erro", e.message || "Erro ao atualizar.");
   }
 });
+let searchTimer = null;
 
-search?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") refreshBtn?.click();
+search?.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+
+  searchTimer = setTimeout(async () => {
+    try {
+      await refreshList();
+    } catch (e) {
+      toast("error", "Erro", e.message || "Erro ao buscar alunos.");
+    }
+  }, 250);
 });
 
 saveBtn?.addEventListener("click", async () => {

@@ -126,22 +126,28 @@ async function main() {
   });
 
   // ===== ADMIN =====
-
   app.get(`${API_PREFIX}/admin/users`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
-
+  
     const q = normKey(String(req.query?.q || ""));
-
+  
     const users = await prisma.user.findMany({
       where: {
         role: "student",
-        ...(q ? { email: { contains: q, mode: "insensitive" } } : {}),
+        ...(q
+          ? {
+              OR: [
+                { name: { contains: q, mode: "insensitive" } },
+                { email: { contains: q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
       },
       orderBy: { createdAt: "desc" },
       take: 50,
       select: { email: true, name: true, active: true, createdAt: true },
     });
-
+  
     return { users };
   });
 
