@@ -14,9 +14,18 @@ import {
 } from "./api.js";
 import { clearSession } from "./state.js";
 import { toast, openModal } from "./ui.js";
+import {
+  buildDashboardPrintHTML,
+  monthKey,
+  monthLabel,
+  pct,
+  pickDate,
+  monthsBetween,
+} from "./helpers/report.js";
 
 // ===== Elements =====
 const who = document.getElementById("who");
+const mName = document.getElementById("mName");
 const logoutBtn = document.getElementById("logoutBtn");
 
 // Create
@@ -74,6 +83,8 @@ const meRefreshBtn = document.getElementById("meRefreshBtn");
 let token = null;
 let selectedRow = null;
 let meSessionUser = null;
+let dashboardUsers = [];
+let dashboardMonthlyRows = [];
 
 // ===== Helpers =====
 function clearEditFields() {
@@ -186,36 +197,16 @@ async function refreshList() {
   renderUsers(data.users || []);
 }
 
-// ===== DASHBOARD =====
-function monthKey(d) {
-  const dt = new Date(d);
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
-}
-
-function monthLabel(key) {
-  const [y, m] = key.split("-");
-  return `${m}/${y}`;
-}
-
-function pct(part, total) {
-  if (!total) return "0%";
-  return Math.round((part / total) * 100) + "%";
-}
-
-function pickDate(u) {
-  return u.createdAt || u.created_at || u.updatedAt || u.updated_at || null;
-}
-
 function buildMonthOptions(n = 24) {
   const now = new Date();
   const cursor = new Date(now.getFullYear(), now.getMonth(), 1);
   const keys = [];
+
   for (let i = 0; i < n; i++) {
     keys.push(monthKey(cursor));
     cursor.setMonth(cursor.getMonth() - 1);
   }
+
   return keys;
 }
 
@@ -235,25 +226,6 @@ function fillMonthSelects() {
   dashTo.value = defaultTo;
 }
 
-function monthsBetween(fromKey, toKey) {
-  const [fy, fm] = fromKey.split("-").map(Number);
-  const [ty, tm] = toKey.split("-").map(Number);
-
-  const start = new Date(fy, fm - 1, 1);
-  const end = new Date(ty, tm - 1, 1);
-
-  const a = start <= end ? start : end;
-  const b = start <= end ? end : start;
-
-  const out = [];
-  const cur = new Date(a.getFullYear(), a.getMonth(), 1);
-  while (cur <= b) {
-    out.push(monthKey(cur));
-    cur.setMonth(cur.getMonth() + 1);
-  }
-  return out;
-}
-
 function renderMonthly(rows) {
   if (!dashMonthlyBody) return;
 
@@ -265,13 +237,13 @@ function renderMonthly(rows) {
   dashMonthlyBody.innerHTML = rows
     .map(
       (r) => `
-    <tr>
-      <td>${monthLabel(r.key)}</td>
-      <td>${r.total}</td>
-      <td>${r.active}</td>
-      <td>${r.inactive}</td>
-    </tr>
-  `
+      <tr>
+        <td>${monthLabel(r.key)}</td>
+        <td>${r.total}</td>
+        <td>${r.active}</td>
+        <td>${r.inactive}</td>
+      </tr>
+    `
     )
     .join("");
 }
@@ -293,6 +265,8 @@ async function loadDashboard() {
     const data = await apiAdminListUsers(token, "");
     const users = data?.users || [];
 
+    dashboardUsers = users;
+
     const total = users.length;
     const activeCount = users.filter((u) => !!u.active).length;
     const inactiveCount = total - activeCount;
@@ -312,11 +286,13 @@ async function loadDashboard() {
       dashPeriodLabel.textContent = `Período: ${monthLabel(keys[0])} → ${monthLabel(keys[keys.length - 1])}`;
     }
 
-    const periodNew = users.filter((u) => {
+    const periodUsers = users.filter((u) => {
       const d = pickDate(u);
       if (!d) return false;
       return keys.includes(monthKey(d));
-    }).length;
+    });
+
+    const periodNew = periodUsers.length;
 
     if (dashPeriodNew) dashPeriodNew.textContent = String(periodNew);
 
@@ -329,9 +305,16 @@ async function loadDashboard() {
 
       const t = inMonth.length;
       const a = inMonth.filter((u) => !!u.active).length;
-      return { key, total: t, active: a, inactive: t - a };
+
+      return {
+        key,
+        total: t,
+        active: a,
+        inactive: t - a,
+      };
     });
 
+    dashboardMonthlyRows = monthly;
     renderMonthly(monthly);
   } catch (e) {
     toast("error", "Erro", e.message || "Erro ao carregar dashboard.");
@@ -341,65 +324,11 @@ async function loadDashboard() {
   }
 }
 
-function buildDashboardPrintHTML() {
-  const period = dashPeriodLabel?.textContent || "";
-  const total = dashTotal?.textContent || "—";
-  const act = dashActive?.textContent || "—";
-  const inact = dashInactive?.textContent || "—";
-  const newp = dashPeriodNew?.textContent || "—";
-  const now = new Date().toLocaleString("pt-BR");
-  const bodyRows = dashMonthlyBody?.innerHTML || "";
-
-  return `
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8"/>
-  <title>RF — Relatório de Alunos</title>
-  <style>
-    body{ font-family: Arial; padding: 24px; color:#111; }
-    h1{ margin:0 0 6px; }
-    .muted{ color:#444; margin:0 0 18px; }
-    .grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 18px; }
-    .box{ border:1px solid #ddd; border-radius:10px; padding:12px; }
-    .label{ font-size:12px; color:#555; }
-    .val{ font-size:22px; font-weight:800; margin-top:6px; }
-    table{ width:100%; border-collapse:collapse; }
-    th, td{ border:1px solid #ddd; padding:8px; text-align:left; }
-    th{ background:#f6f6f6; }
-  </style>
-</head>
-<body>
-  <h1>RF FITNESS — Relatório de Alunos</h1>
-  <p class="muted">${period} • Gerado em: ${now}</p>
-
-  <div class="grid">
-    <div class="box"><div class="label">Total</div><div class="val">${total}</div></div>
-    <div class="box"><div class="label">Ativos</div><div class="val">${act}</div></div>
-    <div class="box"><div class="label">Inativos</div><div class="val">${inact}</div></div>
-    <div class="box"><div class="label">Cadastros no período</div><div class="val">${newp}</div></div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Mês</th><th>Total cadastrados</th><th>Ativos</th><th>Inativos</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${bodyRows}
-    </tbody>
-  </table>
-</body>
-</html>`;
-}
-
 // ===== ME (Admin) =====
 async function loadMe() {
   try {
     const data = await apiMe(token);
 
-    // ✅ NÃO sobrescreve se veio vazio / inválido
     if (!data?.user?.email) {
       toast("error", "Erro", "API /me não retornou um usuário válido.");
       return;
@@ -410,7 +339,7 @@ async function loadMe() {
     if (meName) meName.value = (data.user.name || "").trim();
     if (meEmail) meEmail.value = (data.user.email || "").trim();
     if (who) who.textContent = data.user.email;
-    if (mName) mName.textContent = data.user.name;
+    if (mName) mName.textContent = data.user.name || "";
 
     if (mePass1) mePass1.value = "";
     if (mePass2) mePass2.value = "";
@@ -419,10 +348,8 @@ async function loadMe() {
   }
 }
 
-
 async function saveMe() {
   try {
-    // garante que temos o "me" carregado
     if (!meSessionUser) {
       await loadMe();
       if (!meSessionUser) {
@@ -440,20 +367,20 @@ async function saveMe() {
     const p1 = (mePass1?.value || "").trim();
     const p2 = (mePass2?.value || "").trim();
 
-    // validações básicas
     if (!name || name.length < 2) {
       return toast("error", "Atenção", "Nome precisa ter no mínimo 2 caracteres.");
     }
+
     if (!email) {
       return toast("error", "Atenção", "Email inválido.");
     }
 
-    // monta PATCH somente com o que mudou (✅ não exige preencher tudo)
     const patch = {};
     if (name !== oldName) patch.name = name;
     if (email !== oldEmail) patch.email = email;
 
     const passwordChanged = !!(p1 || p2);
+
     if (passwordChanged) {
       if (p1.length < 6) return toast("error", "Senha fraca", "Use no mínimo 6 caracteres.");
       if (p1 !== p2) return toast("error", "Senha não confere", "Digite a mesma senha nos 2 campos.");
@@ -463,43 +390,35 @@ async function saveMe() {
       return toast("info", "Nada mudou", "Nenhuma alteração detectada.");
     }
 
-    // 1) Atualiza perfil (nome/email) somente se mudou
     let updatedUser = meSessionUser;
+
     if (Object.keys(patch).length > 0) {
-      const resp = await apiUpdateMe(token, patch); // ✅ PATCH /api/me
+      const resp = await apiUpdateMe(token, patch);
       updatedUser = resp?.user || updatedUser;
 
-      // atualiza topo
       if (who) who.textContent = updatedUser.email || oldEmail;
       toast("ok", "Salvo", "Perfil atualizado.");
     }
 
-    // 2) Atualiza senha (opcional)
     if (passwordChanged) {
-      await apiUpdateMyPassword(token, p1); // ✅ PATCH /api/me/password
+      await apiUpdateMyPassword(token, p1);
       toast("ok", "Salvo", "Senha atualizada.");
 
       if (mePass1) mePass1.value = "";
       if (mePass2) mePass2.value = "";
     }
 
-    // 3) recarrega do servidor para confirmar e não ficar com cache
     await loadMe();
 
-    // Se mudou email, seu token antigo pode ficar “inconsistente” (depende da sua política)
-    // Aqui eu só AVISO. Se quiser deslogar automaticamente, eu adapto.
     if (email !== oldEmail) {
       toast("info", "Atenção", "Email alterado. Se der problema depois, faça login novamente.");
     }
   } catch (e) {
-    // mostra status/payload se vier do readJson com debug
     const status = e?.status ? ` (HTTP ${e.status})` : "";
-    const extra = e?.payload ? ` | ${JSON.stringify(e.payload)}` : "";
     toast("error", "Erro ao salvar", (e?.message || "Erro desconhecido") + status);
-    console.error("saveMe error:", e, extra);
+    console.error("saveMe error:", e);
   }
 }
-
 
 // ===== Events =====
 logoutBtn?.addEventListener("click", () => {
@@ -532,6 +451,7 @@ createBtn?.addEventListener("click", async () => {
 refreshBtn?.addEventListener("click", async () => {
   try {
     const r = sessionStorage.getItem("route") || "";
+
     if (r === "dash") {
       await loadDashboard();
       toast("ok", "Atualizado", "Dashboard carregado.");
@@ -546,6 +466,7 @@ refreshBtn?.addEventListener("click", async () => {
     toast("error", "Erro", e.message || "Erro ao atualizar.");
   }
 });
+
 let searchTimer = null;
 
 search?.addEventListener("input", () => {
@@ -654,10 +575,26 @@ dashRefreshBtn?.addEventListener("click", async () => {
 });
 
 dashPdfBtn?.addEventListener("click", () => {
+  const fromKey = dashFrom?.value || monthKey(new Date());
+  const toKey = dashTo?.value || monthKey(new Date());
+
+  const html = buildDashboardPrintHTML({
+    periodLabel: dashPeriodLabel?.textContent || "",
+    total: Number(dashTotal?.textContent || 0),
+    active: Number(dashActive?.textContent || 0),
+    inactive: Number(dashInactive?.textContent || 0),
+    periodNew: Number(dashPeriodNew?.textContent || 0),
+    users: dashboardUsers,
+    monthlyRows: dashboardMonthlyRows,
+    fromKey,
+    toKey,
+  });
+
   const w = window.open("", "_blank");
   if (!w) return toast("error", "Popup bloqueado", "Permita popups para gerar o PDF.");
+
   w.document.open();
-  w.document.write(buildDashboardPrintHTML());
+  w.document.write(html);
   w.document.close();
   w.focus();
   w.print();
@@ -712,9 +649,6 @@ window.addEventListener("routechange", async (e) => {
 
   fillMonthSelects();
 
-  // ✅ ESSA LINHA RESOLVE o "fica em branco ao recarregar"
   await loadMe().catch(() => {});
-
   await refreshList().catch(() => {});
 })();
-
