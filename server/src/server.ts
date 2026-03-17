@@ -135,29 +135,29 @@ async function main() {
       .split(/\s+/)
       .filter(Boolean);
     
-    const users = await prisma.user.findMany({
-      where: {
-        role: "student",
-        ...(terms.length
-          ? {
-              AND: terms.map((t) => ({
-                OR: [
-                  { name: { contains: t, mode: "insensitive" } },
-                  { email: { contains: t, mode: "insensitive" } },
-                ],
-              })),
-            }
-          : {}),
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      select: {
-        email: true,
-        name: true,
-        active: true,
-        createdAt: true,
-      },
-    });
+      const users = await prisma.user.findMany({
+        where: {
+          role: "student",
+          ...(terms.length
+            ? {
+                AND: terms.map((t) => ({
+                  OR: [
+                    { name: { contains: t, mode: "insensitive" } },
+                    { email: { contains: t, mode: "insensitive" } },
+                  ],
+                })),
+              }
+            : {}),
+        },
+        orderBy: [{ createdAt: "desc" }],
+        take: 500,
+        select: {
+          email: true,
+          name: true,
+          active: true,
+          createdAt: true,
+        },
+      });
   
     return { users };
   });
