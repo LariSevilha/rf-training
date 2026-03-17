@@ -177,12 +177,37 @@
                 <div class="label">De</div>
                 <select id="dashFrom"></select>
               </div>
-
+            
               <div class="fItem">
                 <div class="label">Até</div>
                 <select id="dashTo"></select>
               </div>
-
+            
+              <div class="fItem">
+                <div class="label">Status</div>
+                <select id="dashStatus">
+                  <option value="all">Todos</option>
+                  <option value="active">Somente ativos</option>
+                  <option value="inactive">Somente inativos</option>
+                </select>
+              </div>
+            
+              <div class="fItem" style="min-width:260px;">
+                <div class="label">Buscar no relatório</div>
+                <input id="dashText" type="text" placeholder="Nome ou email..." />
+              </div>
+            
+              <div class="fItem">
+                <div class="label">Ordenar por</div>
+                <select id="dashSort">
+                  <option value="recent">Mais recentes</option>
+                  <option value="oldest">Mais antigos</option>
+                  <option value="name-asc">Nome A-Z</option>
+                  <option value="name-desc">Nome Z-A</option>
+                  <option value="email-asc">Email A-Z</option>
+                </select>
+              </div>
+            
               <button class="btnGhost" id="dashApplyBtn" type="button">Aplicar</button>
             </div>
 

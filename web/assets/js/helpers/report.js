@@ -62,67 +62,65 @@ export function monthKey(d) {
     periodNew = 0,
     users = [],
     monthlyRows = [],
-    fromKey,
-    toKey,
+    filterMeta = {},
   }) {
     const now = new Date().toLocaleString("pt-BR");
-    const keys = monthsBetween(fromKey, toKey);
   
-    const periodUsers = (users || []).filter((u) => {
-      const d = pickDate(u);
-      if (!d) return false;
-      return keys.includes(monthKey(d));
-    });
+    const activeUsers = (users || []).filter((u) => !!u.active);
+    const inactiveUsers = (users || []).filter((u) => !u.active);
+    const unnamedUsers = (users || []).filter((u) => !String(u.name || "").trim());
   
-    const monthsCount = keys.length || 1;
-    const avgPerMonth = (periodNew / monthsCount).toFixed(1);
+    const sortedByDateAsc = [...(users || [])].sort(
+      (a, b) => new Date(pickDate(a) || 0) - new Date(pickDate(b) || 0)
+    );
   
-    const sortedBest = [...(monthlyRows || [])].sort((a, b) => b.total - a.total);
-    const sortedWorst = [...(monthlyRows || [])].sort((a, b) => a.total - b.total);
+    const firstUser = sortedByDateAsc[0] || null;
+    const lastUser = sortedByDateAsc[sortedByDateAsc.length - 1] || null;
   
-    const bestMonth = sortedBest[0] || null;
-    const worstMonth = sortedWorst[0] || null;
+    const bestMonth = [...(monthlyRows || [])].sort((a, b) => b.total - a.total)[0] || null;
+    const worstMonth = [...(monthlyRows || [])].sort((a, b) => a.total - b.total)[0] || null;
   
-    const activePeriod = periodUsers.filter((u) => !!u.active).length;
-    const inactivePeriod = periodUsers.length - activePeriod;
+    const avgPerMonth = monthlyRows.length ? (periodNew / monthlyRows.length).toFixed(1) : "0.0";
   
-    const firstMonth = monthlyRows?.[0] || null;
-    const lastMonth = monthlyRows?.[monthlyRows.length - 1] || null;
-  
-    const variationText =
-      firstMonth && lastMonth
-        ? `${monthLabel(firstMonth.key)} (${firstMonth.total}) → ${monthLabel(lastMonth.key)} (${lastMonth.total})`
-        : "—";
+    const domainsRows = (filterMeta.domains || [])
+      .map(
+        (d) => `
+        <tr>
+          <td>${d.domain}</td>
+          <td>${d.total}</td>
+        </tr>
+      `
+      )
+      .join("");
   
     const monthlyRowsHtml = (monthlyRows || [])
       .map(
         (r) => `
-          <tr>
-            <td>${monthLabel(r.key)}</td>
-            <td>${r.total}</td>
-            <td>${r.active}</td>
-            <td>${r.inactive}</td>
-          </tr>
-        `
+        <tr>
+          <td>${monthLabel(r.key)}</td>
+          <td>${r.total}</td>
+          <td>${r.active}</td>
+          <td>${r.inactive}</td>
+        </tr>
+      `
       )
       .join("");
   
-    const usersRowsHtml = (periodUsers || [])
-      .sort((a, b) => new Date(pickDate(b) || 0) - new Date(pickDate(a) || 0))
+    const usersRowsHtml = (users || [])
       .map((u, index) => {
         const status = u.active ? "Ativo" : "Inativo";
         const statusClass = u.active ? "status-active" : "status-inactive";
   
         return `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${(u.name || "").trim() || "—"}</td>
-            <td>${u.email || "—"}</td>
-            <td><span class="status ${statusClass}">${status}</span></td>
-            <td>${formatDateBR(pickDate(u))}</td>
-            <td>${formatDateTimeBR(pickDate(u))}</td>
-          </tr>
-        `;
+        <tr>
+          <td>${index + 1}</td>
+          <td>${(u.name || "").trim() || "—"}</td>
+          <td>${u.email || "—"}</td>
+          <td><span class="status ${statusClass}">${status}</span></td>
+          <td>${formatDateBR(pickDate(u))}</td>
+          <td>${formatDateTimeBR(pickDate(u))}</td>
+        </tr>
+      `;
       })
       .join("");
   
@@ -131,9 +129,10 @@ export function monthKey(d) {
   <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <title>RF Fitness — Relatório Detalhado de Alunos</title>
+    <title>RF Fitness — Relatório Avançado de Alunos</title>
     <style>
       *{ box-sizing:border-box; }
+  
       body{
         margin:0;
         padding:28px;
@@ -143,9 +142,9 @@ export function monthKey(d) {
       }
   
       .header{
-        border-bottom: 3px solid #ceac5e;
-        padding-bottom: 14px;
-        margin-bottom: 24px;
+        border-bottom:3px solid #ceac5e;
+        padding-bottom:14px;
+        margin-bottom:22px;
       }
   
       .title{
@@ -164,15 +163,15 @@ export function monthKey(d) {
       }
   
       .section{
-        margin-top:26px;
+        margin-top:24px;
       }
   
       .section h2{
         margin:0 0 12px;
         font-size:18px;
-        color:#222;
-        border-left: 4px solid #ceac5e;
+        border-left:4px solid #ceac5e;
         padding-left:10px;
+        color:#222;
       }
   
       .summary{
@@ -266,100 +265,53 @@ export function monthKey(d) {
         color:#666;
       }
   
-      @media print {
+      @media print{
         body{ padding:16px; }
         .section{ break-inside: avoid; }
-        table{ break-inside: auto; }
-        tr{ break-inside: avoid; break-after: auto; }
+        tr{ break-inside: avoid; }
       }
     </style>
   </head>
   <body>
     <div class="header">
-      <h1 class="title">RF FITNESS — Relatório Detalhado de Alunos</h1>
+      <h1 class="title">RF FITNESS — Relatório Avançado de Alunos</h1>
       <p class="subtitle">
         ${periodLabel}<br>
         Gerado em: ${now}
       </p>
     </div>
   
+ 
+  
     <div class="section">
       <h2>Resumo executivo</h2>
       <div class="summary">
-        A base atual possui <strong>${total}</strong> alunos cadastrados, sendo
-        <strong>${active}</strong> ativos (${pct(active, total)}) e
-        <strong>${inactive}</strong> inativos (${pct(inactive, total)}).<br><br>
+        O relatório filtrado contém <strong>${total}</strong> aluno(s), sendo
+        <strong>${active}</strong> ativo(s) (${pct(active, total)}) e
+        <strong>${inactive}</strong> inativo(s) (${pct(inactive, total)}).<br><br>
   
-        No período selecionado, foram encontrados <strong>${periodNew}</strong> cadastros,
-        com média de <strong>${avgPerMonth}</strong> alunos por mês.<br><br>
-  
-        Dentro do período, há <strong>${activePeriod}</strong> alunos ativos e
-        <strong>${inactivePeriod}</strong> inativos.<br><br>
-  
+        A média de cadastros por mês no período foi de <strong>${avgPerMonth}</strong>.<br>
         ${
           bestMonth
-            ? `O mês com maior volume de cadastros foi <strong>${monthLabel(bestMonth.key)}</strong>, com <strong>${bestMonth.total}</strong> cadastro(s).`
+            ? `Mês com maior volume: <strong>${monthLabel(bestMonth.key)}</strong> (${bestMonth.total}).<br>`
             : ""
         }
-        <br>
         ${
           worstMonth
-            ? `O mês com menor volume foi <strong>${monthLabel(worstMonth.key)}</strong>, com <strong>${worstMonth.total}</strong> cadastro(s).`
+            ? `Mês com menor volume: <strong>${monthLabel(worstMonth.key)}</strong> (${worstMonth.total}).<br>`
             : ""
         }
-        <br><br>
-  
-        Comparação entre início e fim do período: <strong>${variationText}</strong>.
+        ${firstUser ? `Primeiro cadastro do filtro: <strong>${formatDateTimeBR(pickDate(firstUser))}</strong>.<br>` : ""}
+        ${lastUser ? `Último cadastro do filtro: <strong>${formatDateTimeBR(pickDate(lastUser))}</strong>.<br>` : ""}
+        Alunos sem nome preenchido: <strong>${unnamedUsers.length}</strong>.<br>
+        Alunos ativos no filtro: <strong>${activeUsers.length}</strong>.<br>
+        Alunos inativos no filtro: <strong>${inactiveUsers.length}</strong>.
       </div>
     </div>
   
+    
     <div class="section">
-      <h2>Indicadores gerais</h2>
-      <div class="grid">
-        <div class="box">
-          <div class="label">Total de alunos</div>
-          <div class="val">${total}</div>
-        </div>
-  
-        <div class="box">
-          <div class="label">Ativos</div>
-          <div class="val">${active}</div>
-          <div class="mini">${pct(active, total)} do total</div>
-        </div>
-  
-        <div class="box">
-          <div class="label">Inativos</div>
-          <div class="val">${inactive}</div>
-          <div class="mini">${pct(inactive, total)} do total</div>
-        </div>
-  
-        <div class="box">
-          <div class="label">Cadastros no período</div>
-          <div class="val">${periodNew}</div>
-          <div class="mini">Média ${avgPerMonth}/mês</div>
-        </div>
-      </div>
-    </div>
-  
-    <div class="section">
-      <h2>Evolução mensal</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Mês</th>
-            <th>Total cadastrados</th>
-            <th>Ativos</th>
-            <th>Inativos</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${monthlyRowsHtml || `<tr><td colspan="4">Nenhum dado disponível no período.</td></tr>`}
-        </tbody>
-      </table>
-    </div>
-  
-    <div class="section">
-      <h2>Listagem detalhada de alunos cadastrados no período</h2>
+      <h2>Listagem detalhada</h2>
       <table>
         <thead>
           <tr>
@@ -372,7 +324,7 @@ export function monthKey(d) {
           </tr>
         </thead>
         <tbody>
-          ${usersRowsHtml || `<tr><td colspan="6">Nenhum aluno encontrado no período selecionado.</td></tr>`}
+          ${usersRowsHtml || `<tr><td colspan="6">Nenhum aluno encontrado no filtro.</td></tr>`}
         </tbody>
       </table>
     </div>

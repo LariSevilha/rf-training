@@ -72,6 +72,12 @@ const dashPdfBtn = document.getElementById("dashPdfBtn");
 const dashPeriodNew = document.getElementById("dashPeriodNew");
 const dashPeriodLabel = document.getElementById("dashPeriodLabel");
 
+// filtros extras do relatório
+const dashStatus = document.getElementById("dashStatus");
+const dashNamed = document.getElementById("dashNamed");
+const dashText = document.getElementById("dashText");
+const dashSort = document.getElementById("dashSort");
+
 // ===== ME (Admin Profile) =====
 const meName = document.getElementById("meName");
 const meEmail = document.getElementById("meEmail");
@@ -83,8 +89,12 @@ const meRefreshBtn = document.getElementById("meRefreshBtn");
 let token = null;
 let selectedRow = null;
 let meSessionUser = null;
+
+// dashboard state
 let dashboardUsers = [];
+let dashboardFilteredUsers = [];
 let dashboardMonthlyRows = [];
+let dashboardFilterMeta = {};
 
 // ===== Helpers =====
 function clearEditFields() {
@@ -98,6 +108,84 @@ function markSelectedRow(tr) {
   if (selectedRow) selectedRow.classList.remove("selected");
   selectedRow = tr;
   if (selectedRow) selectedRow.classList.add("selected");
+}
+
+function normalizeText(v) {
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function compareDatesDesc(a, b) {
+  return new Date(pickDate(b) || 0) - new Date(pickDate(a) || 0);
+}
+
+function compareDatesAsc(a, b) {
+  return new Date(pickDate(a) || 0) - new Date(pickDate(b) || 0);
+}
+
+function getEmailDomain(email) {
+  const clean = String(email || "").trim().toLowerCase();
+  const parts = clean.split("@");
+  return parts[1] || "—";
+}
+
+function buildDomainSummary(users) {
+  const map = new Map();
+
+  for (const u of users || []) {
+    const domain = getEmailDomain(u.email);
+    map.set(domain, (map.get(domain) || 0) + 1);
+  }
+
+  return [...map.entries()]
+    .map(([domain, total]) => ({ domain, total }))
+    .sort((a, b) => b.total - a.total || a.domain.localeCompare(b.domain, "pt-BR"));
+}
+
+function applyDashboardExtraFilters(users) {
+  let out = [...(users || [])];
+
+  const status = dashStatus?.value || "all";
+  const named = dashNamed?.value || "all";
+  const text = normalizeText(dashText?.value || "");
+  const sort = dashSort?.value || "recent";
+
+  if (status === "active") {
+    out = out.filter((u) => !!u.active);
+  } else if (status === "inactive") {
+    out = out.filter((u) => !u.active);
+  }
+
+  if (named === "with-name") {
+    out = out.filter((u) => !!String(u.name || "").trim());
+  } else if (named === "without-name") {
+    out = out.filter((u) => !String(u.name || "").trim());
+  }
+
+  if (text) {
+    out = out.filter((u) => {
+      const name = normalizeText(u.name || "");
+      const email = normalizeText(u.email || "");
+      return name.includes(text) || email.includes(text);
+    });
+  }
+
+  if (sort === "recent") out.sort(compareDatesDesc);
+  if (sort === "oldest") out.sort(compareDatesAsc);
+  if (sort === "name-asc") {
+    out.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "pt-BR"));
+  }
+  if (sort === "name-desc") {
+    out.sort((a, b) => String(b.name || "").localeCompare(String(a.name || ""), "pt-BR"));
+  }
+  if (sort === "email-asc") {
+    out.sort((a, b) => String(a.email || "").localeCompare(String(b.email || ""), "pt-BR"));
+  }
+
+  return out;
 }
 
 async function selectUser(email, isActive, name = "") {
@@ -248,6 +336,7 @@ function renderMonthly(rows) {
     .join("");
 }
 
+// ===== DASHBOARD =====
 async function loadDashboard() {
   if (!dashTotal || !dashMonthlyBody) return;
 
@@ -264,40 +353,41 @@ async function loadDashboard() {
 
     const data = await apiAdminListUsers(token, "");
     const users = data?.users || [];
-
     dashboardUsers = users;
 
-    const total = users.length;
-    const activeCount = users.filter((u) => !!u.active).length;
-    const inactiveCount = total - activeCount;
-
-    dashTotal.textContent = String(total);
-    dashActive.textContent = String(activeCount);
-    dashInactive.textContent = String(inactiveCount);
-
-    if (dashActivePct) dashActivePct.textContent = `${pct(activeCount, total)} do total`;
-    if (dashInactivePct) dashInactivePct.textContent = `${pct(inactiveCount, total)} do total`;
-
+    const totalBase = users.length;
     const fromKey = dashFrom?.value || monthKey(new Date());
     const toKey = dashTo?.value || monthKey(new Date());
     const keys = monthsBetween(fromKey, toKey);
 
-    if (dashPeriodLabel) {
-      dashPeriodLabel.textContent = `Período: ${monthLabel(keys[0])} → ${monthLabel(keys[keys.length - 1])}`;
-    }
-
-    const periodUsers = users.filter((u) => {
+    let periodUsers = users.filter((u) => {
       const d = pickDate(u);
       if (!d) return false;
       return keys.includes(monthKey(d));
     });
 
-    const periodNew = periodUsers.length;
+    periodUsers = applyDashboardExtraFilters(periodUsers);
+    dashboardFilteredUsers = periodUsers;
 
-    if (dashPeriodNew) dashPeriodNew.textContent = String(periodNew);
+    const filteredTotal = periodUsers.length;
+    const activeCount = periodUsers.filter((u) => !!u.active).length;
+    const inactiveCount = filteredTotal - activeCount;
+
+    dashTotal.textContent = String(filteredTotal);
+    dashActive.textContent = String(activeCount);
+    dashInactive.textContent = String(inactiveCount);
+
+    if (dashActivePct) dashActivePct.textContent = `${pct(activeCount, filteredTotal)} do total filtrado`;
+    if (dashInactivePct) dashInactivePct.textContent = `${pct(inactiveCount, filteredTotal)} do total filtrado`;
+
+    if (dashPeriodLabel) {
+      dashPeriodLabel.textContent = `Período: ${monthLabel(keys[0])} → ${monthLabel(keys[keys.length - 1])}`;
+    }
+
+    if (dashPeriodNew) dashPeriodNew.textContent = String(filteredTotal);
 
     const monthly = keys.map((key) => {
-      const inMonth = users.filter((u) => {
+      const inMonth = periodUsers.filter((u) => {
         const d = pickDate(u);
         if (!d) return false;
         return monthKey(d) === key;
@@ -315,6 +405,19 @@ async function loadDashboard() {
     });
 
     dashboardMonthlyRows = monthly;
+
+    dashboardFilterMeta = {
+      fromKey,
+      toKey,
+      totalBase,
+      filteredTotal,
+      status: dashStatus?.value || "all",
+      named: dashNamed?.value || "all",
+      text: (dashText?.value || "").trim(),
+      sort: dashSort?.value || "recent",
+      domains: buildDomainSummary(periodUsers),
+    };
+
     renderMonthly(monthly);
   } catch (e) {
     toast("error", "Erro", e.message || "Erro ao carregar dashboard.");
@@ -574,20 +677,28 @@ dashRefreshBtn?.addEventListener("click", async () => {
   toast("ok", "Atualizado", "Dashboard carregado.");
 });
 
-dashPdfBtn?.addEventListener("click", () => {
-  const fromKey = dashFrom?.value || monthKey(new Date());
-  const toKey = dashTo?.value || monthKey(new Date());
+dashStatus?.addEventListener("change", loadDashboard);
+dashNamed?.addEventListener("change", loadDashboard);
+dashSort?.addEventListener("change", loadDashboard);
 
+let dashTextTimer = null;
+dashText?.addEventListener("input", () => {
+  clearTimeout(dashTextTimer);
+  dashTextTimer = setTimeout(() => {
+    loadDashboard();
+  }, 250);
+});
+
+dashPdfBtn?.addEventListener("click", () => {
   const html = buildDashboardPrintHTML({
     periodLabel: dashPeriodLabel?.textContent || "",
     total: Number(dashTotal?.textContent || 0),
     active: Number(dashActive?.textContent || 0),
     inactive: Number(dashInactive?.textContent || 0),
     periodNew: Number(dashPeriodNew?.textContent || 0),
-    users: dashboardUsers,
+    users: dashboardFilteredUsers,
     monthlyRows: dashboardMonthlyRows,
-    fromKey,
-    toKey,
+    filterMeta: dashboardFilterMeta,
   });
 
   const w = window.open("", "_blank");
@@ -610,7 +721,7 @@ meSaveBtn?.addEventListener("click", async () => {
   await saveMe();
 });
 
-// ✅ Route change
+// Route change
 window.addEventListener("routechange", async (e) => {
   const r = e?.detail?.route;
 
