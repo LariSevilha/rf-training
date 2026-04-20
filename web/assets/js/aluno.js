@@ -8,15 +8,11 @@ if ("serviceWorker" in navigator) {
     }
   });
  }
- 
- 
  import { requireAuth } from "./guard.js";
  import { apiDocuments, apiMe } from "./api.js";
  import { clearSession } from "./state.js";
  import { setMsg, clearMsg } from "./ui.js";
  import { driveToPreview, placeholderHtml } from "./pdf.js";
- 
- 
  // ===== Elements =====
  const logoutBtn = document.getElementById("logoutBtn");
  const statusEl = document.getElementById("status");
@@ -24,30 +20,20 @@ if ("serviceWorker" in navigator) {
  const ok = document.getElementById("ok");
  const err = document.getElementById("err");
  const menuGrid = document.getElementById("menuGrid");
- 
- 
  // PDF
  const pdfOverlay = document.getElementById("pdfOverlay");
  const pdfFrame = document.getElementById("pdfFrame");
  const pdfBack = document.getElementById("pdfBack");
  const pdfTitle = document.getElementById("pdfTitle");
  const loadingLayer = document.getElementById("loadingLayer");
- 
- 
  // Offline
  const offlineMask = document.getElementById("offlineMask");
  const offlineTryBtn = document.getElementById("offlineTryBtn");
- 
- 
  // Install (Android)
  const installBtn = document.getElementById("installBtn");
  let deferredPrompt = null;
- 
- 
  // links dos PDFs
  const urls = { training: "", diet: "", supp: "", stretch: "" };
- 
- 
  // ===== helpers =====
  let fallbackTimer = null;
  function showLoading() {
@@ -61,8 +47,6 @@ if ("serviceWorker" in navigator) {
   fallbackTimer = null;
  }
  pdfFrame?.addEventListener("load", hideLoading);
- 
- 
  function isIOSDevice() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -77,8 +61,6 @@ if ("serviceWorker" in navigator) {
     window.navigator.standalone === true
   );
  }
- 
- 
  // ====================
  // OFFLINE UI
  // ====================
@@ -91,8 +73,6 @@ if ("serviceWorker" in navigator) {
  window.addEventListener("online", setOfflineUI);
  window.addEventListener("offline", setOfflineUI);
  offlineTryBtn?.addEventListener("click", setOfflineUI);
- 
- 
  // ====================
  // Menu sem flash
  // ====================
@@ -104,8 +84,6 @@ if ("serviceWorker" in navigator) {
   document.body.classList.add("ready");
   menuGrid?.classList.remove("menuLocked");
  }
- 
- 
  function applyVisibility() {
   const buttons = Array.from(document.querySelectorAll(".menuBtn"));
   buttons.forEach((btn) => {
@@ -115,8 +93,6 @@ if ("serviceWorker" in navigator) {
     btn.style.display = hasLink ? "" : "none";
   });
  }
- 
- 
  // ====================
  // PDF overlay
  // ====================
@@ -127,15 +103,9 @@ if ("serviceWorker" in navigator) {
     supp: "SUPLEMENTAÇÃO",
     stretch: "ALONGAMENTOS E MOBILIDADE",
   };
- 
- 
   if (pdfTitle) pdfTitle.textContent = titles[type] || "PDF";
   showLoading();
- 
- 
   const rawUrl = (urls[type] || "").trim();
- 
- 
   if (!rawUrl) {
     const html = placeholderHtml("PDF não configurado", "Entre em contato com o personal.");
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
@@ -154,14 +124,10 @@ if ("serviceWorker" in navigator) {
       pdfFrame.src = preview;
     }
   }
- 
- 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
  }
- 
- 
  function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
@@ -169,22 +135,14 @@ if ("serviceWorker" in navigator) {
   hideLoading();
   setTimeout(() => { if (pdfFrame) pdfFrame.src = "about:blank"; }, 200);
  }
- 
- 
  pdfBack?.addEventListener("click", closePdf);
- 
- 
  document.querySelectorAll(".menuBtn").forEach((btn) => {
   btn.addEventListener("click", () => openPdf(btn.dataset.open));
  });
- 
- 
  logoutBtn?.addEventListener("click", () => {
   clearSession();
   window.location.href = "/pages/index.html";
  });
- 
- 
  // ====================
  // ANDROID INSTALL
  // ====================
@@ -193,15 +151,14 @@ if ("serviceWorker" in navigator) {
  // ====================
  function hideInstallUI() { if (installBtn) installBtn.style.display = "none"; }
  function showInstallUI() { if (installBtn) installBtn.style.display = "inline-flex"; }
+  
+ function hideInstallUI() {
+  if (installBtn) installBtn.style.display = "none";
+ }
  
  
- function openAndroidHowTo() {
-  alert(
-    "Para instalar:\n\n" +
-    "1) Abra o menu do Chrome (⋮)\n" +
-    "2) Toque em “Instalar app” ou “Adicionar à tela inicial”\n\n" +
-    "Se não aparecer, verifique se está no Chrome e com internet."
-  );
+ function showInstallUI() {
+  if (installBtn) installBtn.style.display = "inline-flex";
  }
  
  
@@ -209,40 +166,35 @@ if ("serviceWorker" in navigator) {
   hideInstallUI();
  
  
-  const shouldShow = isAndroidDevice() && !isStandaloneMode();
- 
- 
-  // ✅ Fallback: mostra o botão mesmo se o evento não disparar
-  if (shouldShow) {
-    setTimeout(() => {
-      if (installBtn.style.display === "none") {
-        installBtn.textContent = "Instalar";
-        showInstallUI();
-      }
-    }, 1200);
+  if (!isAndroidDevice() || isStandaloneMode()) {
+    hideInstallUI();
   }
  
  
   window.addEventListener("beforeinstallprompt", (e) => {
-    if (!shouldShow) return;
+    if (!isAndroidDevice() || isStandaloneMode()) return;
+ 
+ 
     e.preventDefault();
     deferredPrompt = e;
- 
- 
     installBtn.textContent = "Instalar";
     showInstallUI();
   });
  
  
   installBtn.addEventListener("click", async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice.catch(() => {});
+    if (!deferredPrompt) return;
+ 
+ 
+    try {
+      await deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+    } catch (e) {
+      console.warn("Falha ao abrir prompt de instalação:", e);
+    } finally {
       deferredPrompt = null;
       hideInstallUI();
-      return;
     }
-    openAndroidHowTo();
   });
  
  
@@ -251,32 +203,20 @@ if ("serviceWorker" in navigator) {
     hideInstallUI();
   });
  }
- 
- 
- 
- 
  // ====================
  // iOS modal (ÚNICO)
  // ====================
  (function iosInstallModalInit() {
   const modal = document.getElementById("iosInstallModal");
   if (!modal) return;
- 
- 
   if (!isIOSDevice() || isStandaloneMode()) return;
- 
- 
   const key = "rf_ios_install_hide_until";
   const hideUntil = Number(localStorage.getItem(key) || "0");
   if (hideUntil && Date.now() < hideUntil) return;
- 
- 
   const closeBtn = document.getElementById("iosInstallClose");
   const laterBtn = document.getElementById("iosLaterBtn");
   const okBtn = document.getElementById("iosOkBtn");
   const dontShowChk = document.getElementById("iosDontShowChk");
- 
- 
   function open() {
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
@@ -289,49 +229,29 @@ if ("serviceWorker" in navigator) {
     modal.classList.remove("show");
     modal.setAttribute("aria-hidden", "true");
   }
- 
- 
   closeBtn?.addEventListener("click", close);
   laterBtn?.addEventListener("click", close);
   okBtn?.addEventListener("click", close);
- 
- 
   modal.addEventListener("click", (e) => {
     if (e.target === modal) close();
   });
- 
- 
   setTimeout(open, 700);
  })();
- 
- 
  // ====================
  // Sync docs
  // ====================
  let session = null;
- 
- 
  async function syncDocuments() {
   if (!session?.token) return;
- 
- 
   lockMenu();
   if (statusEl) statusEl.textContent = navigator.onLine ? "Sincronizando documentos…" : "Você está offline.";
- 
- 
   try {
     const docs = await apiDocuments(session.token);
- 
- 
     urls.training = (docs.training || "").trim();
     urls.diet = (docs.diet || "").trim();
     urls.supp = (docs.supp || "").trim();
     urls.stretch = (docs.stretch || "").trim();
- 
- 
     applyVisibility();
- 
- 
     if (statusEl) statusEl.textContent = "Toque em um item disponível para abrir.";
     clearMsg(err);
     setTimeout(() => clearMsg(ok), 1200);
@@ -341,22 +261,14 @@ if ("serviceWorker" in navigator) {
     unlockMenu();
   }
  }
- 
- 
  // ====================
  // INIT
  // ====================
  (async function init() {
   setOfflineUI();
- 
- 
   session = await requireAuth("student");
   if (!session) return;
- 
- 
   lockMenu();
- 
- 
   // Nome do aluno
   let displayName = (session?.user?.name || "").trim();
   if (!displayName) {
@@ -367,10 +279,9 @@ if ("serviceWorker" in navigator) {
   }
   if (!displayName) displayName = "Aluno";
   if (nameEl) nameEl.textContent = displayName;
- 
- 
   await syncDocuments().catch(() => {});
  })();
+ 
  
  
  
