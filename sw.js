@@ -2,7 +2,7 @@
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("/service-worker.js");
+      const reg = await navigator.serviceWorker.register("/sw.js");
       reg.update?.();
     } catch (e) {
       console.warn("SW register falhou:", e);
