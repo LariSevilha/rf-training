@@ -2,7 +2,8 @@
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
-      await navigator.serviceWorker.register("/service-worker.js");
+      const reg = await navigator.serviceWorker.register("/service-worker.js");
+      reg.update?.();
     } catch (e) {
       console.warn("SW register falhou:", e);
     }
@@ -34,34 +35,48 @@ const loadingLayer = document.getElementById("loadingLayer");
 const offlineMask = document.getElementById("offlineMask");
 const offlineTryBtn = document.getElementById("offlineTryBtn");
 
-// Install (Android)
+// Install
 const installBtn = document.getElementById("installBtn");
 let deferredPrompt = null;
 
 // links dos PDFs
-const urls = { training: "", diet: "", supp: "", stretch: "" };
+const urls = {
+  training: "",
+  diet: "",
+  supp: "",
+  stretch: "",
+};
 
 // ===== helpers =====
 let fallbackTimer = null;
+
 function showLoading() {
   loadingLayer?.classList.add("show");
   clearTimeout(fallbackTimer);
-  fallbackTimer = setTimeout(() => loadingLayer?.classList.remove("show"), 12000);
+  fallbackTimer = setTimeout(() => {
+    loadingLayer?.classList.remove("show");
+  }, 12000);
 }
+
 function hideLoading() {
   loadingLayer?.classList.remove("show");
   clearTimeout(fallbackTimer);
   fallbackTimer = null;
 }
+
 pdfFrame?.addEventListener("load", hideLoading);
 
 function isIOSDevice() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
 }
+
 function isAndroidDevice() {
   return /Android/i.test(navigator.userAgent);
 }
+
 function isStandaloneMode() {
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -76,9 +91,11 @@ function isStandaloneMode() {
 function setOfflineUI() {
   const online = navigator.onLine;
   if (!offlineMask) return;
+
   offlineMask.classList.toggle("show", !online);
   offlineMask.setAttribute("aria-hidden", online ? "true" : "false");
 }
+
 window.addEventListener("online", setOfflineUI);
 window.addEventListener("offline", setOfflineUI);
 offlineTryBtn?.addEventListener("click", setOfflineUI);
@@ -90,6 +107,7 @@ function lockMenu() {
   document.body.classList.remove("ready");
   menuGrid?.classList.add("menuLocked");
 }
+
 function unlockMenu() {
   document.body.classList.add("ready");
   menuGrid?.classList.remove("menuLocked");
@@ -97,9 +115,11 @@ function unlockMenu() {
 
 function applyVisibility() {
   const buttons = Array.from(document.querySelectorAll(".menuBtn"));
+
   buttons.forEach((btn) => {
     const type = btn?.dataset?.open;
     if (!type) return;
+
     const hasLink = !!(urls[type] || "").trim();
     btn.style.display = hasLink ? "" : "none";
   });
@@ -116,23 +136,36 @@ function openPdf(type) {
     stretch: "ALONGAMENTOS E MOBILIDADE",
   };
 
-  if (pdfTitle) pdfTitle.textContent = titles[type] || "PDF";
+  if (pdfTitle) {
+    pdfTitle.textContent = titles[type] || "PDF";
+  }
+
   showLoading();
 
   const rawUrl = (urls[type] || "").trim();
 
   if (!rawUrl) {
-    const html = placeholderHtml("PDF não configurado", "Entre em contato com o personal.");
+    const html = placeholderHtml(
+      "PDF não configurado",
+      "Entre em contato com o personal."
+    );
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    const html = placeholderHtml("Você está offline", "Conecte-se para abrir este PDF.");
+    const html = placeholderHtml(
+      "Você está offline",
+      "Conecte-se para abrir este PDF."
+    );
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
     setTimeout(hideLoading, 250);
   } else {
     const preview = driveToPreview(rawUrl);
+
     if (!preview) {
-      const html = placeholderHtml("Link inválido", "Envie um link do Drive compatível.");
+      const html = placeholderHtml(
+        "Link inválido",
+        "Envie um link do Drive compatível."
+      );
       pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
       setTimeout(hideLoading, 250);
     } else {
@@ -149,8 +182,12 @@ function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
+
   hideLoading();
-  setTimeout(() => { if (pdfFrame) pdfFrame.src = "about:blank"; }, 200);
+
+  setTimeout(() => {
+    if (pdfFrame) pdfFrame.src = "about:blank";
+  }, 200);
 }
 
 pdfBack?.addEventListener("click", closePdf);
@@ -166,55 +203,44 @@ logoutBtn?.addEventListener("click", () => {
 
 // ====================
 // ANDROID INSTALL
+// clicou no botão = abre prompt nativo
+// sem modal explicativo
 // ====================
-// ====================
-// ANDROID INSTALL (mostra botão + fallback quando não houver prompt)
-// ====================
-function hideInstallUI() { if (installBtn) installBtn.style.display = "none"; }
-function showInstallUI() { if (installBtn) installBtn.style.display = "inline-flex"; }
+function hideInstallUI() {
+  if (installBtn) installBtn.style.display = "none";
+}
 
-function openAndroidHowTo() {
-  alert(
-    "Para instalar:\n\n" +
-    "1) Abra o menu do Chrome (⋮)\n" +
-    "2) Toque em “Instalar app” ou “Adicionar à tela inicial”\n\n" +
-    "Se não aparecer, verifique se está no Chrome e com internet."
-  );
+function showInstallUI() {
+  if (installBtn) installBtn.style.display = "inline-flex";
 }
 
 if (installBtn) {
   hideInstallUI();
 
-  const shouldShow = isAndroidDevice() && !isStandaloneMode();
-
-  // ✅ Fallback: mostra o botão mesmo se o evento não disparar
-  if (shouldShow) {
-    setTimeout(() => {
-      if (installBtn.style.display === "none") {
-        installBtn.textContent = "Instalar";
-        showInstallUI();
-      }
-    }, 1200);
+  if (!isAndroidDevice() || isStandaloneMode()) {
+    hideInstallUI();
   }
 
   window.addEventListener("beforeinstallprompt", (e) => {
-    if (!shouldShow) return;
+    if (!isAndroidDevice() || isStandaloneMode()) return;
+
     e.preventDefault();
     deferredPrompt = e;
-
-    installBtn.textContent = "Instalar";
     showInstallUI();
   });
 
   installBtn.addEventListener("click", async () => {
-    if (deferredPrompt) {
+    if (!deferredPrompt) return;
+
+    try {
       deferredPrompt.prompt();
-      await deferredPrompt.userChoice.catch(() => {});
+      await deferredPrompt.userChoice;
+    } catch (e) {
+      console.warn("Falha ao abrir prompt de instalação:", e);
+    } finally {
       deferredPrompt = null;
       hideInstallUI();
-      return;
     }
-    openAndroidHowTo();
   });
 
   window.addEventListener("appinstalled", () => {
@@ -223,9 +249,8 @@ if (installBtn) {
   });
 }
 
-
 // ====================
-// iOS modal (ÚNICO)
+// iOS modal
 // ====================
 (function iosInstallModalInit() {
   const modal = document.getElementById("iosInstallModal");
@@ -246,11 +271,13 @@ if (installBtn) {
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
   }
+
   function close() {
     if (dontShowChk?.checked) {
       const sevenDays = 7 * 24 * 60 * 60 * 1000;
       localStorage.setItem(key, String(Date.now() + sevenDays));
     }
+
     modal.classList.remove("show");
     modal.setAttribute("aria-hidden", "true");
   }
@@ -263,7 +290,7 @@ if (installBtn) {
     if (e.target === modal) close();
   });
 
-  setTimeout(open, 700);
+  setTimeout(open, 900);
 })();
 
 // ====================
@@ -275,7 +302,12 @@ async function syncDocuments() {
   if (!session?.token) return;
 
   lockMenu();
-  if (statusEl) statusEl.textContent = navigator.onLine ? "Sincronizando documentos…" : "Você está offline.";
+
+  if (statusEl) {
+    statusEl.textContent = navigator.onLine
+      ? "Sincronizando documentos…"
+      : "Você está offline.";
+  }
 
   try {
     const docs = await apiDocuments(session.token);
@@ -289,6 +321,7 @@ async function syncDocuments() {
 
     if (statusEl) statusEl.textContent = "Toque em um item disponível para abrir.";
     clearMsg(err);
+    setMsg(ok, "Pronto ✅", "ok");
     setTimeout(() => clearMsg(ok), 1200);
   } catch {
     if (statusEl) statusEl.textContent = "Erro ao sincronizar";
@@ -308,14 +341,15 @@ async function syncDocuments() {
 
   lockMenu();
 
-  // Nome do aluno
   let displayName = (session?.user?.name || "").trim();
+
   if (!displayName) {
     try {
       const me = await apiMe(session.token);
       displayName = (me?.user?.name || "").trim();
     } catch {}
   }
+
   if (!displayName) displayName = "Aluno";
   if (nameEl) nameEl.textContent = displayName;
 
