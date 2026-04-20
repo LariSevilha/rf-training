@@ -126,22 +126,39 @@ async function main() {
   });
 
   // ===== ADMIN =====
-
   app.get(`${API_PREFIX}/admin/users`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
     if (!requireAdmin(req, reply)) return;
+  
+    const q = String(req.query?.q || "").trim();
 
-    const q = normKey(String(req.query?.q || ""));
-
-    const users = await prisma.user.findMany({
-      where: {
-        role: "student",
-        ...(q ? { email: { contains: q, mode: "insensitive" } } : {}),
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      select: { email: true, name: true, active: true, createdAt: true },
-    });
-
+    const terms = q
+      .split(/\s+/)
+      .filter(Boolean);
+    
+      const users = await prisma.user.findMany({
+        where: {
+          role: "student",
+          ...(terms.length
+            ? {
+                AND: terms.map((t) => ({
+                  OR: [
+                    { name: { contains: t, mode: "insensitive" } },
+                    { email: { contains: t, mode: "insensitive" } },
+                  ],
+                })),
+              }
+            : {}),
+        },
+        orderBy: [{ createdAt: "desc" }],
+        take: 500,
+        select: {
+          email: true,
+          name: true,
+          active: true,
+          createdAt: true,
+        },
+      });
+  
     return { users };
   });
 
@@ -257,7 +274,7 @@ async function main() {
       data: { name: clean ? clean : null },
       select: { email: true, name: true },
     });
-
+ 
     return { ok: true, user: updated };
   });
 
