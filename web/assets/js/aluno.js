@@ -206,75 +206,59 @@ logoutBtn?.addEventListener("click", () => {
 // ANDROID INSTALL
 // ====================
 function hideInstallUI() {
-  if (!installBtn) return;
-  installBtn.style.display = "none";
+  if (installBtn) installBtn.style.display = "none";
 }
 
 function showInstallUI() {
-  if (!installBtn) return;
-  installBtn.style.display = "inline-flex";
+  if (installBtn) installBtn.style.display = "inline-flex";
 }
 
-function setInstallButtonDefault() {
+function setInstallText(text, disabled = false) {
   if (!installBtn) return;
-  installBtn.textContent = "Instalar";
-  installBtn.disabled = false;
-}
-
-function setInstallButtonLoading() {
-  if (!installBtn) return;
-  installBtn.textContent = "Carregando...";
-  installBtn.disabled = true;
+  installBtn.textContent = text;
+  installBtn.disabled = disabled;
 }
 
 if (installBtn) {
   hideInstallUI();
 
-  const canShowAndroidInstall = isAndroidDevice() && !isStandaloneMode();
+  const canInstallHere = isAndroidDevice() && !isStandaloneMode();
 
-  if (canShowAndroidInstall) {
-    setInstallButtonDefault();
+  if (canInstallHere) {
+    setInstallText("Instalar");
     showInstallUI();
   }
 
   window.addEventListener("beforeinstallprompt", (e) => {
-    if (!canShowAndroidInstall) return;
+    if (!canInstallHere) return;
 
     e.preventDefault();
     deferredPrompt = e;
-
-    setInstallButtonDefault();
+    console.log("beforeinstallprompt recebido");
+    setInstallText("Instalar");
     showInstallUI();
-
-    console.log("Prompt de instalação pronto");
   });
 
   installBtn.addEventListener("click", async () => {
-    if (!canShowAndroidInstall) return;
-
-    setInstallButtonLoading();
-
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      await reg?.update?.();
-    } catch (e) {
-      console.warn("Falha ao atualizar SW:", e);
-    }
+    if (!canInstallHere) return;
 
     if (!deferredPrompt) {
-      setInstallButtonDefault();
-      console.log("Prompt ainda não liberado pelo navegador");
+      console.log("deferredPrompt ainda não existe");
+      setInstallText("Instalar indisponível");
+      setTimeout(() => setInstallText("Instalar"), 1500);
       return;
     }
 
     try {
+      setInstallText("Abrindo...", true);
       await deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
+      const choice = await deferredPrompt.userChoice;
+      console.log("Escolha do usuário:", choice);
     } catch (e) {
-      console.warn("Falha ao abrir prompt de instalação:", e);
-      setInstallButtonDefault();
+      console.warn("Falha ao abrir prompt:", e);
     } finally {
       deferredPrompt = null;
+      setInstallText("Instalar");
     }
   });
 
@@ -284,7 +268,6 @@ if (installBtn) {
     hideInstallUI();
   });
 }
-
 // ====================
 // iOS modal
 // ====================
