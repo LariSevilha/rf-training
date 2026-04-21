@@ -256,7 +256,7 @@ if (installBtn) {
 
 // ====================
 // iOS modal
-// ====================
+// ====================j
 (function iosInstallModalInit() {
   const modal = document.getElementById("iosInstallModal");
   if (!modal) return;
