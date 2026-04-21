@@ -1,8 +1,8 @@
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("../service-worker.js");
-      reg.update?.();
+      await navigator.serviceWorker.register("../service-worker.js");
+      console.log("SW registrado com sucesso");
     } catch (e) {
       console.warn("SW register falhou:", e);
     }
@@ -196,7 +196,6 @@ logoutBtn?.addEventListener("click", () => {
 
 // ====================
 // ANDROID INSTALL
-// mostra botão SOMENTE quando houver prompt nativo
 // ====================
 function hideInstallUI() {
   if (installBtn) installBtn.style.display = "none";
@@ -209,10 +208,6 @@ function showInstallUI() {
 if (installBtn) {
   hideInstallUI();
 
-  if (!isAndroidDevice() || isStandaloneMode()) {
-    hideInstallUI();
-  }
-
   window.addEventListener("beforeinstallprompt", (e) => {
     if (!isAndroidDevice() || isStandaloneMode()) return;
 
@@ -220,6 +215,7 @@ if (installBtn) {
     deferredPrompt = e;
     installBtn.textContent = "Instalar";
     showInstallUI();
+    console.log("beforeinstallprompt disparou");
   });
 
   installBtn.addEventListener("click", async () => {
@@ -239,6 +235,7 @@ if (installBtn) {
   window.addEventListener("appinstalled", () => {
     deferredPrompt = null;
     hideInstallUI();
+    console.log("App instalado");
   });
 }
 
