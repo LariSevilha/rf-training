@@ -1,21 +1,26 @@
-// ✅ PWA: registra SW
+import { requireAuth } from "./guard.js";
+import { apiDocuments, apiMe } from "./api.js";
+import { clearSession } from "./state.js";
+import { clearMsg } from "./ui.js";
+import { driveToPreview, placeholderHtml } from "./pdf.js";
+
+// ====================
+// SERVICE WORKER
+// ====================
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
       await navigator.serviceWorker.register("/service-worker.js");
+      console.log("SW registrado com sucesso");
     } catch (e) {
       console.warn("SW register falhou:", e);
     }
   });
 }
 
-import { requireAuth } from "./guard.js";
-import { apiDocuments, apiMe } from "./api.js";
-import { clearSession } from "./state.js";
-import { setMsg, clearMsg } from "./ui.js";
-import { driveToPreview, placeholderHtml } from "./pdf.js";
-
-// ===== Elements =====
+// ====================
+// ELEMENTS
+// ====================
 const logoutBtn = document.getElementById("logoutBtn");
 const statusEl = document.getElementById("status");
 const nameEl = document.getElementById("studentName");
@@ -23,22 +28,24 @@ const ok = document.getElementById("ok");
 const err = document.getElementById("err");
 const menuGrid = document.getElementById("menuGrid");
 
-// PDF
 const pdfOverlay = document.getElementById("pdfOverlay");
 const pdfFrame = document.getElementById("pdfFrame");
 const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
 const loadingLayer = document.getElementById("loadingLayer");
 
-// Offline
 const offlineMask = document.getElementById("offlineMask");
 const offlineTryBtn = document.getElementById("offlineTryBtn");
 
-// Install (Android)
 const installBtn = document.getElementById("installBtn");
-let deferredPrompt = null;
 
-// links dos PDFs
+// ====================
+// STATE
+// ====================
+let session = null;
+let deferredPrompt = null;
+let installPromptSeen = false;
+
 const urls = {
   training: "",
   diet: "",
@@ -46,7 +53,44 @@ const urls = {
   stretch: ""
 };
 
-// ===== helpers =====
+// ====================
+// HELPERS
+// ====================
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isAndroidDevice() {
+  return /Android/i.test(navigator.userAgent);
+}
+
+function isStandaloneMode() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    window.navigator.standalone === true
+  );
+}
+
+function showInstallButton() {
+  if (installBtn) installBtn.style.display = "inline-flex";
+}
+
+function hideInstallButton() {
+  if (installBtn) installBtn.style.display = "none";
+}
+
+function showAndroidManualInstall() {
+  alert(
+    "Para instalar no Android:\n\n" +
+    "1) Abra este site no Chrome\n" +
+    "2) Toque no menu ⋮\n" +
+    "3) Toque em “Instalar app” ou “Adicionar à tela inicial”\n\n" +
+    "Se a opção não aparecer, feche e abra o site novamente após alguns segundos."
+  );
+}
+
 let fallbackTimer = null;
 
 function showLoading() {
@@ -65,25 +109,8 @@ function hideLoading() {
 
 pdfFrame?.addEventListener("load", hideLoading);
 
-function isIOSDevice() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-}
-
-function isAndroidDevice() {
-  return /Android/i.test(navigator.userAgent);
-}
-
-function isStandaloneMode() {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.matchMedia("(display-mode: fullscreen)").matches ||
-    window.navigator.standalone === true
-  );
-}
-
 // ====================
-// OFFLINE UI
+// OFFLINE
 // ====================
 function setOfflineUI() {
   const online = navigator.onLine;
@@ -98,7 +125,7 @@ window.addEventListener("offline", setOfflineUI);
 offlineTryBtn?.addEventListener("click", setOfflineUI);
 
 // ====================
-// Menu sem flash
+// MENU
 // ====================
 function lockMenu() {
   document.body.classList.remove("ready");
@@ -123,7 +150,7 @@ function applyVisibility() {
 }
 
 // ====================
-// PDF overlay
+// PDF
 // ====================
 function openPdf(type) {
   const titles = {
@@ -180,87 +207,102 @@ document.querySelectorAll(".menuBtn").forEach((btn) => {
   btn.addEventListener("click", () => openPdf(btn.dataset.open));
 });
 
+// ====================
+// LOGOUT
+// ====================
 logoutBtn?.addEventListener("click", () => {
   clearSession();
   window.location.href = "/pages/index.html";
 });
 
 // ====================
-// ANDROID INSTALL
+// INSTALL
 // ====================
-function hideInstallUI() {
-  if (installBtn) installBtn.style.display = "none";
-}
+function setupInstallFlow() {
+  if (!installBtn) return;
 
-function showInstallUI() {
-  if (installBtn) installBtn.style.display = "inline-flex";
-}
+  hideInstallButton();
 
-function openAndroidHowTo() {
-  alert(
-    "Para instalar:\n\n" +
-    "1) Abra o menu do Chrome (⋮)\n" +
-    "2) Toque em “Instalar app” ou “Adicionar à tela inicial”\n\n" +
-    "Se não aparecer, verifique se está no Chrome e com internet."
-  );
-}
+  // Android com fallback
+  if (isAndroidDevice() && !isStandaloneMode()) {
+    showInstallButton();
+    installBtn.textContent = "Instalar app";
+  }
 
-if (installBtn) {
-  hideInstallUI();
+  window.addEventListener("beforeinstallprompt", (event) => {
+    console.log("beforeinstallprompt capturado");
+    event.preventDefault();
 
-  const shouldShowInstall = isAndroidDevice() && !isStandaloneMode();
+    deferredPrompt = event;
+    installPromptSeen = true;
 
-  window.addEventListener("beforeinstallprompt", (e) => {
-    if (!shouldShowInstall) return;
-
-    e.preventDefault();
-    deferredPrompt = e;
-
-    installBtn.textContent = "Instalar";
-    showInstallUI();
+    if (isAndroidDevice() && !isStandaloneMode()) {
+      installBtn.textContent = "Instalar app";
+      showInstallButton();
+    }
   });
 
   installBtn.addEventListener("click", async () => {
-    if (deferredPrompt) {
-      try {
-        await deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-      } catch (error) {
-        console.warn("Falha ao abrir prompt de instalação:", error);
-      }
-
-      deferredPrompt = null;
-      hideInstallUI();
+    if (isStandaloneMode()) {
+      hideInstallButton();
       return;
     }
 
-    openAndroidHowTo();
+    if (deferredPrompt) {
+      try {
+        await deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        console.log("Resultado install:", choice?.outcome || "sem retorno");
+      } catch (e) {
+        console.warn("Falha ao abrir prompt:", e);
+      } finally {
+        deferredPrompt = null;
+        if (!isStandaloneMode()) {
+          showInstallButton();
+        } else {
+          hideInstallButton();
+        }
+      }
+      return;
+    }
+
+    if (isAndroidDevice()) {
+      showAndroidManualInstall();
+      return;
+    }
+
+    if (isIOSDevice()) {
+      const modal = document.getElementById("iosInstallModal");
+      if (modal) {
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+      }
+    }
   });
 
   window.addEventListener("appinstalled", () => {
+    console.log("App instalado");
     deferredPrompt = null;
-    hideInstallUI();
+    hideInstallButton();
   });
 
-  // fallback: se o beforeinstallprompt não disparar,
-  // ainda mostra o botão com instrução manual
-  if (shouldShowInstall) {
-    setTimeout(() => {
-      if (!deferredPrompt && !isStandaloneMode()) {
-        installBtn.textContent = "Instalar";
-        showInstallUI();
-      }
-    }, 1800);
-  }
+  // fallback: alguns Androids não disparam beforeinstallprompt na hora
+  setTimeout(() => {
+    if (isAndroidDevice() && !isStandaloneMode() && !installPromptSeen) {
+      installBtn.textContent = "Instalar app";
+      showInstallButton();
+    }
+  }, 2500);
 }
 
+setupInstallFlow();
+
 // ====================
-// iOS modal
-// ====================j
+// iOS MODAL
+// ====================
 (function iosInstallModalInit() {
   const modal = document.getElementById("iosInstallModal");
   if (!modal) return;
-
   if (!isIOSDevice() || isStandaloneMode()) return;
 
   const key = "rf_ios_install_hide_until";
@@ -299,10 +341,8 @@ if (installBtn) {
 })();
 
 // ====================
-// Sync docs
+// DATA
 // ====================
-let session = null;
-
 async function syncDocuments() {
   if (!session?.token) return;
 
