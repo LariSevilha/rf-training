@@ -205,8 +205,28 @@ function showInstallUI() {
   if (installBtn) installBtn.style.display = "inline-flex";
 }
 
+function showInstallMessage(text, type = "ok") {
+  if (!statusEl) return;
+  statusEl.textContent = text;
+
+  if (type === "error") {
+    setMsg(err, text, "error");
+    setTimeout(() => clearMsg(err), 1800);
+  } else {
+    setMsg(ok, text, "ok");
+    setTimeout(() => clearMsg(ok), 1800);
+  }
+}
+
 if (installBtn) {
   hideInstallUI();
+
+  // em Android e fora do modo app, mostra o botão mesmo se o prompt ainda não veio
+  if (isAndroidDevice() && !isStandaloneMode()) {
+    installBtn.textContent = "Instalar";
+    showInstallUI();
+    console.log("Botão instalar exibido no Android");
+  }
 
   window.addEventListener("beforeinstallprompt", (e) => {
     if (!isAndroidDevice() || isStandaloneMode()) return;
@@ -219,10 +239,16 @@ if (installBtn) {
   });
 
   installBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
+    if (!isAndroidDevice() || isStandaloneMode()) return;
+
+    if (!deferredPrompt) {
+      console.log("Prompt nativo ainda não disponível");
+      showInstallMessage("Instalação ainda não disponível. Tente recarregar a página.", "error");
+      return;
+    }
 
     try {
-      deferredPrompt.prompt();
+      await deferredPrompt.prompt();
       await deferredPrompt.userChoice;
     } catch (e) {
       console.warn("Prompt de instalação falhou:", e);
