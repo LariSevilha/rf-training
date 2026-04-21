@@ -1,8 +1,12 @@
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   "name": "RF App",
   "short_name": "RF App",
 =======
+=======
+  "id": "/",
+>>>>>>> cb25b54fc5f61c9dddd2c5958c88c939d4294dd8
   "name": "RF Fitness",
   "short_name": "RF Fitness",
 >>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
@@ -11,9 +15,13 @@
   "scope": "/",
   "display": "standalone",
 <<<<<<< HEAD
+<<<<<<< HEAD
   "display_override": ["standalone"],
 =======
 >>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
+=======
+  "display_override": ["standalone"],
+>>>>>>> cb25b54fc5f61c9dddd2c5958c88c939d4294dd8
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
@@ -32,8 +40,17 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       "src": "/web/img/logoapp-512.png",
 =======
+=======
+      "src": "/img/logoapp-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+>>>>>>> cb25b54fc5f61c9dddd2c5958c88c939d4294dd8
       "src": "/img/logoapp-512.png",
 >>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
 =======
@@ -54,7 +71,7 @@
 >>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }
