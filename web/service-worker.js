@@ -8,6 +8,7 @@ if ("serviceWorker" in navigator) {
       console.warn("SW register falhou:", e);
     }
   });
+  
 }
 
 import { requireAuth } from "./guard.js";
