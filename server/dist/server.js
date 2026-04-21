@@ -4,11 +4,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
+const node_path_1 = __importDefault(require("node:path"));
 const fastify_1 = __importDefault(require("fastify"));
 const cors_1 = __importDefault(require("@fastify/cors"));
 const jwt_1 = __importDefault(require("@fastify/jwt"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const zod_1 = require("zod");
+const static_1 = __importDefault(require("@fastify/static"));
 const client_1 = require("@prisma/client");
 const adapter_pg_1 = require("@prisma/adapter-pg");
 const adapter = new adapter_pg_1.PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -27,6 +29,13 @@ async function main() {
         allowedHeaders: ["Content-Type", "Authorization"],
     });
     await app.register(jwt_1.default, { secret: process.env.JWT_SECRET });
+    // ✅ SERVE O WEB/ COMO SITE (PWA)
+    // Assim /manifest.webmanifest e /service-worker.js deixam de dar 404
+    app.register(static_1.default, {
+        root: node_path_1.default.join(__dirname, "../../web"),
+        prefix: "/", // serve em /
+        index: false, // não forçar index.html (você usa /pages/*)
+    });
     app.decorate("auth", async (req, reply) => {
         try {
             await req.jwtVerify();
@@ -65,9 +74,9 @@ async function main() {
             token,
             user: {
                 email: user.email,
-                name: user.name, // ✅
+                name: user.name,
                 active: user.active,
-                role: user.role
+                role: user.role,
             },
         };
     });
@@ -79,10 +88,10 @@ async function main() {
         return {
             user: {
                 email: user.email,
-                name: user.name, // ✅
+                name: user.name,
                 active: user.active,
-                role: user.role
-            }
+                role: user.role,
+            },
         };
     });
     // ===== ALUNO =====
@@ -95,29 +104,43 @@ async function main() {
             return reply.code(403).send({ message: "Usuário desativado" });
         const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
         const out = { training: "", diet: "", supp: "", stretch: "" };
-        for (const d of docs) {
+        for (const d of docs)
             out[normKey(d.docType)] = d.url;
-        }
         return out;
     });
     // ===== ADMIN =====
-    // list users (✅ inclui name)
     app.get(`${API_PREFIX}/admin/users`, { preHandler: app.auth }, async (req, reply) => {
         if (!requireAdmin(req, reply))
             return;
-        const q = normKey(String(req.query?.q || ""));
+        const q = String(req.query?.q || "").trim();
+        const terms = q
+            .split(/\s+/)
+            .filter(Boolean);
         const users = await prisma.user.findMany({
             where: {
                 role: "student",
-                ...(q ? { email: { contains: q, mode: "insensitive" } } : {}),
+                ...(terms.length
+                    ? {
+                        AND: terms.map((t) => ({
+                            OR: [
+                                { name: { contains: t, mode: "insensitive" } },
+                                { email: { contains: t, mode: "insensitive" } },
+                            ],
+                        })),
+                    }
+                    : {}),
             },
             orderBy: { createdAt: "desc" },
             take: 50,
-            select: { email: true, name: true, active: true, createdAt: true }, // ✅
+            select: {
+                email: true,
+                name: true,
+                active: true,
+                createdAt: true,
+            },
         });
         return { users };
     });
-    // create user (✅ aceita name)
     app.post(`${API_PREFIX}/admin/users`, { preHandler: app.auth }, async (req, reply) => {
         if (!requireAdmin(req, reply))
             return;
@@ -125,7 +148,7 @@ async function main() {
             email: zod_1.z.string().email(),
             password: zod_1.z.string().min(6),
             active: zod_1.z.boolean().optional(),
-            name: zod_1.z.string().min(2).max(80).optional(), // ✅
+            name: zod_1.z.string().min(2).max(80).optional(),
         });
         const { email, password, active, name } = schema.parse(req.body);
         const normalized = normEmail(email);
@@ -136,12 +159,12 @@ async function main() {
         const user = await prisma.user.create({
             data: {
                 email: normalized,
-                name: name?.trim() || null, // ✅
+                name: name?.trim() || null,
                 passwordHash,
                 role: "student",
-                active: active ?? true
+                active: active ?? true,
             },
-            select: { email: true, name: true, active: true, role: true, createdAt: true }, // ✅
+            select: { email: true, name: true, active: true, role: true, createdAt: true },
         });
         return { ok: true, user };
     });
@@ -157,17 +180,14 @@ async function main() {
         if (!me)
             return reply.code(404).send({ message: "Usuário não encontrado" });
         const data = {};
-        // nome
         if ("name" in body) {
             const cleanName = String(body.name ?? "").trim();
             data.name = cleanName ? cleanName : null;
         }
-        // email (troca segura)
         if ("email" in body) {
             const newEmail = normEmail(body.email ?? "");
             if (!newEmail)
                 return reply.code(400).send({ message: "Email inválido" });
-            // se mudou, valida duplicidade
             if (newEmail !== me.email) {
                 const exists = await prisma.user.findUnique({ where: { email: newEmail } });
                 if (exists)
@@ -196,7 +216,6 @@ async function main() {
         });
         return { ok: true };
     });
-    // ✅ update profile (name)
     app.patch(`${API_PREFIX}/admin/users/:email/profile`, { preHandler: app.auth }, async (req, reply) => {
         if (!requireAdmin(req, reply))
             return;
@@ -216,7 +235,6 @@ async function main() {
         });
         return { ok: true, user: updated };
     });
-    // set active
     app.patch(`${API_PREFIX}/admin/users/:email`, { preHandler: app.auth }, async (req, reply) => {
         if (!requireAdmin(req, reply))
             return;
@@ -229,7 +247,6 @@ async function main() {
         const updated = await prisma.user.update({ where: { email }, data: { active } });
         return { ok: true, user: { email: updated.email, active: updated.active } };
     });
-    // GET docs admin
     app.get(`${API_PREFIX}/admin/users/:email/documents`, { preHandler: app.auth }, async (req, reply) => {
         if (!requireAdmin(req, reply))
             return;
@@ -239,12 +256,10 @@ async function main() {
             return reply.code(404).send({ message: "Aluno não encontrado" });
         const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
         const out = { training: "", diet: "", supp: "", stretch: "" };
-        for (const d of docs) {
+        for (const d of docs)
             out[normKey(d.docType)] = d.url;
-        }
         return out;
     });
-    // PUT docs admin (salva e devolve os docs do banco)
     app.put(`${API_PREFIX}/admin/users/:email/documents`, { preHandler: app.auth }, async (req, reply) => {
         if (!requireAdmin(req, reply))
             return;
@@ -289,7 +304,6 @@ async function main() {
             out[normKey(d.docType)] = d.url;
         return out;
     });
-    // reset password
     app.patch(`${API_PREFIX}/admin/users/:email/password`, { preHandler: app.auth }, async (req, reply) => {
         if (!requireAdmin(req, reply))
             return;
@@ -303,7 +317,6 @@ async function main() {
         await prisma.user.update({ where: { email }, data: { passwordHash } });
         return { ok: true };
     });
-    // delete user
     app.delete(`${API_PREFIX}/admin/users/:email`, { preHandler: app.auth }, async (req, reply) => {
         if (!requireAdmin(req, reply))
             return;
