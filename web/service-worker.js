@@ -1,4 +1,4 @@
-const CACHE_NAME = "rf-fitness-v4";
+const CACHE_NAME = "rf-fitness-v5";
 
 const APP_SHELL = [
   "/manifest.webmanifest",
