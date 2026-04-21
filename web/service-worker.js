@@ -1,14 +1,14 @@
 const CACHE_NAME = "rf-fitness-v3";
 
 const APP_SHELL = [
-  "./manifest.webmanifest",
-  "./pages/index.html",
-  "./pages/aluno.html",
-  "./assets/css/main.css",
-  "./assets/js/aluno.js",
-  "./img/logoapp-192.png",
-  "./img/logoapp-512.png",
-  "./img/logoapp-maskable-512.png"
+  "/manifest.webmanifest",
+  "/pages/index.html",
+  "/pages/aluno.html",
+  "/assets/css/main.css",
+  "/assets/js/aluno.js",
+  "/img/logoapp-192.png",
+  "/img/logoapp-512.png",
+  "/img/logoapp-maskable-512.png"
 ];
 
 self.addEventListener("install", (event) => {
