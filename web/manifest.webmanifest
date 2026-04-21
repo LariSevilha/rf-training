@@ -1,74 +1,60 @@
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-  "name": "RF App",
-  "short_name": "RF App",
-=======
-=======
   "id": "/",
->>>>>>> cb25b54fc5f61c9dddd2c5958c88c939d4294dd8
   "name": "RF Fitness",
   "short_name": "RF Fitness",
->>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
   "description": "Treino, Alimentação e Suplementação",
   "start_url": "/pages/aluno.html",
   "scope": "/",
   "display": "standalone",
-<<<<<<< HEAD
-<<<<<<< HEAD
-  "display_override": ["standalone"],
-=======
->>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
-=======
-  "display_override": ["standalone"],
->>>>>>> cb25b54fc5f61c9dddd2c5958c88c939d4294dd8
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
-<<<<<<< HEAD
-      "src": "/web/img/logoapp-192.png",
-=======
       "src": "/img/logoapp-192.png",
->>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-      "src": "/web/img/logoapp-512.png",
-=======
-=======
-      "src": "/img/logoapp-maskable-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
->>>>>>> cb25b54fc5f61c9dddd2c5958c88c939d4294dd8
       "src": "/img/logoapp-512.png",
->>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
-=======
-      "src": "/img/logoapp.png",
->>>>>>> 0d9c44dc2dbb47192243560c1f2ae88de6eee871
-=======
-      "src": "/img/logoapp-512.png",
->>>>>>> cc05f7885393c1ab7dcc404a2bcfcccaae56a162
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-<<<<<<< HEAD
-      "src": "/web/img/logoapp-maskable-512.png",
-=======
       "src": "/img/logoapp-maskable-512.png",
->>>>>>> 8e2955e1e76985c70f69dafd139bf4c40559cd85
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}{
+  "id": "/",
+  "name": "RF Fitness",
+  "short_name": "RF Fitness",
+  "description": "Treino, Alimentação e Suplementação",
+  "start_url": "/pages/aluno.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/img/logoapp-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/logoapp-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/logoapp-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

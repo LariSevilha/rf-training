@@ -6,23 +6,27 @@ const APP_SHELL = [
   "/pages/aluno.html",
   "/assets/css/main.css",
   "/assets/js/aluno.js",
+  "/assets/js/index.js",
   "/img/logoapp-192.png",
-  "/img/logoapp-maskable-192.png",
   "/img/logoapp-512.png",
-  "/img/logoapp-maskable-512.png"
+  "/img/logoapp-maskable-512.png",
+  "/img/logoapp-ios-180.png"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
 
-    await Promise.allSettled(
-      APP_SHELL.map(async (url) => {
+    for (const url of APP_SHELL) {
+      try {
         const res = await fetch(url, { cache: "no-cache" });
-        if (!res.ok) throw new Error(`Falha ao baixar ${url}`);
-        await cache.put(url, res.clone());
-      })
-    );
+        if (res.ok) {
+          await cache.put(url, res.clone());
+        }
+      } catch (err) {
+        console.warn("Falha no preload:", url, err);
+      }
+    }
 
     await self.skipWaiting();
   })());
@@ -32,9 +36,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(
-      keys
-        .filter((key) => key !== CACHE_NAME)
-        .map((key) => caches.delete(key))
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
     );
     await self.clients.claim();
   })());
@@ -42,18 +44,21 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
   if (request.method !== "GET") return;
 
-  // Navegação de páginas
+  // ignora chrome-extension, data:, blob:, etc.
+  if (url.protocol !== "http:" && url.protocol !== "https:") return;
+
   if (request.mode === "navigate") {
     event.respondWith((async () => {
       try {
-        const networkResponse = await fetch(request);
+        const response = await fetch(request);
         const cache = await caches.open(CACHE_NAME);
-        cache.put(request, networkResponse.clone());
-        return networkResponse;
-      } catch (err) {
+        await cache.put(request, response.clone());
+        return response;
+      } catch {
         return (
           (await caches.match(request)) ||
           (await caches.match("/pages/aluno.html")) ||
@@ -64,19 +69,20 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Assets estáticos
   event.respondWith((async () => {
     const cached = await caches.match(request);
     if (cached) return cached;
 
     try {
       const response = await fetch(request);
+
       if (response && response.ok) {
         const cache = await caches.open(CACHE_NAME);
-        cache.put(request, response.clone());
+        await cache.put(request, response.clone());
       }
+
       return response;
-    } catch (err) {
+    } catch {
       return caches.match(request);
     }
   })());
