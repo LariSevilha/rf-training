@@ -31,6 +31,7 @@
     {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       "src": "/web/img/logoapp-512.png",
 =======
       "src": "/img/logoapp-512.png",
@@ -38,6 +39,9 @@
 =======
       "src": "/img/logoapp.png",
 >>>>>>> 0d9c44dc2dbb47192243560c1f2ae88de6eee871
+=======
+      "src": "/img/logoapp-512.png",
+>>>>>>> cc05f7885393c1ab7dcc404a2bcfcccaae56a162
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
