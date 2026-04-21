@@ -6,7 +6,6 @@
   "start_url": "/pages/aluno.html",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone"],
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
@@ -16,12 +15,6 @@
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/img/logoapp-maskable-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
     },
     {
       "src": "/img/logoapp-512.png",
