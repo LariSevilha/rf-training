@@ -1,10 +1,20 @@
-@import './styles/_aluno.css';
-@import './styles/_components.css';
-@import './styles/_ios.css';
-@import './styles/_login.css';
-@import './styles/_mobile.css';
-@import './styles/_pdf.css';
-@import './styles/_reset.css';
-@import './styles/_variables.css';
-@import './styles/_admin.css';
-@import './styles/_politica-privacidade.css';
+/* =========================================================
+   RF FITNESS — Design System
+   Arquivo central de estilos.
+   Organização:
+   1. Tokens da marca
+   2. Reset/base
+   3. Componentes reutilizáveis
+   4. Layouts e páginas
+   ========================================================= */
+
+@import url('./base/tokens.css');
+@import url('./base/reset.css');
+@import url('./base/global.css');
+@import url('./components.css');
+@import url('./layouts/admin.css');
+@import url('./pages/login.css');
+@import url('./pages/aluno.css');
+@import url('./pages/pdf.css');
+@import url('./pages/politica-privacidade.css');
+@import url('./utilities/responsive.css');

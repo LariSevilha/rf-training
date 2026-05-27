@@ -1,0 +1,407 @@
+/* RF Fitness • Área do aluno — layout simples, limpo e profissional */
+.pageAluno.alunoClean {
+  --rf-bg: #080808;
+  --rf-surface: #111111;
+  --rf-surface-2: #161616;
+  --rf-card: #141414;
+  --rf-border: rgba(255,255,255,.10);
+  --rf-border-2: rgba(255,255,255,.16);
+  --rf-text: #f5f5f5;
+  --rf-muted: rgba(245,245,245,.64);
+  --rf-soft: rgba(245,245,245,.46);
+  --rf-gold: #ceac5e;
+  --rf-gold-soft: rgba(206,172,94,.12);
+  --rf-error: #ff7a7a;
+  --rf-success: #76e39a;
+  --rf-warn: #ffd37a;
+  background: var(--rf-bg) !important;
+  color: var(--rf-text);
+  min-height: 100vh;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+
+.alunoClean * { box-sizing: border-box; }
+
+.alunoClean .alunoTop {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(8,8,8,.92);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--rf-border);
+}
+
+.alunoClean .alunoTopInner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 12px 18px;
+}
+
+.alunoClean .topLogo {
+  max-height: 38px;
+  object-fit: contain;
+}
+
+.alunoPage {
+  width: min(1080px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 22px 0 40px;
+}
+
+.alunoHero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid var(--rf-border);
+  border-radius: 22px;
+  background: var(--rf-surface);
+}
+
+.alunoHero .eyebrow {
+  color: var(--rf-gold);
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.alunoHero h1 {
+  font-size: clamp(24px, 3.5vw, 38px);
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -.03em;
+}
+
+.alunoHero p {
+  margin: 8px 0 0;
+  color: var(--rf-muted);
+  font-size: 14px;
+}
+
+.softRefresh,
+.alunoClean .pill,
+.installPill,
+.saveWorkoutBtn,
+.videoBtn,
+.backBtn {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--rf-border-2);
+  background: var(--rf-surface-2);
+  color: var(--rf-text);
+  padding: 0 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.softRefresh:hover,
+.alunoClean .pill:hover,
+.videoBtn:hover,
+.backBtn:hover {
+  border-color: rgba(206,172,94,.55);
+  background: #1b1b1b;
+}
+
+.studentMessage {
+  margin: 14px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 13px 15px;
+  border-radius: 14px;
+  border: 1px solid var(--rf-border);
+  background: var(--rf-surface);
+}
+.studentMessage b { font-size: 14px; }
+.studentMessage span { font-size: 13px; color: var(--rf-muted); }
+.studentMessage.ok { border-color: rgba(118,227,154,.36); background: rgba(118,227,154,.08); }
+.studentMessage.error { border-color: rgba(255,122,122,.40); background: rgba(255,122,122,.08); }
+.studentMessage.warn { border-color: rgba(255,211,122,.38); background: rgba(255,211,122,.08); }
+.studentMessage.info { border-color: rgba(206,172,94,.36); background: var(--rf-gold-soft); }
+
+.alunoTabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 4px;
+  border: 1px solid var(--rf-border);
+  border-radius: 14px;
+  background: var(--rf-surface);
+  width: fit-content;
+}
+.alunoTab {
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rf-muted);
+  padding: 0 15px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.alunoTab.active {
+  background: var(--rf-gold);
+  color: #111;
+}
+
+.alunoPanel {
+  display: none;
+  border: 1px solid var(--rf-border);
+  border-radius: 22px;
+  padding: 18px;
+  background: var(--rf-surface);
+}
+.alunoPanel.active { display: block; }
+
+.panelHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.panelHead h2 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+.panelHead p { margin: 5px 0 0; color: var(--rf-muted); font-size: 14px; }
+
+.studentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.studentCard {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--rf-border);
+  border-radius: 16px;
+  background: var(--rf-card);
+  color: var(--rf-text);
+  padding: 14px;
+  cursor: pointer;
+}
+.studentCard:hover {
+  border-color: rgba(206,172,94,.48);
+  background: #181818;
+}
+.cardIcon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--rf-gold-soft);
+  font-size: 20px;
+}
+.cardText { display: flex; flex-direction: column; gap: 3px; }
+.cardText b { font-size: 15px; }
+.cardText small { color: var(--rf-muted); font-size: 12px; }
+.cardArrow { color: var(--rf-gold); font-size: 24px; }
+
+.emptyState {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 7px;
+  padding: 30px 16px;
+  border: 1px dashed var(--rf-border-2);
+  border-radius: 18px;
+  background: #101010;
+  color: var(--rf-muted);
+}
+.emptyState.inline { margin: 14px; }
+.emptyState h3 { color: var(--rf-text); margin: 0; font-size: 18px; }
+.emptyState p { margin: 0; max-width: 430px; font-size: 14px; }
+.emptyIcon { font-size: 30px; }
+
+.workoutTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.workoutTab {
+  min-height: 40px;
+  border: 1px solid var(--rf-border);
+  color: var(--rf-muted);
+  background: var(--rf-card);
+  border-radius: 12px;
+  padding: 0 14px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.workoutTab.active {
+  color: #111;
+  background: var(--rf-gold);
+  border-color: var(--rf-gold);
+}
+
+.workoutCard {
+  border: 1px solid var(--rf-border);
+  border-radius: 20px;
+  background: #101010;
+  overflow: hidden;
+}
+.workoutHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px;
+  border-bottom: 1px solid var(--rf-border);
+  background: #121212;
+}
+.workoutHead h2 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+.workoutHead p { margin: 7px 0 0; color: var(--rf-muted); font-size: 14px; }
+.saveWorkoutBtn {
+  border-color: var(--rf-gold);
+  background: var(--rf-gold);
+  color: #111;
+  white-space: nowrap;
+}
+.saveWorkoutBtn:disabled { opacity: .65; cursor: wait; }
+.videoBtn {
+  background: transparent;
+  color: var(--rf-gold);
+  border-color: rgba(206,172,94,.38);
+  min-height: 38px;
+}
+
+.exerciseBlock {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--rf-border);
+}
+.exerciseBlock:last-child { border-bottom: 0; }
+.exerciseHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.exerciseKicker {
+  color: var(--rf-gold);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .10em;
+  margin-bottom: 4px;
+}
+.exerciseHeader h3 { margin: 0; font-size: 17px; }
+.exerciseHeader p { margin: 5px 0 0; color: var(--rf-muted); font-size: 14px; }
+
+.seriesTable {
+  border: 1px solid var(--rf-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+.seriesHead,
+.seriesRow {
+  display: grid;
+  grid-template-columns: 64px 1fr 116px 116px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.seriesHead {
+  color: var(--rf-soft);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  background: #151515;
+  font-weight: 900;
+}
+.seriesRow { border-top: 1px solid var(--rf-border); }
+.seriesRow label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--rf-border);
+  border-radius: 10px;
+  padding: 6px 8px;
+  background: #121212;
+}
+.seriesRow small { color: var(--rf-muted); font-size: 11px; }
+.seriesRow input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--rf-text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.alunoFooter {
+  padding: 20px 0 0;
+  text-align: center;
+  color: var(--rf-muted);
+  font-size: 13px;
+}
+.alunoFooter a { color: var(--rf-gold); text-decoration: none; }
+
+@media (max-width: 760px) {
+  .alunoPage { width: min(100% - 20px, 1080px); padding-top: 14px; }
+  .alunoHero { padding: 18px; border-radius: 18px; align-items: flex-start; flex-direction: column; }
+  .softRefresh { width: 100%; }
+  .alunoTabs { width: 100%; }
+  .alunoTab { flex: 1; }
+  .alunoPanel { padding: 12px; border-radius: 18px; }
+  .studentGrid { grid-template-columns: 1fr; }
+  .panelHead { align-items: flex-start; flex-direction: column; }
+  .workoutHead, .exerciseHeader { flex-direction: column; }
+  .saveWorkoutBtn, .videoBtn { width: 100%; text-align: center; }
+  .seriesHead { display: none; }
+  .seriesRow { grid-template-columns: 48px 1fr; gap: 8px; }
+  .seriesRow label { grid-column: 1 / -1; }
+}
+
+.workoutObservationBox {
+  padding: 16px 18px 18px;
+  border-top: 1px solid var(--rf-border);
+  background: #101010;
+}
+.workoutObservationBox textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 92px;
+  border: 1px solid var(--rf-border);
+  border-radius: 14px;
+  background: #0d0d0d;
+  color: var(--rf-text);
+  padding: 12px 14px;
+  outline: none;
+}
+.workoutObservationBox textarea:focus {
+  border-color: rgba(206,172,94,.55);
+}
+
+.techniqueBox {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(206,172,94,.28);
+  background: rgba(206,172,94,.08);
+  color: var(--rf-text);
+  font-size: 13px;
+}
+.techniqueBox small {
+  color: var(--rf-muted);
+}
+.techniqueBox .videoBtn {
+  margin-top: 8px;
+  width: fit-content;
+}

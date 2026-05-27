@@ -1,0 +1,2 @@
+ALTER TABLE "StudentExtraItem" ADD COLUMN IF NOT EXISTS "category" TEXT NOT NULL DEFAULT 'outros';
+ALTER TABLE "StudentExtraItem" ADD COLUMN IF NOT EXISTS "sourceType" TEXT NOT NULL DEFAULT 'link';

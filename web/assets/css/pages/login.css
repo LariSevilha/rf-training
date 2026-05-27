@@ -1,0 +1,45 @@
+
+.loginWrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px 18px;
+}
+
+.loginCard {
+  width: min(460px, 100%);
+  padding: 28px;
+  border: 1px solid var(--rf-border);
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015)),
+    rgba(14,14,14,.92);
+  box-shadow: var(--rf-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.loginTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.loginTitle {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.loginSub { margin-top: 4px; color: var(--rf-muted); }
+.field + .field { margin-top: 14px; }
+.inputWrap { position: relative; }
+.inputWrap input { padding-right: 52px; }
+.eyeBtn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 38px;
+  min-height: 38px;
+  padding: 0;
+}
+.loginCard .check { margin: 14px 0 18px; }

@@ -15,17 +15,159 @@ model User {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  documents    StudentDocument[]
+  documents       StudentDocument[]
+  workouts        Workout[]
+  workoutLogs     StudentWorkoutLog[]
+  workoutSessions StudentWorkoutSession[]
+  extraItems      StudentExtraItem[]
 }
 
-model StudentDocument {         
+model StudentDocument {
   id        String   @id @default(uuid())
   userId    String
-  docType   String   // training | diet | supp | stretch
+  docType   String // training | diet | supp | stretch
   url       String
   updatedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, docType])
-} 
+}
+
+model MuscleGroup {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  exercises Exercise[]
+}
+
+model Video {
+  id        String   @id @default(uuid())
+  title     String   @unique
+  url       String
+  createdAt DateTime @default(now())
+
+  exercises Exercise[]
+}
+
+model Exercise {
+  id            String   @id @default(uuid())
+  name          String
+  muscleGroupId String?
+  videoId       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  muscleGroup      MuscleGroup?      @relation(fields: [muscleGroupId], references: [id], onDelete: SetNull)
+  video            Video?            @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  workoutExercises WorkoutExercise[]
+
+  @@unique([name, muscleGroupId])
+}
+
+model Workout {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  notes     String?
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutExercise[]
+  logs      StudentWorkoutLog[]
+  sessions  StudentWorkoutSession[]
+}
+
+model WorkoutExercise {
+  id                String   @id @default(uuid())
+  workoutId         String
+  exerciseId        String
+  techniqueId       String?
+  notes             String?
+  techniqueName     String?
+  techniqueVideoUrl String?
+  techniqueNotes    String?
+  techniqueNote     String?
+  order             Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  workout   Workout            @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise  Exercise           @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  technique TrainingTechnique? @relation(fields: [techniqueId], references: [id], onDelete: SetNull)
+  series    WorkoutSeries[]
+}
+
+model WorkoutSeries {
+  id                String   @id @default(uuid())
+  workoutExerciseId String
+  targetReps        String
+  count             Int      @default(1)
+  order             Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  workoutExercise WorkoutExercise     @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+  logs            StudentWorkoutLog[]
+}
+
+model StudentWorkoutSession {
+  id        String   @id @default(uuid())
+  userId    String
+  workoutId String
+  notes     String?
+  weekStart DateTime
+  createdAt DateTime @default(now())
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout Workout             @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  logs    StudentWorkoutLog[]
+
+  @@unique([userId, workoutId, weekStart])
+}
+
+model StudentWorkoutLog {
+  id            String   @id @default(uuid())
+  userId        String
+  workoutId     String?
+  seriesId      String
+  sessionId     String?
+  setIndex      Int      @default(0)
+  weight        Float?
+  performedReps Int?
+  createdAt     DateTime @default(now())
+
+  user    User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout Workout?               @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+  series  WorkoutSeries          @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  session StudentWorkoutSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model TrainingTechnique {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  videoUrl  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workoutExercises WorkoutExercise[]
+}
+
+model StudentExtraItem {
+  id         String   @id @default(uuid())
+  userId     String
+  title      String
+  category   String   @default("outros") // diet | stretch | supp | cardio | exams | other
+  sourceType String   @default("link") // link | pdf_link | file
+  url        String
+  notes      String?
+  active     Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

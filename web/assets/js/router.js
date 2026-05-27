@@ -1,7 +1,8 @@
 function setRoute(route) {
   // ativa botão do menu
   document.querySelectorAll(".navBtn[data-route]").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.route === route);
+    const inLibrary = ["muscles", "videos", "exercises", "records"].includes(route);
+    btn.classList.toggle("active", btn.dataset.route === route || (btn.dataset.route === "library" && inLibrary));
   });
 
   // mostra view isolada

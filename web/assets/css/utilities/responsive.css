@@ -1,0 +1,101 @@
+
+@media (max-width: 1180px) {
+  .dashFilters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dashStats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .libraryGrid { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 1080px) {
+  .appShell { grid-template-columns: 1fr; }
+  .sidebarFixed {
+    position: sticky;
+    top: 0;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--rf-border);
+  }
+  .nav {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(188px, 1fr);
+    overflow: auto;
+    padding-bottom: 14px;
+  }
+  .sideFooter { display: none; }
+  .mainArea { padding-top: 16px; }
+}
+
+@media (max-width: 820px) {
+  .grid2,
+  .dashFilters,
+  .dashStats {
+    grid-template-columns: 1fr;
+  }
+  .topbar {
+    position: static;
+    width: 100%;
+    border-radius: 22px;
+    padding: 14px;
+  }
+  .topbar, .topLeft, .topRight, .dashHead, .panelHead, .workoutHead, .exerciseHeader, .alunoHero, .alunoTopInner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchWrap { min-width: 0; width: 100%; }
+  .libraryCard,
+  .studentCard { grid-template-columns: 48px 1fr auto; }
+  .alunoTabs { width: 100%; display: flex; }
+  .alunoTab { flex: 1; }
+  .studentGrid { grid-template-columns: 1fr; }
+  .workoutCard, .alunoPanel, .card { padding: 15px; }
+  .seriesHead { display: none; }
+  .seriesRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .seriesRow > span:nth-child(1),
+  .seriesRow > span:nth-child(2) {
+    padding-top: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .alunoPage,
+  .alunoTopInner,
+  .privacyPage { width: min(100%, calc(100% - 20px)); }
+  .mainArea { padding: 14px 10px 24px; }
+  .alunoPage { padding-top: 16px; }
+  .sideTop { padding: 16px 14px 12px; }
+  .nav { padding: 10px; }
+  .navBtn {
+    min-height: 54px;
+    padding: 10px;
+  }
+  .card,
+  .alunoPanel,
+  .alunoHero,
+  .loginCard,
+  .workoutCard,
+  .modal,
+  .offlineCard,
+  .iosInstallCard { border-radius: 24px; }
+  .loginCard { padding: 22px; }
+  .alunoHero { padding: 16px; }
+  .softRefresh,
+  .pill,
+  .btn,
+  .btnGhost,
+  .saveWorkoutBtn { width: 100%; }
+  .topNavRight,
+  .actionsRow,
+  .dashActions,
+  .modalActions,
+  .iosActions { display: grid; grid-template-columns: 1fr; }
+  .seriesRow { grid-template-columns: 1fr; }
+  .seriesRow > span { padding-top: 0 !important; }
+  .studentCard,
+  .libraryCard { grid-template-columns: 46px 1fr; }
+  .cardArrow,
+  .libraryCard span:last-child { display: none; }
+  .pdfBar { padding: 12px; }
+  #pdfFrame { min-height: calc(100vh - 64px); }
+}

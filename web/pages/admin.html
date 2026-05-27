@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>RF Fitness – Admin</title>
   <link rel="stylesheet" href="../assets/css/main.css" />
+  <link rel="stylesheet" href="../assets/css/admin-clean.css" />
+
 </head>
 <body>
   <div class="appShell">
@@ -76,291 +78,1081 @@
           </div>
           <div class="navChev">›</div>
         </button>
-      </nav>
+
+
+        <button class="navBtn" data-route="library" type="button">
+          <div class="navLeft">
+            <div class="navIcon">📚</div>
+            <div class="navTxt">
+              <p class="h">Biblioteca</p>
+              <p class="s">Cadastros e histórico</p>
+            </div>
+          </div>
+          <div class="navChev">›</div>
+        </button>
+        </nav>
 
       <div class="sideFooter">
         <button class="pill" id="logoutBtn" type="button" style="width:100%;">Sair</button>
+
+        <div class="adminFooterProfile">
+          <div class="adminAvatar" id="adminAvatar">RF</div>
+          <div class="adminFooterText">
+            <strong id="footerAdminName">Admin</strong>
+            <small id="footerAdminEmail">—</small>
+          </div>
+        </div>
       </div>
     </aside>
 
     <!-- MAIN -->
     <main class="mainArea">
 
-      <header class="topbar">
-        <div class="topLeft"> 
-          <div class="hello">Olá, <span id="mName" style="font-weight:950;color:white;"></span></div>
-        </div>
-
-        <div class="topRight">
-          <!-- aparece no LIST -->
-          <div class="searchWrap" id="searchWrap" style="display:none;">
-            <span>🔎</span>
-            <input id="search" type="text" placeholder="Buscar por nome..." />
-          </div>
-
-          <!-- aparece no LIST e DASH -->
-          <button class="pill" id="refreshBtn" type="button" style="display:none;">Atualizar</button>
-        </div>
-      </header>
+      <!-- Topbar removida: buscas e ações ficam dentro das telas que usam lista -->
 
       <section class="viewWrap">
 
         <!-- VIEW: ME -->
         <section class="view" id="view-me">
-          <div class="card">
-            <div class="dashHead">
+          <div class="proPage">
+            <div class="proHero compactHero">
               <div>
-                <h2 style="margin:0;">Meu Admin</h2>
-                <p class="muted" style="margin:6px 0 0;">Gerencie suas informações e segurança da conta.</p>
+                <span class="sectionKicker">Conta administrativa</span>
+                <h2>Meu Admin</h2>
+                <p>Atualize seus dados de acesso e mantenha a segurança da conta organizada.</p>
               </div>
-
-              <div class="admin-btn"> 
-                <button class="btn" id="meSaveBtn" type="button">Salvar</button>
-              </div>
+              <button class="btn heroAction" id="meSaveBtn" type="button">Salvar alterações</button>
             </div>
 
-            <div class="hr"></div>
+            <div class="proGrid twoCols">
+              <section class="proPanel">
+                <div class="panelTitleRow">
+                  <div class="panelIcon">👤</div>
+                  <div>
+                    <h3>Dados do perfil</h3>
+                    <p>Informações usadas no painel administrativo.</p>
+                  </div>
+                </div>
 
-            <div class="grid2">
-              <div>
-                <div class="label">Nome</div>
-                <input id="meName" type="text" placeholder="Seu nome" />
-              </div>
+                <div class="formGrid">
+                  <div class="fieldGroup">
+                    <div class="label">Nome</div>
+                    <input id="meName" type="text" placeholder="Seu nome" />
+                  </div>
 
-              <div>
-                <div class="label">Email</div>
-                <input id="meEmail" type="email" placeholder="Seu email" />
-                <div class="smallHint">Se você alterar o email, será necessário logar novamente.</div>
-              </div>
-            </div>
+                  <div class="fieldGroup">
+                    <div class="label">Email</div>
+                    <input id="meEmail" type="email" placeholder="Seu email" />
+                    <div class="smallHint">Se você alterar o email, será necessário logar novamente.</div>
+                  </div>
+                </div>
+              </section>
 
-            <div class="hr"></div>
+              <section class="proPanel accentPanel">
+                <div class="panelTitleRow">
+                  <div class="panelIcon">🔐</div>
+                  <div>
+                    <h3>Segurança</h3>
+                    <p>Preencha apenas se quiser trocar a senha.</p>
+                  </div>
+                </div>
 
-            <h3 style="margin:0 0 10px;">Segurança</h3>
-            <p class="muted" style="margin:0 0 12px;">Para trocar a senha, preencha os campos abaixo.</p>
+                <div class="formGrid">
+                  <div class="fieldGroup">
+                    <div class="label">Nova senha</div>
+                    <input id="mePass1" type="password" placeholder="mín. 6 caracteres" />
+                  </div>
 
-            <div class="grid2">
-              <div>
-                <div class="label">Nova senha</div>
-                <input id="mePass1" type="password" placeholder="mín. 6 caracteres" />
-              </div>
+                  <div class="fieldGroup">
+                    <div class="label">Confirmar nova senha</div>
+                    <input id="mePass2" type="password" placeholder="repita a senha" />
+                  </div>
+                </div>
 
-              <div>
-                <div class="label">Confirmar nova senha</div>
-                <input id="mePass2" type="password" placeholder="repita a senha" />
-              </div>
-            </div>
-
-            <div class="smallHint" style="margin-top:10px;">
-              Dica: use uma senha forte (mín. 10 caracteres, com letras e números).
+                <div class="infoStrip">Use uma senha forte, de preferência com letras, números e caracteres especiais.</div>
+              </section>
             </div>
           </div>
         </section>
 
         <!-- VIEW: DASH -->
         <section class="view" id="view-dash">
-          <div class="card">
-            <div class="dashHead">
+          <div class="proPage">
+            <div class="proHero dashboardHero">
               <div>
-                <h2 style="margin:0;">Dashboard</h2>
-                <p class="muted" style="margin:6px 0 0;">Visão geral e relatório mensal de alunos.</p>
+                <span class="sectionKicker">Visão geral</span>
+                <h2>Dashboard</h2>
+                <p>Acompanhe a base de alunos, filtre períodos e gere um relatório mais organizado.</p>
               </div>
 
-              <div class="dashActions">
+              <div class="heroActions">
                 <button class="btnGhost" id="dashRefreshBtn" type="button">Atualizar</button>
                 <button class="btn" id="dashPdfBtn" type="button">Gerar PDF</button>
               </div>
             </div>
 
-            <div class="dashFilters">
-              <div class="fItem">
-                <div class="label">De</div>
-                <select id="dashFrom"></select>
-              </div>
-            
-              <div class="fItem">
-                <div class="label">Até</div>
-                <select id="dashTo"></select>
-              </div>
-            
-              <div class="fItem">
-                <div class="label">Status</div>
-                <select id="dashStatus">
-                  <option value="all">Todos</option>
-                  <option value="active">Somente ativos</option>
-                  <option value="inactive">Somente inativos</option>
-                </select>
-              </div>
-            
-              <div class="fItem" style="min-width:260px;">
-                <div class="label">Buscar no relatório</div>
-                <input id="dashText" type="text" placeholder="Nome ou email..." />
-              </div>
-            
-              <div class="fItem">
-                <div class="label">Ordenar por</div>
-                <select id="dashSort">
-                  <option value="recent">Mais recentes</option>
-                  <option value="oldest">Mais antigos</option>
-                  <option value="name-asc">Nome A-Z</option>
-                  <option value="name-desc">Nome Z-A</option>
-                  <option value="email-asc">Email A-Z</option>
-                </select>
-              </div>
-            
-              <button class="btnGhost" id="dashApplyBtn" type="button">Aplicar</button>
-            </div>
-
-            <div class="dashStats">
-              <div class="statCard">
+            <div class="dashStats proStats">
+              <div class="statCard proStatCard">
                 <div class="label">Total de alunos</div>
                 <div class="statVal" id="dashTotal">—</div>
               </div>
 
-              <div class="statCard">
+              <div class="statCard proStatCard">
                 <div class="label">Ativos</div>
                 <div class="statVal" id="dashActive">—</div>
                 <div class="smallHint" id="dashActivePct">—</div>
               </div>
 
-              <div class="statCard">
+              <div class="statCard proStatCard">
                 <div class="label">Inativos</div>
                 <div class="statVal" id="dashInactive">—</div>
                 <div class="smallHint" id="dashInactivePct">—</div>
               </div>
 
-              <div class="statCard">
+              <div class="statCard proStatCard goldStat">
                 <div class="label">Cadastros no período</div>
                 <div class="statVal" id="dashPeriodNew">—</div>
                 <div class="smallHint" id="dashPeriodLabel">—</div>
               </div>
             </div>
 
-            <div class="hr"></div>
+            <section class="proPanel">
+              <div class="panelTitleRow spaceBetween">
+                <div class="panelTitleInline">
+                  <div class="panelIcon">⚙️</div>
+                  <div>
+                    <h3>Filtros do relatório</h3>
+                    <p>Use os filtros abaixo para refinar os dados exibidos.</p>
+                  </div>
+                </div>
+                <button class="btnGhost panelAction" id="dashApplyBtn" type="button">Aplicar filtros</button>
+              </div>
 
-            <div class="tableWrap" style="margin-top:10px;">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Mês</th>
-                    <th>Total cadastrados</th>
-                    <th>Ativos</th>
-                    <th>Inativos</th>
-                  </tr>
-                </thead>
-                <tbody id="dashMonthlyBody">
-                  <tr><td colspan="4" style="opacity:.7;padding:12px;">—</td></tr>
-                </tbody>
-              </table>
-            </div>
+              <div class="dashFilters proFilters">
+                <div class="fItem">
+                  <div class="label">De</div>
+                  <select id="dashFrom"></select>
+                </div>
+
+                <div class="fItem">
+                  <div class="label">Até</div>
+                  <select id="dashTo"></select>
+                </div>
+
+                <div class="fItem">
+                  <div class="label">Status</div>
+                  <select id="dashStatus">
+                    <option value="all">Todos</option>
+                    <option value="active">Somente ativos</option>
+                    <option value="inactive">Somente inativos</option>
+                  </select>
+                </div>
+
+                <div class="fItem growField">
+                  <div class="label">Buscar no relatório</div>
+                  <input id="dashText" type="text" placeholder="Nome ou email..." />
+                </div>
+
+                <div class="fItem">
+                  <div class="label">Ordenar por</div>
+                  <select id="dashSort">
+                    <option value="recent">Mais recentes</option>
+                    <option value="oldest">Mais antigos</option>
+                    <option value="name-asc">Nome A-Z</option>
+                    <option value="name-desc">Nome Z-A</option>
+                    <option value="email-asc">Email A-Z</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <section class="proPanel tablePanel">
+              <div class="panelTitleRow">
+                <div class="panelIcon">📅</div>
+                <div>
+                  <h3>Resumo mensal</h3>
+                  <p>Total de cadastros e status dos alunos por mês.</p>
+                </div>
+              </div>
+
+              <div class="tableWrap dashTableWrap">
+                <table class="dashTable">
+                  <thead>
+                    <tr>
+                      <th>Mês</th>
+                      <th>Total cadastrados</th>
+                      <th>Ativos</th>
+                      <th>Inativos</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashMonthlyBody">
+                    <tr><td colspan="4" style="opacity:.7;padding:12px;">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </section>
 
         <!-- VIEW: CREATE -->
         <section class="view active" id="view-create">
-          <div class="card">
-            <h2>Criar aluno</h2>
-            <p>Crie um novo acesso e defina se começa ativo.</p>
-
-            <div>
-              <div class="label">Nome do aluno</div>
-              <input id="newName" type="text" placeholder="ex: Larissa Silva" />
-            </div>
-
-            <div class="grid2" style="margin-top:12px;">
+          <div class="proPage">
+            <div class="proHero createHero">
               <div>
-                <div class="label">Email do aluno</div>
-                <input id="newEmail" type="email" placeholder="ex: aluna@email.com" />
+                <span class="sectionKicker">Novo acesso</span>
+                <h2>Criar aluno</h2>
+                <p>Cadastre o aluno com os dados principais e libere o acesso de forma organizada.</p>
               </div>
-              <div>
-                <div class="label">Senha inicial</div>
-                <input id="newPass" type="text" placeholder="mín. 6 caracteres" />
+              <div class="heroMiniCard">
+                <strong>Próximo passo</strong>
+                <span>Depois do cadastro, selecione o aluno em “Editar aluno” para adicionar materiais e treino.</span>
               </div>
             </div>
 
-            <label class="check" style="margin-top:12px;">
-              <input id="newActive" type="checkbox" checked />
-              Ativo
-            </label>
+            <section class="proPanel createStudentPanel">
+              <div class="panelTitleRow">
+                <div class="panelIcon">➕</div>
+                <div>
+                  <h3>Dados do aluno</h3>
+                  <p>Essas informações serão usadas para o primeiro login.</p>
+                </div>
+              </div>
 
-            <div class="hr"></div>
+              <div class="formGrid createFormGrid">
+                <div class="fieldGroup fieldFull">
+                  <div class="label">Nome do aluno</div>
+                  <input id="newName" type="text" placeholder="ex: Larissa Silva" />
+                </div>
 
-            <button class="btn btnFull" id="createBtn" type="button">Criar aluno</button>
-            <div class="smallHint">Dica: depois você pode resetar a senha na aba “Editar aluno”.</div>
+                <div class="fieldGroup">
+                  <div class="label">Email do aluno</div>
+                  <input id="newEmail" type="email" placeholder="ex: aluna@email.com" />
+                </div>
+
+                <div class="fieldGroup">
+                  <div class="label">Senha inicial</div>
+                  <input id="newPass" type="text" placeholder="mín. 6 caracteres" />
+                </div>
+              </div>
+
+              <div class="createFooter">
+                <label class="check proCheck">
+                  <input id="newActive" type="checkbox" checked />
+                  <span><b>Acesso ativo</b><small>O aluno já poderá entrar assim que for criado.</small></span>
+                </label>
+
+                <button class="btn createMainBtn" id="createBtn" type="button">Criar aluno</button>
+              </div>
+
+              <div class="infoStrip">Dica: depois você pode resetar a senha na aba “Editar aluno”.</div>
+            </section>
           </div>
         </section>
 
         <!-- VIEW: LIST -->
-        <section class="view" id="view-list">
-          <div class="card">
-            <h2>Alunos</h2>
-            <p>Clique em um aluno para selecionar e abrir automaticamente a tela de edição.</p>
+        <section class="view viewWide" id="view-list">
+          <div class="studentsPage">
+            <div class="studentsHero">
+              <div class="studentsHeroText">
+                <span class="sectionKicker">Gestão de alunos</span>
+                <h2>Alunos</h2>
+                <p>Busque, selecione e gerencie os acessos dos alunos com uma tela mais limpa e rápida.</p>
+              </div>
 
-            <div class="tableWrap" style="margin-top:10px;">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width:92px;">Status</th>
-                    <th>Nome</th>
-                    <th>Email</th>
-                    <th style="width:120px;">Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="userList"></tbody>
-              </table>
+               
+
+            <div class="studentsToolbar">
+              <div class="searchWrap studentsSearch" id="searchWrap" style="display:none;">
+                <span>🔎</span>
+                <input id="search" type="text" placeholder="Buscar por nome ou email..." />
+              </div>
+              <button class="pill studentsRefresh" id="refreshBtn" type="button" style="display:none;">Atualizar lista</button>
             </div>
 
-            <div class="smallHint">Use a busca no topo. Pressione Enter para pesquisar.</div>
+            <div class="studentsPanel">
+              <div class="studentsPanelHead">
+                <div>
+                  <h3>Lista de alunos</h3>
+                  <p id="studentsResultText">Carregando alunos...</p>
+                </div>
+                <span class="studentsHint">Clique em uma linha para editar</span>
+              </div>
+
+              <div class="tableWrap listTableWrap studentsTableWrap">
+                <table class="listTable studentsTable">
+                  <thead>
+                    <tr>
+                      <th>Aluno</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="userList"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 
         <!-- VIEW: EDIT -->
         <section class="view" id="view-edit">
-          <div class="card">
-            <h2>Editar aluno</h2>
-            <p>Ative/desative, edite nome e os links dos PDFs. Para remover um link, deixe em branco e salve.</p>
-
-            <div class="label">Nome do aluno</div>
-            <input id="studentName" type="text" placeholder="Nome do aluno" />
-
-            <div style="height:10px;"></div>
-
-            <div class="label">Email do aluno</div>
-            <input id="studentEmail" type="email" placeholder="Email do aluno" />
-
-            <label class="check" style="margin-top:12px;">
-              <input id="active" type="checkbox" checked />
-              Ativo
-            </label>
-
-            <div class="hr"></div>
-
-            <div class="grid2">
+          <div class="proPage editStudentPage">
+            <div class="proHero editStudentHero">
               <div>
-                <div class="label">Link treino</div>
-                <input id="training" type="text" placeholder="Link do Drive" />
+                <span class="sectionKicker">Gestão individual</span>
+                <h2>Editar aluno</h2>
+                <p>Selecione um aluno na lista, ajuste acesso, materiais, cardio e treino manual em uma tela mais organizada.</p>
               </div>
-              <div>
-                <div class="label">Link alimentação</div>
-                <input id="diet" type="text" placeholder="Link do Drive" />
-              </div>
-              <div>
-                <div class="label">Link suplementação</div>
-                <input id="supp" type="text" placeholder="Link do Drive" />
-              </div>
-              <div>
-                <div class="label">Link alongamentos</div>
-                <input id="stretch" type="text" placeholder="Link do Drive" />
+              <div class="heroMiniCard editHeroCard">
+                <strong>Fluxo ideal</strong>
+                <span>Primeiro escolha o aluno em “Alunos”. Depois edite os dados e salve no final da página.</span>
               </div>
             </div>
 
-            <div class="actionsRow">
-              <button class="btn" id="saveBtn" type="button">Salvar</button>
-              <button class="btnGhost" id="resetBtn" type="button">Reset senha</button>
-              <button class="btnGhost" id="deleteBtn" type="button">Deletar</button>
+            <div class="editStudentGrid">
+              <section class="proPanel editProfilePanel">
+                <div class="panelTitleRow">
+                  <div class="panelIcon">👤</div>
+                  <div>
+                    <h3>Dados do aluno</h3>
+                    <p>Informações principais de acesso e identificação.</p>
+                  </div>
+                </div>
+
+                <div class="formGrid editProfileGrid">
+                  <div class="fieldGroup">
+                    <div class="label">Nome do aluno</div>
+                    <input id="studentName" type="text" placeholder="Nome do aluno" />
+                  </div>
+
+                  <div class="fieldGroup">
+                    <div class="label">Email do aluno</div>
+                    <input id="studentEmail" type="email" placeholder="Email do aluno" />
+                  </div>
+                </div>
+
+                <div class="editStatusBox">
+                  <label class="check proCheck" style="margin:0;">
+                    <input id="active" type="checkbox" checked />
+                    <span><b>Acesso ativo</b><small>Quando ativo, o aluno consegue entrar no painel dele.</small></span>
+                  </label>
+                </div>
+              </section>
+
+              <section class="proPanel editMaterialsPanel">
+                <div class="panelTitleRow spaceBetween">
+                  <div class="panelTitleInline">
+                    <div class="panelIcon">📄</div>
+                    <div>
+                      <h3>Materiais do aluno</h3>
+                      <p>Organize cada material em sua própria aba para evitar tela poluída.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="editDocTabs" id="editDocTabs">
+                  <button class="editDocTab active" type="button" data-doc-panel="training">Treino</button>
+                  <button class="editDocTab" type="button" data-doc-panel="diet">Dieta</button>
+                  <button class="editDocTab" type="button" data-doc-panel="supp">Suplementação</button>
+                  <button class="editDocTab" type="button" data-doc-panel="cardio">Cardio</button>
+                  <button class="editDocTab" type="button" data-doc-panel="exams">Exames</button>
+                  <button class="editDocTab" type="button" data-doc-panel="stretch">Alongamento</button>
+                </div>
+
+                <div class="editDocPanel active" id="doc-panel-training">
+                  <div class="docPanelHead">
+                    <span class="docPanelIcon">🏋️</span>
+                    <div>
+                      <h3>Treino</h3>
+                      <p>Escolha entre treino manual ou PDF/link.</p>
+                    </div>
+                  </div>
+
+                  <div class="grid2">
+                    <div>
+                      <div class="label">Tipo de treino</div>
+                      <select id="trainingMode">
+                        <option value="pdf">PDF / Link</option>
+                        <option value="manual">Treino manual</option>
+                      </select>
+                    </div>
+
+                    <div id="pdfTrainingBox">
+                      <div class="label">Link do treino em PDF/Drive</div>
+                      <input id="training" type="text" placeholder="Cole o link do treino" />
+                      <div class="smallHint">Use link do Drive, PDF direto ou URL compatível.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="editDocPanel" id="doc-panel-diet">
+                  <div class="docPanelHead"><span class="docPanelIcon">🍽️</span><div><h3>Dieta</h3><p>Material alimentar do aluno.</p></div></div>
+                  <div class="label">Link da dieta</div>
+                  <input id="diet" type="text" placeholder="Cole o link da dieta" />
+                </div>
+
+                <div class="editDocPanel" id="doc-panel-supp">
+                  <div class="docPanelHead"><span class="docPanelIcon">💊</span><div><h3>Suplementação</h3><p>Orientações complementares do aluno.</p></div></div>
+                  <div class="label">Link da suplementação</div>
+                  <input id="supp" type="text" placeholder="Cole o link da suplementação" />
+                </div>
+
+                <div class="editDocPanel" id="doc-panel-cardio">
+                  <div class="docPanelHead"><span class="docPanelIcon">🏃</span><div><h3>Cardio / Corrida</h3><p>Cadastre por escrito o que o aluno verá ao clicar em Cardio.</p></div></div>
+
+                  <div class="grid2">
+                    <div>
+                      <div class="label">Nome do cardio</div>
+                      <input id="cardioName" type="text" placeholder="Ex.: Esteira, bicicleta, escada, corrida" />
+                    </div>
+
+                    <div>
+                      <div class="label">Tempo</div>
+                      <input id="cardioTime" type="text" placeholder="Ex.: 30 minutos" />
+                    </div>
+
+                    <div>
+                      <div class="label">Intensidade</div>
+                      <input id="cardioIntensity" type="text" placeholder="Ex.: Leve, moderada, forte, zona 2, 6/10" />
+                    </div>
+
+                    <div>
+                      <div class="label">Dias da semana</div>
+                      <input id="cardioDays" type="text" placeholder="Ex.: Segunda, quarta e sexta" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="editDocPanel" id="doc-panel-exams">
+                  <div class="docPanelHead"><span class="docPanelIcon">🧪</span><div><h3>Exames</h3><p>Link dos exames ou avaliações.</p></div></div>
+                  <div class="label">Link dos exames</div>
+                  <input id="exams" type="text" placeholder="Cole o link dos exames" />
+                </div>
+
+                <div class="editDocPanel" id="doc-panel-stretch">
+                  <div class="docPanelHead"><span class="docPanelIcon">🧘</span><div><h3>Alongamento</h3><p>Material geral de mobilidade e alongamento.</p></div></div>
+                  <div class="label">Link do alongamento</div>
+                  <input id="stretch" type="text" placeholder="Cole o link do alongamento" />
+                </div>
+              </section>
             </div>
 
-            <div class="smallHint">Ao clicar em um aluno na lista, esta tela é preenchida automaticamente.</div>
+            <div id="manualTrainingBox" class="manualTrainingShell" style="display:none;">
+              <div class="manualHeader">
+                <div>
+                  <span class="sectionKicker">Treino manual</span>
+                  <h3>Montagem do treino do aluno</h3>
+                  <p>Organize o treino em etapas: dados gerais, exercício, técnica, séries e revisão final.</p>
+                </div>
+                <div class="manualHeaderActions">
+                  <button class="btnGhost" id="workoutLoadBtn" type="button" style="display:none;">Carregar treinos</button>
+                  <button class="btn" id="workoutSaveBtn" type="button">Salvar treinos manuais</button>
+                </div>
+              </div>
+
+              <div class="manualGrid">
+                <section class="formSection formSectionFull">
+                  <div class="formSectionHead">
+                    <span class="stepBadge">01</span>
+                    <div>
+                      <h4>Dados do treino</h4>
+                      <p>Nome, ordem de exibição e observação geral.</p>
+                    </div>
+                  </div>
+
+                  <div class="grid2">
+                    <div>
+                      <div class="label">Nome do treino</div>
+                      <input id="workoutTitle" type="text" placeholder="Ex.: Treino A, Treino B, Inferiores" />
+                    </div>
+                    <div>
+                      <div class="label">Ordem</div>
+                      <input id="workoutOrder" type="number" min="0" value="0" />
+                    </div>
+                    <div style="grid-column:1 / -1;">
+                      <div class="label">Observação geral do treino</div>
+                      <textarea id="workoutNotes" rows="3" placeholder="Ex.: foco em amplitude, descanso de 90 segundos..."></textarea>
+                    </div>
+                  </div>
+
+                  <label class="check" style="margin-top:12px;">
+                    <input id="workoutActive" type="checkbox" checked />
+                    Treino ativo
+                  </label>
+                </section>
+
+                <section class="formSection">
+                  <div class="formSectionHead">
+                    <span class="stepBadge">02</span>
+                    <div>
+                      <h4>Exercício</h4>
+                      <p>Selecione o exercício e descreva a orientação individual.</p>
+                    </div>
+                  </div>
+
+                  <div class="fieldStack">
+                    <div>
+                      <div class="label">Exercício cadastrado</div>
+                      <select id="workoutExerciseSelect"></select>
+                    </div>
+                    <div>
+                      <div class="label">Ordem do exercício</div>
+                      <input id="workoutExerciseOrder" type="number" min="0" value="0" />
+                    </div>
+                    <div>
+                      <div class="label">Observação individual do exercício</div>
+                      <textarea id="workoutExerciseNotes" rows="3" placeholder="Ex.: controlar excêntrica, não perder alinhamento..."></textarea>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="formSection">
+                  <div class="formSectionHead">
+                    <span class="stepBadge">03</span>
+                    <div>
+                      <h4>Técnica de treino</h4>
+                      <p>Opcional. Use quando quiser orientar uma estratégia específica.</p>
+                    </div>
+                  </div>
+
+                  <div class="fieldStack">
+                    <div>
+                      <div class="label">Técnica</div>
+                      <select id="workoutTechniqueSelect">
+                        <option value="">Sem técnica</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div class="label">Observação da técnica</div>
+                      <input id="workoutTechniqueNote" type="text" placeholder="Ex.: última série em drop-set" />
+                    </div>
+                    <div class="smallHint">Cadastre novas técnicas em Biblioteca › Técnicas de treino.</div>
+                  </div>
+                </section>
+
+                <section class="formSection formSectionFull">
+                  <div class="formSectionHead">
+                    <span class="stepBadge">04</span>
+                    <div>
+                      <h4>Séries e repetições</h4>
+                      <p>Monte os blocos de séries que pertencem ao exercício selecionado.</p>
+                    </div>
+                  </div>
+
+                  <div class="seriesBuilderGrid">
+                    <div>
+                      <div class="label">Quantidade de séries</div>
+                      <input id="seriesCount" type="number" min="1" placeholder="Ex.: 4" />
+                    </div>
+                    <div>
+                      <div class="label">Repetições</div>
+                      <input id="seriesTargetReps" type="text" placeholder="Ex.: 8 a 10" />
+                    </div>
+                    <div class="seriesButtons">
+                      <button class="btnGhost" id="seriesAddBtn" type="button">Adicionar série</button>
+                      <button class="btnGhost" id="seriesClearBtn" type="button">Limpar séries</button>
+                    </div>
+                  </div>
+
+                  <div id="currentSeriesBox" class="previewBox">Nenhuma série adicionada.</div>
+
+                  <div class="actionsRow" style="margin-top:14px;">
+                    <button class="btn" id="workoutExerciseAddBtn" type="button">Adicionar exercício ao treino</button>
+                    <button class="btnGhost" id="workoutDraftClearBtn" type="button">Limpar treino em montagem</button>
+                  </div>
+                </section>
+
+                <section class="formSection formSectionFull">
+                  <div class="formSectionHead">
+                    <span class="stepBadge">05</span>
+                    <div>
+                      <h4>Treino em montagem</h4>
+                      <p>Revise os exercícios antes de adicionar o treino à lista do aluno.</p>
+                    </div>
+                  </div>
+
+                  <div id="workoutDraftBox" class="previewBox">Nenhum exercício adicionado ao treino atual.</div>
+                  <div class="smallHint" style="margin-top:8px;">Dica: arraste os exercícios do treino em montagem para trocar a ordem.</div>
+
+                  <div class="actionsRow" style="margin-top:14px;">
+                    <button class="btn" id="workoutAddBtn" type="button">Adicionar treino à lista do aluno</button>
+                  </div>
+                </section>
+
+                <section class="formSection formSectionFull">
+                  <div class="formSectionHead">
+                    <span class="stepBadge">06</span>
+                    <div>
+                      <h4>Treinos do aluno</h4>
+                      <p>Lista final que será exibida para o aluno no login dele.</p>
+                    </div>
+                  </div>
+
+                  <div id="workoutListBox" class="previewBox">Carregue um aluno ou adicione um treino.</div>
+                  <div class="smallHint" style="margin-top:8px;">Dica: arraste os blocos dos treinos para trocar a ordem antes de salvar.</div>
+                </section>
+              </div>
+            </div>
+
+            <section class="editSaveBar">
+              <div>
+                <b>Salvar alterações do aluno</b>
+                <small>Use estes botões para gravar dados, resetar senha ou remover o aluno.</small>
+              </div>
+              <div class="editSaveActions">
+                <button class="btn" id="saveBtn" type="button">Salvar dados</button>
+                <button class="btnGhost" id="resetBtn" type="button">Reset senha</button>
+                <button class="btnGhost dangerGhost" id="deleteBtn" type="button">Deletar</button>
+              </div>
+            </section>
+
+            <div class="infoStrip">Ao clicar em um aluno na lista, esta tela é preenchida automaticamente.</div>
+          </div>
+        </section>
+
+
+        <!-- VIEW: LIBRARY -->
+        <section class="view" id="view-library">
+          <div class="proPage">
+            <div class="proHero libraryHero">
+              <div>
+                <span class="sectionKicker">Central de cadastros</span>
+                <h2>Biblioteca</h2>
+                <p>Organize vídeos, exercícios, agrupamentos, técnicas, itens extras e histórico em uma área única.</p>
+              </div>
+              <div class="heroMiniCard">
+                <strong>Fluxo recomendado</strong>
+                <span>Cadastre agrupamentos, vídeos e exercícios antes de montar o treino manual.</span>
+              </div>
+            </div>
+
+            <div class="libraryGrid proLibraryGrid">
+              <button class="libraryCard proLibraryCard" type="button" data-route-go="videos">
+                <span class="cardIcon">▶</span>
+                <span><b>Vídeos</b><small>Banco de vídeos explicativos</small></span>
+                <span class="cardArrow">›</span>
+              </button>
+              <button class="libraryCard proLibraryCard" type="button" data-route-go="exercises">
+                <span class="cardIcon">🏋️</span>
+                <span><b>Exercícios</b><small>Nome, grupo muscular e vídeo</small></span>
+                <span class="cardArrow">›</span>
+              </button>
+              <button class="libraryCard proLibraryCard" type="button" data-route-go="muscles">
+                <span class="cardIcon">💪</span>
+                <span><b>Agrupamentos</b><small>Grupos musculares reutilizáveis</small></span>
+                <span class="cardArrow">›</span>
+              </button>
+              <button class="libraryCard proLibraryCard" type="button" data-route-go="techniques">
+                <span class="cardIcon">⚡</span>
+                <span><b>Técnicas de treino</b><small>Nome, vídeo e observação padrão</small></span>
+                <span class="cardArrow">›</span>
+              </button>
+              <button class="libraryCard proLibraryCard" type="button" data-route-go="extra-items">
+                <span class="cardIcon">📎</span>
+                <span><b>Itens extras</b><small>Cards personalizados por aluno</small></span>
+                <span class="cardArrow">›</span>
+              </button>
+              <button class="libraryCard proLibraryCard" type="button" data-route-go="records">
+                <span class="cardIcon">🧾</span>
+                <span><b>Histórico</b><small>Registros de treino dos alunos</small></span>
+                <span class="cardArrow">›</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: RECORDS -->
+        <section class="view" id="view-records">
+          <div class="proPage librarySubPage">
+            <div class="proHero compactHero subHero">
+              <div>
+                <span class="sectionKicker">Histórico de evolução</span>
+                <h2>Registros dos alunos</h2>
+                <p>Visualize cargas, repetições e observações registradas nos treinos, com filtro por aluno e período.</p>
+              </div>
+              <div class="heroActions">
+                <button class="btnGhost" id="recordsRefreshBtn" type="button">Atualizar</button>
+                <button class="btn" id="recordsPdfBtn" type="button">Baixar PDF</button>
+              </div>
+            </div>
+
+            <div class="proGrid twoCols recordsProGrid">
+              <section class="proPanel librarySidePanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">👥</span>
+                  <div>
+                    <h3>Selecionar aluno</h3>
+                    <p>Busque pelo nome e clique para carregar o histórico.</p>
+                  </div>
+                </div>
+
+                <div class="searchWrap fullSearch">
+                  <span>🔎</span>
+                  <input id="recordsStudentSearch" type="text" placeholder="Buscar aluno..." />
+                </div>
+
+                <div id="recordsStudentsList" class="recordsStudentsList proScrollList">
+                  <div class="smallHint">Carregando alunos...</div>
+                </div>
+              </section>
+
+              <section class="proPanel accentPanel libraryMainPanel">
+                <div class="panelTitleRow spaceBetween">
+                  <div class="panelTitleInline">
+                    <span class="panelIcon">📊</span>
+                    <div>
+                      <h3>Histórico do aluno</h3>
+                      <p>Filtre por data e carregue os registros de execução.</p>
+                    </div>
+                  </div>
+                  <button class="btn panelAction" id="recordsApplyBtn" type="button">Carregar registros</button>
+                </div>
+
+                <div class="formGrid compactDateGrid">
+                  <div class="fieldGroup">
+                    <div class="label">De</div>
+                    <input id="recordsFrom" type="date" />
+                  </div>
+                  <div class="fieldGroup">
+                    <div class="label">Até</div>
+                    <input id="recordsTo" type="date" />
+                  </div>
+                </div>
+
+                <div class="selectedBox proSelectedBox" id="recordsSelectedStudentBox">
+                  Selecione um aluno na lista para ver os registros.
+                </div>
+
+                <div id="recordsListBox" class="recordsResultPanel">
+                  <div class="emptyState">
+                    <h3>Nenhum aluno selecionado</h3>
+                    <p>Clique em um aluno à esquerda para carregar o histórico.</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- VIEW: MUSCLES -->
+        <section class="view" id="view-muscles">
+          <div class="proPage librarySubPage">
+            <div class="proHero compactHero subHero">
+              <div>
+                <span class="sectionKicker">Banco de exercícios</span>
+                <h2>Agrupamentos musculares</h2>
+                <p>Cadastre os grupos musculares que serão usados para organizar os exercícios e montar treinos com mais velocidade.</p>
+              </div>
+              <button class="btnGhost heroAction" id="muscleRefreshBtn" type="button">Atualizar lista</button>
+            </div>
+
+            <div class="proGrid twoCols libraryFormGrid">
+              <section class="proPanel accentPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">💪</span>
+                  <div>
+                    <h3>Novo agrupamento</h3>
+                    <p>Use nomes simples para facilitar a busca dentro do treino manual.</p>
+                  </div>
+                </div>
+                <div class="fieldGroup">
+                  <div class="label">Nome do agrupamento</div>
+                  <input id="muscleName" type="text" placeholder="Ex.: Peito, Costas, Quadríceps" />
+                </div>
+                <div class="libraryFooterActions">
+                  <button class="btn" id="muscleSaveBtn" type="button">Cadastrar agrupamento</button>
+                  <button class="btnGhost" id="muscleCancelEditBtn" type="button" style="display:none;">Cancelar edição</button>
+                </div>
+              </section>
+
+              <section class="proPanel libraryListPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">📋</span>
+                  <div>
+                    <h3>Lista de agrupamentos</h3>
+                    <p>Edite ou remova agrupamentos já cadastrados.</p>
+                  </div>
+                </div>
+                <div id="muscleListBox" class="libraryListBox"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: VIDEOS -->
+        <section class="view" id="view-videos">
+          <div class="proPage librarySubPage">
+            <div class="proHero compactHero subHero">
+              <div>
+                <span class="sectionKicker">Conteúdo técnico</span>
+                <h2>Vídeos explicativos</h2>
+                <p>Cadastre os vídeos uma vez e depois vincule aos exercícios, evitando retrabalho na montagem dos treinos.</p>
+              </div>
+              <button class="btnGhost heroAction" id="videoRefreshBtn" type="button">Atualizar lista</button>
+            </div>
+
+            <div class="proGrid twoCols libraryFormGrid">
+              <section class="proPanel accentPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">▶</span>
+                  <div>
+                    <h3>Novo vídeo</h3>
+                    <p>Cadastre o título e o link do vídeo explicativo.</p>
+                  </div>
+                </div>
+                <div class="formGrid">
+                  <div class="fieldGroup">
+                    <div class="label">Título do vídeo</div>
+                    <input id="videoTitle" type="text" placeholder="Ex.: Agachamento livre - execução" />
+                  </div>
+                  <div class="fieldGroup">
+                    <div class="label">Link do vídeo</div>
+                    <input id="videoUrl" type="text" placeholder="YouTube, Drive ou outro link" />
+                  </div>
+                </div>
+                <div class="libraryFooterActions">
+                  <button class="btn" id="videoSaveBtn" type="button">Cadastrar vídeo</button>
+                  <button class="btnGhost" id="videoCancelEditBtn" type="button" style="display:none;">Cancelar edição</button>
+                </div>
+              </section>
+
+              <section class="proPanel libraryListPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">🎬</span>
+                  <div>
+                    <h3>Vídeos cadastrados</h3>
+                    <p>Use esta lista para editar links ou conferir o banco de vídeos.</p>
+                  </div>
+                </div>
+                <div id="videoListBox" class="libraryListBox"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: EXERCISES -->
+        <section class="view" id="view-exercises">
+          <div class="proPage librarySubPage">
+            <div class="proHero compactHero subHero">
+              <div>
+                <span class="sectionKicker">Banco de movimentos</span>
+                <h2>Exercícios</h2>
+                <p>Cadastre cada exercício com seu agrupamento muscular e, se necessário, vincule um vídeo explicativo.</p>
+              </div>
+              <button class="btnGhost heroAction" id="exerciseListBtn" type="button">Atualizar lista</button>
+            </div>
+
+            <div class="proGrid twoCols libraryFormGrid">
+              <section class="proPanel accentPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">🏋️</span>
+                  <div>
+                    <h3>Novo exercício</h3>
+                    <p>Organize o exercício antes de usar no treino manual.</p>
+                  </div>
+                </div>
+                <div class="formGrid">
+                  <div class="fieldGroup">
+                    <div class="label">Nome do exercício</div>
+                    <input id="exerciseName" type="text" placeholder="Ex.: Supino inclinado" />
+                  </div>
+                  <div class="fieldGroup">
+                    <div class="label">Agrupamento muscular</div>
+                    <select id="exerciseMuscleSelect"></select>
+                  </div>
+                  <div class="fieldGroup fieldFull">
+                    <div class="label">Vídeo explicativo</div>
+                    <select id="exerciseVideoSelect"></select>
+                  </div>
+                </div>
+                <div class="libraryFooterActions">
+                  <button class="btn" id="exerciseSaveBtn" type="button">Cadastrar exercício</button>
+                  <button class="btnGhost" id="exerciseCancelEditBtn" type="button" style="display:none;">Cancelar edição</button>
+                </div>
+              </section>
+
+              <section class="proPanel libraryListPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">📚</span>
+                  <div>
+                    <h3>Exercícios cadastrados</h3>
+                    <p>Consulte, edite ou remova exercícios do banco.</p>
+                  </div>
+                </div>
+                <div id="exerciseListBox" class="libraryListBox"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+
+
+
+        <!-- VIEW: TECHNIQUES -->
+        <section class="view" id="view-techniques">
+          <div class="proPage librarySubPage">
+            <div class="proHero compactHero subHero">
+              <div>
+                <span class="sectionKicker">Métodos avançados</span>
+                <h2>Técnicas de treino</h2>
+                <p>Cadastre técnicas como drop-set, rest-pause, bi-set, cluster e outras estratégias para aplicar nas séries.</p>
+              </div>
+              <button class="btnGhost heroAction" id="techniqueRefreshBtn" type="button">Atualizar lista</button>
+            </div>
+
+            <div class="proGrid twoCols libraryFormGrid">
+              <section class="proPanel accentPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">⚡</span>
+                  <div>
+                    <h3>Nova técnica</h3>
+                    <p>Defina o nome, vídeo e instrução padrão para reutilizar no treino manual.</p>
+                  </div>
+                </div>
+                <div class="formGrid">
+                  <div class="fieldGroup">
+                    <div class="label">Nome da técnica</div>
+                    <input id="techniqueName" type="text" placeholder="Ex.: Drop-set" />
+                  </div>
+                  <div class="fieldGroup">
+                    <div class="label">Vídeo da técnica</div>
+                    <input id="techniqueVideoUrl" type="text" placeholder="Link do vídeo" />
+                  </div>
+                  <div class="fieldGroup fieldFull">
+                    <div class="label">Observação padrão</div>
+                    <textarea id="techniqueNotes" rows="3" placeholder="Explique como aplicar esta técnica."></textarea>
+                  </div>
+                </div>
+                <div class="libraryFooterActions">
+                  <button class="btn" id="techniqueSaveBtn" type="button">Cadastrar técnica</button>
+                  <button class="btnGhost" id="techniqueCancelEditBtn" type="button" style="display:none;">Cancelar edição</button>
+                </div>
+              </section>
+
+              <section class="proPanel libraryListPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">🧠</span>
+                  <div>
+                    <h3>Técnicas cadastradas</h3>
+                    <p>Edite instruções, vídeos ou remova técnicas do banco.</p>
+                  </div>
+                </div>
+                <div id="techniqueListBox" class="libraryListBox"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- VIEW: EXTRA ITEMS -->
+        <section class="view" id="view-extra-items">
+          <div class="proPage librarySubPage extraItemsPage">
+            <div class="proHero compactHero subHero">
+              <div>
+                <span class="sectionKicker">Materiais personalizados</span>
+                <h2>Itens extras do aluno</h2>
+                <p>Busque o aluno pelo nome, selecione o cadastro correto e organize cards extras que aparecem no login dele.</p>
+              </div>
+              <div class="heroActions">
+                <button class="btnGhost" id="extraLoadBtn" type="button">Recarregar itens</button>
+              </div>
+            </div>
+
+            <div class="proGrid twoCols extraManagerGrid">
+              <section class="proPanel librarySidePanel extraStudentPanel">
+                <div class="panelTitleRow">
+                  <span class="panelIcon">👤</span>
+                  <div>
+                    <h3>Selecionar aluno</h3>
+                    <p>Digite nome ou e-mail e clique no aluno para carregar os itens extras.</p>
+                  </div>
+                </div>
+
+                <div class="searchWrap fullSearch">
+                  <span>🔎</span>
+                  <input id="extraStudentSearch" type="text" placeholder="Buscar por nome ou email..." autocomplete="off" />
+                </div>
+                <input id="extraStudentEmail" type="hidden" />
+
+                <div id="extraStudentsList" class="extraStudentsList proScrollList">
+                  <div class="smallHint">Carregando alunos...</div>
+                </div>
+              </section>
+
+              <section class="proPanel accentPanel libraryMainPanel extraEditorPanel">
+                <div class="panelTitleRow spaceBetween">
+                  <div class="panelTitleInline">
+                    <span class="panelIcon">📎</span>
+                    <div>
+                      <h3>Gerenciar itens extras</h3>
+                      <p>Adicione links, PDFs, protocolos e materiais complementares para o aluno selecionado.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="selectedBox" id="extraSelectedStudentBox">Selecione um aluno para cadastrar itens extras.</div>
+
+                <div class="formBlock extraFormBlock">
+                  <div class="panelTitleRow compactPanelTitle">
+                    <span class="panelIcon smallPanelIcon">＋</span>
+                    <div>
+                      <h3>Novo item extra</h3>
+                      <p>Preencha os dados do card que será exibido no painel do aluno.</p>
+                    </div>
+                  </div>
+
+                  <div class="formGrid extraFormGrid">
+                    <div class="fieldGroup">
+                      <div class="label">Título que aparece para o aluno</div>
+                      <input id="extraTitle" type="text" placeholder="Ex.: Protocolo de cardio" />
+                    </div>
+                    <div class="fieldGroup">
+                      <div class="label">Link do arquivo/PDF</div>
+                      <input id="extraUrl" type="text" placeholder="Link do Drive, PDF ou página" />
+                    </div>
+                    <div class="fieldGroup compactField">
+                      <div class="label">Ordem</div>
+                      <input id="extraOrder" type="number" min="0" value="0" />
+                    </div>
+                    <div class="fieldGroup compactField activeField">
+                      <div class="label">Status</div>
+                      <label class="check extraActiveCheck">
+                        <input id="extraActive" type="checkbox" checked />
+                        Ativo para o aluno
+                      </label>
+                    </div>
+                    <div class="fieldGroup fieldFull">
+                      <div class="label">Observação que aparece abaixo do título</div>
+                      <textarea id="extraNotes" rows="3" placeholder="Ex.: Material complementar do seu acompanhamento"></textarea>
+                    </div>
+                  </div>
+
+                  <div class="libraryFooterActions">
+                    <button class="btn" id="extraAddBtn" type="button">Adicionar item à lista</button>
+                    <button class="btnGhost" id="extraClearBtn" type="button">Limpar item</button>
+                  </div>
+                </div>
+
+                <div class="itemsListHeader">
+                  <div>
+                    <h3>Itens do aluno</h3>
+                    <p>Revise a lista antes de salvar no banco.</p>
+                  </div>
+                </div>
+
+                <div id="extraItemsBox" class="smallHint extraItemsBox">Selecione um aluno para carregar os itens.</div>
+
+                <div class="extraSaveFooter">
+                  <div>
+                    <b>Finalizar alterações</b>
+                    <small>Depois de adicionar, editar ou remover itens, clique para gravar no banco.</small>
+                  </div>
+                  <button class="btn" id="extraSaveBtn" type="button">Salvar itens</button>
+                </div>
+              </section>
+            </div>
           </div>
         </section>
 

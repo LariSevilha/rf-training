@@ -1,0 +1,38 @@
+
+:root {
+  color-scheme: dark;
+  --rf-black: #050505;
+  --rf-bg: #070707;
+  --rf-bg-2: #0b0b0b;
+  --rf-surface: rgba(14, 14, 14, 0.86);
+  --rf-surface-2: rgba(18, 18, 18, 0.9);
+  --rf-surface-3: rgba(24, 24, 24, 0.94);
+  --rf-card: rgba(15, 15, 15, 0.86);
+  --rf-card-soft: rgba(255, 255, 255, 0.028);
+  --rf-elevated: rgba(20, 20, 20, 0.94);
+  --rf-gold: #ceac5e;
+  --rf-gold-2: #dcc275;
+  --rf-gold-3: #8d6e2f;
+  --rf-gold-soft: rgba(206, 172, 94, 0.10);
+  --rf-gold-soft-2: rgba(206, 172, 94, 0.055);
+  --rf-text: rgba(255, 255, 255, 0.92);
+  --rf-muted: rgba(255, 255, 255, 0.62);
+  --rf-soft: rgba(255, 255, 255, 0.42);
+  --rf-border: rgba(255, 255, 255, 0.085);
+  --rf-border-strong: rgba(206, 172, 94, 0.24);
+  --rf-success: #22c55e;
+  --rf-danger: #ef4444;
+  --rf-warning: #f59e0b;
+  --rf-info: #60a5fa;
+  --rf-radius-xs: 8px;
+  --rf-radius-sm: 12px;
+  --rf-radius: 16px;
+  --rf-radius-lg: 22px;
+  --rf-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+  --rf-shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.18);
+  --rf-shadow-gold: 0 10px 22px rgba(206, 172, 94, 0.12);
+  --rf-focus: 0 0 0 3px rgba(206, 172, 94, 0.12);
+  --rf-font: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --rf-sidebar: 258px;
+  --rf-content: 1240px;
+}

@@ -1,0 +1,5 @@
+
+.privacyPage {
+  width: min(920px, calc(100% - 28px));
+  margin: 32px auto;
+}
