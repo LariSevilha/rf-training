@@ -620,6 +620,9 @@ async function loadDashboard() {
 
 // ===== ME (Admin) =====
 async function loadMe() {
+  const footerAdminName = document.getElementById("footerAdminName");
+  const footerAdminEmail = document.getElementById("footerAdminEmail");
+  const adminAvatar = document.getElementById("adminAvatar");
   try {
     const data = await apiMe(token);
 
@@ -637,6 +640,25 @@ async function loadMe() {
 
     if (mePass1) mePass1.value = "";
     if (mePass2) mePass2.value = "";
+
+    if (footerAdminName) {
+      footerAdminName.textContent = data.user.name || "Admin";
+    }
+    
+    if (footerAdminEmail) {
+      footerAdminEmail.textContent = data.user.email || "—";
+    }
+    
+    if (adminAvatar) {
+      const initials = (data.user.name || data.user.email || "RF")
+        .split(" ")
+        .map((p) => p[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+    
+      adminAvatar.textContent = initials;
+    }
   } catch (e) {
     toast("error", "Erro", e.message || "Erro ao carregar admin.");
   }
