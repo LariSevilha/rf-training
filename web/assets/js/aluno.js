@@ -204,6 +204,11 @@ function setTab(name) {
   });
 
   document.getElementById(`panel-${target}`)?.classList.add("active");
+
+  const hero = document.getElementById("alunoHero");
+  if (hero) {
+    hero.style.display = target === "manual" ? "none" : "flex";
+  }
 }
 
 document.querySelectorAll("[data-student-tab]").forEach((btn) => {
@@ -735,13 +740,13 @@ function renderWorkouts() {
   }).join("");
 
   workoutArea.innerHTML = `
-    <div class="workoutCard" data-workout-id="${escapeHtml(workout.id)}">
-      <div class="workoutHead">
-        <div>
-          <h2>${escapeHtml(workout.title || "Treino")}</h2>
-          ${workout.notes ? `<p>${escapeHtml(workout.notes)}</p>` : `<p>Preencha carga e repetições para registrar sua execução.</p>`}
-        </div>
+  <div class="workoutCard" data-workout-id="${escapeHtml(workout.id)}">
+    <div class="workoutHead">
+      <div>
+        <h2>${escapeHtml(workout.title || "Treino")}</h2>
+        ${workout.notes ? `<p>${escapeHtml(workout.notes)}</p>` : ""}
       </div>
+    </div>
 
       ${exercisesHtml || `<div class="emptyState inline"><h3>Treino sem exercícios</h3><p>Entre em contato com o personal.</p></div>`}
 
