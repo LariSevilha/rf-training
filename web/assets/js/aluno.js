@@ -58,7 +58,6 @@ const menuGrid = document.getElementById("menuGrid");
 const docsEmpty = document.getElementById("docsEmpty");
 const studentMessage = document.getElementById("studentMessage");
 const refreshStudentBtn = document.getElementById("refreshStudentBtn");
-const alunoHero = document.querySelector(".alunoHero");
 
 const pdfOverlay = document.getElementById("pdfOverlay");
 const pdfFrame = document.getElementById("pdfFrame");
@@ -205,11 +204,6 @@ function setTab(name) {
   });
 
   document.getElementById(`panel-${target}`)?.classList.add("active");
-
-  // A saudação fica só na tela inicial. Dentro da visualização do treino, ela some.
-  if (alunoHero) {
-    alunoHero.style.display = target === "documents" ? "flex" : "none";
-  }
 }
 
 document.querySelectorAll("[data-student-tab]").forEach((btn) => {
@@ -747,7 +741,6 @@ function renderWorkouts() {
           <h2>${escapeHtml(workout.title || "Treino")}</h2>
           ${workout.notes ? `<p>${escapeHtml(workout.notes)}</p>` : `<p>Preencha carga e repetições para registrar sua execução.</p>`}
         </div>
-
       </div>
 
       ${exercisesHtml || `<div class="emptyState inline"><h3>Treino sem exercícios</h3><p>Entre em contato com o personal.</p></div>`}
@@ -758,7 +751,9 @@ function renderWorkouts() {
         <div class="smallHint">Essa observação fica salva no histórico para o personal acompanhar.</div>
       </div>
 
-      <button class="saveWorkoutBtn saveWorkoutBtnBottom" id="saveWorkoutBtn" type="button">Salvar execução</button>
+      <div class="workoutSaveFooter">
+        <button class="saveWorkoutBtn" id="saveWorkoutBtn" type="button">Salvar execução</button>
+      </div>
     </div>
   `;
 
