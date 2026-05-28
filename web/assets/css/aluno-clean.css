@@ -929,216 +929,208 @@
   }
 }
 
-/* Ajustes finais solicitados — topo, PDF e tela de cargas/reps */
+
+/* Ajustes finais solicitados — topo menor, série explícita e visualização de treino mais limpa */
 .alunoClean .alunoTopInner {
-  min-height: 74px;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
+  min-height: 54px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
 
 .alunoClean .topBrand {
-  display: inline-flex !important;
-  align-items: center !important;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .alunoClean .topLogo {
-  height: 58px !important;
-  max-height: 58px !important;
-  width: auto !important;
-  object-fit: contain;
+  max-height: 32px;
+  width: auto;
 }
 
 .alunoClean .topNavRight {
   display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  gap: 8px !important;
-  flex-wrap: nowrap !important;
-  width: auto !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
 }
 
 .alunoClean #logoutBtn,
 .alunoClean #installBtn {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 12px;
   width: auto !important;
-  min-width: max-content;
-  height: 40px;
-  min-height: 40px;
-  padding: 0 14px;
+}
+
+.alunoClean .seriesHead,
+.alunoClean .seriesRow {
+  grid-template-columns: 86px 1fr 116px 116px;
+}
+
+.alunoClean .seriesRow > span:first-child {
+  width: auto;
+  min-width: 72px;
+  height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
-}
-
-.pdfOverlay.show {
-  grid-template-rows: auto 1fr;
-  padding-top: env(safe-area-inset-top);
-}
-
-.pdfBar {
-  min-height: 72px;
-  padding: calc(16px + env(safe-area-inset-top)) 16px 14px !important;
-  align-items: center;
-}
-
-.pdfBar .backBtn,
-#pdfBack {
-  min-height: 44px;
-  border-radius: 999px;
-  padding-inline: 16px;
-  position: relative;
-  z-index: 3;
-}
-
-#pdfFrame {
-  min-height: calc(100vh - 88px) !important;
-}
-
-.workoutSaveFooter {
-  padding: 16px 18px 20px;
-  border-top: 1px solid var(--rf-border);
-  background: #101010;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.workoutSaveFooter .saveWorkoutBtn {
-  min-width: 220px;
-  border-color: var(--rf-gold);
-  background: var(--rf-gold);
-  color: #111;
+  white-space: nowrap;
 }
 
 @media (max-width: 760px) {
   .alunoClean .alunoTopInner {
-    min-height: 70px;
-    padding: 8px 12px !important;
+    min-height: 50px;
+    padding: 7px 10px;
   }
 
   .alunoClean .topLogo {
-    height: 52px !important;
-    max-height: 52px !important;
-  }
-
-  .alunoClean .topNavRight {
-    display: flex !important;
-    flex-direction: row !important;
-    grid-template-columns: none !important;
-    gap: 7px !important;
+    max-height: 29px;
   }
 
   .alunoClean #logoutBtn,
   .alunoClean #installBtn {
-    width: auto !important;
-    min-height: 38px;
-    height: 38px;
-    padding: 0 12px;
-    font-size: 12px;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 11.5px;
   }
 
-  .pdfBar {
-    min-height: 82px;
-    padding-top: calc(22px + env(safe-area-inset-top)) !important;
-    gap: 10px;
+  .alunoClean .seriesRow {
+    grid-template-columns: 78px minmax(56px, 1fr) 72px 72px;
   }
 
-  .pdfTitle {
-    font-size: 13px;
-    max-width: 58vw;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  #pdfFrame {
-    min-height: calc(100vh - 92px) !important;
-  }
-
-  .workoutHead {
-    padding: 14px !important;
-  }
-
-  .seriesTable {
-    gap: 10px !important;
-  }
-
-  .seriesRow {
-    grid-template-columns: 34px 1fr !important;
-    gap: 9px !important;
-    padding: 12px !important;
-    border-radius: 14px !important;
-  }
-
-  .seriesRow > span:first-child {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 13px !important;
-  }
-
-  .seriesRow > span:nth-child(2) {
-    font-size: 14px !important;
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: unset !important;
-  }
-
-  .seriesRow label {
-    grid-column: 1 / -1 !important;
-    min-height: 58px !important;
-    padding: 10px 12px !important;
-    border-radius: 13px !important;
-    display: grid !important;
-    grid-template-columns: 48px 1fr !important;
-    gap: 10px !important;
-  }
-
-  .seriesRow small {
-    display: inline-flex !important;
-    align-items: center;
-    font-size: 12px !important;
-    font-weight: 800;
-  }
-
-  .seriesRow input {
-    min-height: 38px !important;
-    font-size: 22px !important;
-    line-height: 1 !important;
-    text-align: left !important;
-    padding: 4px 0 !important;
-  }
-
-  .workoutSaveFooter {
-    padding: 14px 10px 18px;
-  }
-
-  .workoutSaveFooter .saveWorkoutBtn {
-    width: 100% !important;
-    min-height: 50px;
-    font-size: 15px;
-    border-radius: 15px;
+  .alunoClean .seriesRow > span:first-child {
+    min-width: 70px;
+    width: auto;
+    height: 28px;
+    font-size: 11px;
+    padding: 0 8px;
   }
 }
 
 @media (max-width: 380px) {
-  .alunoClean .topLogo {
-    height: 46px !important;
-    max-height: 46px !important;
+  .alunoClean .seriesRow {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .alunoClean #logoutBtn,
-  .alunoClean #installBtn {
-    padding: 0 10px;
+  .alunoClean .seriesRow > span:first-child,
+  .alunoClean .seriesRow > span:nth-child(2) {
+    grid-column: auto;
   }
 
-  .seriesRow {
-    grid-template-columns: 32px 1fr !important;
+  .alunoClean .seriesRow label {
+    grid-column: auto;
+  }
+}
+
+/* Ajustes finais — treino do aluno */
+.alunoClean select {
+  background: #0f0f0f !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+}
+
+.alunoClean select option {
+  background: #0f0f0f !important;
+  color: #ffffff !important;
+}
+
+.alunoClean .workoutHead {
+  align-items: flex-start !important;
+}
+
+.alunoClean .saveWorkoutBtnBottom {
+  width: 100% !important;
+  margin-top: 18px !important;
+  min-height: 48px !important;
+  font-size: 15px !important;
+  border-radius: 14px !important;
+}
+
+.alunoClean .seriesHead,
+.alunoClean .seriesRow {
+  grid-template-columns: 92px minmax(72px, 1fr) minmax(118px, 150px) minmax(118px, 150px) !important;
+}
+
+.alunoClean .seriesRow {
+  gap: 10px !important;
+  padding: 12px !important;
+}
+
+.alunoClean .seriesRow > span:first-child {
+  min-width: 82px !important;
+  height: 34px !important;
+  font-size: 12px !important;
+}
+
+.alunoClean .seriesRow label {
+  min-height: 58px !important;
+  padding: 8px 10px !important;
+  background: rgba(255,255,255,.045) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+}
+
+.alunoClean .seriesRow small {
+  display: block !important;
+  font-size: 11px !important;
+  margin-bottom: 4px !important;
+  color: rgba(255,255,255,.62) !important;
+}
+
+.alunoClean .seriesRow input {
+  width: 100% !important;
+  min-height: 34px !important;
+  font-size: 18px !important;
+  text-align: left !important;
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+.alunoClean .seriesRow input::placeholder {
+  color: rgba(255,255,255,.42) !important;
+  font-size: 14px !important;
+}
+
+@media (max-width: 760px) {
+  .alunoClean .seriesHead {
+    display: none !important;
   }
 
-  .seriesRow label {
-    grid-template-columns: 44px 1fr !important;
+  .alunoClean .seriesRow {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
   }
 
-  .seriesRow input {
+  .alunoClean .seriesRow > span:first-child {
+    grid-column: 1 / -1 !important;
+    width: fit-content !important;
+    min-width: 82px !important;
+  }
+
+  .alunoClean .seriesRow > span:nth-child(2) {
+    grid-column: 1 / -1 !important;
+    font-size: 13px !important;
+  }
+
+  .alunoClean .seriesRow label {
+    grid-column: auto !important;
+    min-height: 64px !important;
+  }
+
+  .alunoClean .seriesRow input {
     font-size: 20px !important;
+    min-height: 36px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .alunoClean .seriesRow {
+    grid-template-columns: 1fr !important;
   }
 }
