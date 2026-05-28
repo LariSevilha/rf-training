@@ -1,40 +1,117 @@
-function setRoute(route) {
-  // ativa botão do menu
-  document.querySelectorAll(".navBtn[data-route]").forEach(btn => {
-    const inLibrary = ["muscles", "videos", "exercises", "records"].includes(route);
-    btn.classList.toggle("active", btn.dataset.route === route || (btn.dataset.route === "library" && inLibrary));
-  });
+const DEFAULT_ROUTE = "create";
+const STORAGE_KEY = "rf_admin_last_route";
 
-  // mostra view isolada
-  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-  const target = document.getElementById(`view-${route}`);
-  if (target) target.classList.add("active");
+const LIBRARY_ROUTES = [
+  "muscles",
+  "videos",
+  "exercises",
+  "techniques",
+  "extra-items",
+  "records",
+];
 
-  // Top search só na LIST
-  const searchWrap = document.getElementById("searchWrap");
-  const refreshBtn = document.getElementById("refreshBtn");
-  const isList = route === "list";
-  if (searchWrap) searchWrap.style.display = isList ? "flex" : "none";
-  if (refreshBtn) refreshBtn.style.display = isList ? "inline-flex" : "none";
+const VALID_ROUTES = [
+  "me",
+  "dash",
+  "create",
+  "list",
+  "edit",
+  "library",
+  ...LIBRARY_ROUTES,
+];
 
-  // evento para o admin.js reagir (ex: carregar lista ao abrir "Alunos")
-  window.dispatchEvent(new CustomEvent("routechange", { detail: { route } }));
+function isValidRoute(route) {
+  return VALID_ROUTES.includes(route);
 }
 
-document.querySelectorAll(".navBtn[data-route]").forEach(btn => {
-  btn.addEventListener("click", () => setRoute(btn.dataset.route));
+function getInitialRoute() {
+  const savedRoute = sessionStorage.getItem(STORAGE_KEY);
+
+  if (savedRoute && isValidRoute(savedRoute)) {
+    return savedRoute;
+  }
+
+  return DEFAULT_ROUTE;
+}
+
+function saveRoute(route) {
+  if (!isValidRoute(route)) return;
+  sessionStorage.setItem(STORAGE_KEY, route);
+}
+
+function setActiveMenu(route) {
+  document.querySelectorAll(".navBtn[data-route]").forEach((btn) => {
+    const isLibraryRoute = LIBRARY_ROUTES.includes(route);
+
+    const isActive =
+      btn.dataset.route === route ||
+      (btn.dataset.route === "library" && isLibraryRoute);
+
+    btn.classList.toggle("active", isActive);
+  });
+}
+
+function setActiveView(route) {
+  document.querySelectorAll(".view").forEach((view) => {
+    view.classList.remove("active");
+  });
+
+  const target = document.getElementById(`view-${route}`);
+
+  if (target) {
+    target.classList.add("active");
+    return;
+  }
+
+  const fallback = document.getElementById(`view-${DEFAULT_ROUTE}`);
+  fallback?.classList.add("active");
+}
+
+function updateListTools(route) {
+  const searchWrap = document.getElementById("searchWrap");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  const isList = route === "list";
+
+  if (searchWrap) {
+    searchWrap.style.display = isList ? "flex" : "none";
+  }
+
+  if (refreshBtn) {
+    refreshBtn.style.display = isList ? "inline-flex" : "none";
+  }
+}
+
+function setRoute(route, options = {}) {
+  const nextRoute = isValidRoute(route) ? route : DEFAULT_ROUTE;
+
+  setActiveMenu(nextRoute);
+  setActiveView(nextRoute);
+  updateListTools(nextRoute);
+
+  if (!options.skipSave) {
+    saveRoute(nextRoute);
+  }
+
+  window.dispatchEvent(
+    new CustomEvent("routechange", {
+      detail: { route: nextRoute },
+    })
+  );
+}
+
+document.querySelectorAll(".navBtn[data-route]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setRoute(btn.dataset.route);
+  });
 });
 
-// expõe pra outros scripts (admin.js manda pra EDIT ao selecionar aluno)
+document.querySelectorAll("[data-route-go]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setRoute(btn.dataset.routeGo);
+  });
+});
+
 window.__setRoute = setRoute;
 
-// exemplo de mapa (ajuste ao seu padrão)
-const ROUTES = {
-  dash: "view-dash",
-  create: "view-create",
-  list: "view-list",
-  edit: "view-edit",
-};
-
-// rota inicial
-setRoute("create");
+setRoute(getInitialRoute(), { skipSave: true });
