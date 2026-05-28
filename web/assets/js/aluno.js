@@ -307,7 +307,7 @@ function renderHomeMenu() {
       key: "training",
       icon: "🏋️",
       title: "Treino",
-      subtitle: hasManualWorkout ? "Abrir treino manual" : "Plano de treino",
+      subtitle: hasManualWorkout ? "Abrir treino" : "Plano de treino",
     });
   }
 
