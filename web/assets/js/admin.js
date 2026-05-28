@@ -100,6 +100,8 @@ const workoutOrder = document.getElementById("workoutOrder");
 const workoutNotes = document.getElementById("workoutNotes");
 const workoutActive = document.getElementById("workoutActive");
 
+const workoutExerciseSearch = document.getElementById("workoutExerciseSearch");
+const workoutExerciseResults = document.getElementById("workoutExerciseResults");
 const workoutExerciseSelect = document.getElementById("workoutExerciseSelect");
 const workoutExerciseOrder = document.getElementById("workoutExerciseOrder");
 const workoutExerciseNotes = document.getElementById("workoutExerciseNotes");
@@ -131,6 +133,7 @@ const exerciseName = document.getElementById("exerciseName");
 const exerciseMuscleSelect = document.getElementById("exerciseMuscleSelect");
 const exerciseVideoSelect = document.getElementById("exerciseVideoSelect");
 const exerciseVideoSearch = document.getElementById("exerciseVideoSearch");
+const exerciseVideoResults = document.getElementById("exerciseVideoResults");
 const exerciseSaveBtn = document.getElementById("exerciseSaveBtn");
 const exerciseListBtn = document.getElementById("exerciseListBtn");
 const exerciseCancelEditBtn = document.getElementById("exerciseCancelEditBtn");
@@ -1714,11 +1717,7 @@ async function refreshExercises() {
     });
   }
 
-  if (workoutExerciseSelect) {
-    workoutExerciseSelect.innerHTML = items.length
-      ? items.map((e) => `<option value="${escapeHtml(e.id || e.name)}">${escapeHtml(e.name)}${e.muscleGroup ? ` · ${escapeHtml(e.muscleGroup)}` : ""}</option>`).join("")
-      : `<option value="">Cadastre exercícios primeiro</option>`;
-  }
+  renderWorkoutExerciseOptions(workoutExerciseSearch?.value || "");
 }
 
 muscleSaveBtn?.addEventListener("click", async () => {
@@ -2565,10 +2564,129 @@ window.addEventListener("routechange", async (e) => {
   updateTrainingModeUI();
 })();
 
-function renderExerciseVideoOptions(items){
- if(!exerciseVideoSelect)return;
- const q=normalizeText(exerciseVideoSearch?.value||"");
- const filtered=(items||window.__videoCatalog||[]).filter(v=>!q||normalizeText(v.title||"").includes(q));
- exerciseVideoSelect.innerHTML=`<option value="">Sem vídeo</option>`+filtered.map(v=>`<option value="${escapeHtml(v.id)}" data-url="${escapeHtml(v.url)}" data-title="${escapeHtml(v.title)}">${escapeHtml(v.title)}</option>`).join("");
+function renderSearchResultList({ box, items, type }) {
+  if (!box) return;
+
+  if (!items.length) {
+    box.style.display = "block";
+    box.innerHTML = `<div class="searchResultEmpty">Nenhum resultado encontrado.</div>`;
+    return;
+  }
+
+  box.style.display = "flex";
+  box.innerHTML = items.slice(0, 12).map((item) => {
+    if (type === "exercise") {
+      const group = item.muscleGroup || item.muscleGroupName || item.muscleGroup?.name || "Sem agrupamento";
+      return `
+        <button class="searchResultItem" type="button" data-pick-exercise="${escapeHtml(item.id || item.name || "")}">
+          <span><b>${escapeHtml(item.name || "Exercício")}</b><small>${escapeHtml(group)}</small></span>
+          <span class="searchResultArrow">Selecionar</span>
+        </button>
+      `;
+    }
+
+    return `
+      <button class="searchResultItem" type="button" data-pick-video="${escapeHtml(item.id || "")}">
+        <span><b>${escapeHtml(item.title || "Vídeo")}</b><small>${escapeHtml(item.url || "")}</small></span>
+        <span class="searchResultArrow">Selecionar</span>
+      </button>
+    `;
+  }).join("");
+
+  if (type === "exercise") {
+    box.querySelectorAll("[data-pick-exercise]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.pickExercise || "";
+        if (workoutExerciseSelect) workoutExerciseSelect.value = id;
+        if (workoutExerciseSearch) {
+          const found = workoutCatalogExercises.find((e) => String(e.id || e.name) === String(id));
+          workoutExerciseSearch.value = found?.name || "";
+        }
+        box.innerHTML = "";
+        box.style.display = "none";
+      });
+    });
+  }
+
+  if (type === "video") {
+    box.querySelectorAll("[data-pick-video]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.pickVideo || "";
+        if (exerciseVideoSelect) exerciseVideoSelect.value = id;
+        if (exerciseVideoSearch) {
+          const found = (window.__videoCatalog || []).find((v) => String(v.id) === String(id));
+          exerciseVideoSearch.value = found?.title || "";
+        }
+        box.innerHTML = "";
+        box.style.display = "none";
+      });
+    });
+  }
 }
-exerciseVideoSearch?.addEventListener("input",()=>renderExerciseVideoOptions(window.__videoCatalog||[]));
+
+function renderWorkoutExerciseOptions(query = "") {
+  if (!workoutExerciseSelect) return;
+
+  const q = normalizeText(query);
+  const items = (workoutCatalogExercises || []).filter((e) => {
+    const name = normalizeText(e.name || "");
+    const group = normalizeText(e.muscleGroup || e.muscleGroupName || e.muscleGroup?.name || "");
+    return !q || name.includes(q) || group.includes(q);
+  });
+
+  workoutExerciseSelect.innerHTML = items.length
+    ? items.map((e) => {
+        const group = e.muscleGroup || e.muscleGroupName || e.muscleGroup?.name || "";
+        return `<option value="${escapeHtml(e.id || e.name)}">${escapeHtml(e.name)}${group ? ` · ${escapeHtml(group)}` : ""}</option>`;
+      }).join("")
+    : `<option value="">Nenhum exercício encontrado</option>`;
+
+  if (q) {
+    renderSearchResultList({ box: workoutExerciseResults, items, type: "exercise" });
+  } else if (workoutExerciseResults) {
+    workoutExerciseResults.innerHTML = "";
+    workoutExerciseResults.style.display = "none";
+  }
+}
+
+function renderExerciseVideoOptions(items) {
+  if (!exerciseVideoSelect) return;
+
+  const catalog = items || window.__videoCatalog || [];
+  const q = normalizeText(exerciseVideoSearch?.value || "");
+  const filtered = catalog.filter((v) => {
+    const title = normalizeText(v.title || "");
+    const url = normalizeText(v.url || "");
+    return !q || title.includes(q) || url.includes(q);
+  });
+
+  exerciseVideoSelect.innerHTML = `<option value="">Sem vídeo</option>` + filtered.map((v) =>
+    `<option value="${escapeHtml(v.id)}" data-url="${escapeHtml(v.url)}" data-title="${escapeHtml(v.title)}">${escapeHtml(v.title)}</option>`
+  ).join("");
+
+  if (q) {
+    renderSearchResultList({ box: exerciseVideoResults, items: filtered, type: "video" });
+  } else if (exerciseVideoResults) {
+    exerciseVideoResults.innerHTML = "";
+    exerciseVideoResults.style.display = "none";
+  }
+}
+
+workoutExerciseSearch?.addEventListener("input", () => {
+  renderWorkoutExerciseOptions(workoutExerciseSearch.value || "");
+});
+
+exerciseVideoSearch?.addEventListener("input", () => {
+  renderExerciseVideoOptions(window.__videoCatalog || []);
+});
+
+
+// Garante que as listas de busca comecem ocultas.
+if (workoutExerciseResults) {
+  workoutExerciseResults.innerHTML = "";
+  workoutExerciseResults.style.display = "none";
+}
+if (exerciseVideoResults) {
+  exerciseVideoResults.innerHTML = "";
+  exerciseVideoResults.style.display = "none";
+}

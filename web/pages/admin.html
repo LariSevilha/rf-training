@@ -607,7 +607,14 @@
 
                   <div class="fieldStack">
                     <div>
-                      <div class="label">Exercício cadastrado</div>
+                      <div class="label">Buscar exercício</div>
+                      <div class="adminSearchBox compactSearchBox">
+                        <span>🔎</span>
+                        <input id="workoutExerciseSearch" type="text" placeholder="Digite o nome ou agrupamento..." autocomplete="off" />
+                      </div>
+                      <div id="workoutExerciseResults" class="searchResultList"></div>
+
+                      <div class="label" style="margin-top:10px;">Exercício cadastrado</div>
                       <select id="workoutExerciseSelect"></select>
                     </div>
                     <div>
@@ -978,7 +985,11 @@
                   </div>
                   <div class="fieldGroup fieldFull">
                     <div class="label">Buscar vídeo explicativo</div>
-                    <input id="exerciseVideoSearch" type="text" placeholder="Buscar vídeo pelo título..." />
+                    <div class="adminSearchBox compactSearchBox">
+                      <span>🔎</span>
+                      <input id="exerciseVideoSearch" type="text" placeholder="Digite o título do vídeo..." autocomplete="off" />
+                    </div>
+                    <div id="exerciseVideoResults" class="searchResultList"></div>
                     <select id="exerciseVideoSelect"></select>
                   </div>
                 </div>
