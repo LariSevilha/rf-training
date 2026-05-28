@@ -54,16 +54,17 @@
 
     <section class="studentMessage" id="studentMessage" aria-live="polite" style="display:none;"></section>
 
-    <section class="alunoTabs" id="alunoTabs" aria-label="Tipo de conteúdo">
-      <button class="alunoTab active" id="documentsTab" data-student-tab="documents" type="button">Materiais</button>
-      <button class="alunoTab" id="manualTab" data-student-tab="manual" type="button">Treino manual</button>
+    <section class="alunoTabs" id="alunoTabs" aria-label="Tipo de conteúdo" hidden>
+      <button class="alunoTab active" id="documentsTab" data-student-tab="documents" type="button">Início</button>
+      <button class="alunoTab" id="manualTab" data-student-tab="manual" type="button">Treino</button>
     </section>
 
     <section class="alunoPanel active" id="panel-documents">
-      <div class="panelHead">
+      <div class="panelHead studentHomeHead">
         <div>
-          <h2>Início</h2>
-          <p>Escolha o material que deseja acessar.</p>
+          <span class="sectionBadge">Seu acompanhamento</span>
+          <h2>Escolha o que deseja acessar</h2>
+          <p>Treino, alimentação e materiais liberados ficam organizados aqui.</p>
         </div>
       </div>
 
@@ -113,11 +114,13 @@
     </section>
 
     <section class="alunoPanel" id="panel-manual">
-      <div class="panelHead">
+      <div class="panelHead manualPanelHead">
         <div>
-          <h2>Treinos manuais</h2>
+          <span class="sectionBadge">Treino</span>
+          <h2>Seu treino</h2>
           <p>Registre carga e repetições de cada série.</p>
         </div>
+        <button class="softRefresh backHomeBtn" id="backHomeBtn" type="button">← Voltar ao início</button>
       </div>
 
       <div class="workoutTabs" id="workoutTabs"></div>

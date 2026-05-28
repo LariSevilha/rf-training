@@ -405,3 +405,526 @@
   margin-top: 8px;
   width: fit-content;
 }
+
+
+/* Upgrade visual da home do aluno */
+.pageAluno.alunoClean {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(206,172,94,.13), transparent 34%),
+    radial-gradient(circle at 88% 10%, rgba(255,255,255,.055), transparent 30%),
+    linear-gradient(180deg, #070707 0%, #0b0b0b 42%, #070707 100%) !important;
+}
+
+.alunoClean .alunoTop {
+  background: rgba(6,6,6,.82);
+  box-shadow: 0 18px 50px rgba(0,0,0,.28);
+}
+
+.alunoPage {
+  width: min(1180px, calc(100% - 32px));
+  padding-top: 26px;
+}
+
+.alunoHero {
+  position: relative;
+  overflow: hidden;
+  min-height: 150px;
+  padding: clamp(22px, 3vw, 34px);
+  border-radius: 30px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.025)),
+    linear-gradient(135deg, rgba(206,172,94,.16), transparent 38%),
+    #101010;
+  box-shadow: 0 26px 80px rgba(0,0,0,.38);
+}
+
+.alunoHero::after {
+  content: "";
+  position: absolute;
+  inset: auto -70px -120px auto;
+  width: 270px;
+  height: 270px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(206,172,94,.18), transparent 64%);
+  pointer-events: none;
+}
+
+.alunoHero h1 {
+  max-width: 720px;
+}
+
+.alunoHero p {
+  font-size: 15px;
+  max-width: 620px;
+}
+
+.studentMessage {
+  position: sticky;
+  top: 72px;
+  z-index: 10;
+  box-shadow: 0 18px 45px rgba(0,0,0,.26);
+}
+
+.alunoTabs[hidden],
+.alunoTabs[style*="display: none"] {
+  display: none !important;
+}
+
+.alunoPanel {
+  margin-top: 18px;
+  border-radius: 30px;
+  padding: clamp(16px, 2vw, 24px);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018)),
+    rgba(17,17,17,.94);
+  box-shadow: 0 22px 70px rgba(0,0,0,.30);
+}
+
+.studentHomeHead {
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 26px;
+  padding: 0 10px;
+  margin-bottom: 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(206,172,94,.36);
+  background: rgba(206,172,94,.11);
+  color: var(--rf-gold);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.panelHead h2 {
+  font-size: clamp(22px, 2.4vw, 31px);
+}
+
+.studentGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.studentCard {
+  position: relative;
+  overflow: hidden;
+  min-height: 150px;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  align-items: stretch;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.07), rgba(255,255,255,.025)),
+    #121212;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 18px 44px rgba(0,0,0,.20);
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.studentCard::after {
+  content: "";
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  right: -65px;
+  bottom: -72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(206,172,94,.18), transparent 70%);
+  pointer-events: none;
+}
+
+.studentCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(206,172,94,.58);
+  background:
+    linear-gradient(145deg, rgba(206,172,94,.10), rgba(255,255,255,.035)),
+    #151515;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 22px 55px rgba(0,0,0,.28);
+}
+
+.cardIcon {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  font-size: 24px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.cardText {
+  grid-column: 1 / -1;
+  grid-row: 2 / 3;
+  justify-content: end;
+  gap: 5px;
+  min-width: 0;
+}
+
+.cardText b {
+  font-size: 18px;
+  letter-spacing: -.015em;
+}
+
+.cardText small {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.cardArrow {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(206,172,94,.10);
+  border: 1px solid rgba(206,172,94,.20);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.studentCard[data-open="training"] {
+  grid-column: span 2;
+  min-height: 170px;
+  background:
+    linear-gradient(135deg, rgba(206,172,94,.20), rgba(255,255,255,.035) 45%, rgba(255,255,255,.025)),
+    #121212;
+}
+
+.studentCard[data-open="training"] .cardIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  font-size: 28px;
+}
+
+.studentCard[data-open="training"] .cardText b {
+  font-size: 23px;
+}
+
+.manualPanelHead {
+  align-items: flex-start;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--rf-border);
+}
+
+.backHomeBtn {
+  white-space: nowrap;
+}
+
+.workoutTabs {
+  margin-top: 18px;
+}
+
+.workoutTab {
+  border-radius: 999px;
+  min-height: 42px;
+}
+
+.workoutCard {
+  border-radius: 26px;
+  background: rgba(16,16,16,.94);
+  box-shadow: 0 18px 55px rgba(0,0,0,.22);
+}
+
+.workoutHead {
+  padding: clamp(18px, 2.4vw, 26px);
+  background: linear-gradient(135deg, rgba(206,172,94,.12), rgba(255,255,255,.035)), #121212;
+}
+
+.exerciseBlock {
+  padding: clamp(16px, 2.2vw, 24px);
+}
+
+@media (max-width: 940px) {
+  .studentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .studentCard[data-open="training"] { grid-column: span 2; }
+}
+
+@media (max-width: 760px) {
+  .alunoPage { width: min(100% - 20px, 1180px); padding-top: 14px; }
+  .alunoHero { border-radius: 24px; }
+  .studentMessage { top: 62px; }
+  .alunoPanel { border-radius: 24px; }
+  .studentGrid { grid-template-columns: 1fr; gap: 12px; }
+  .studentCard,
+  .studentCard[data-open="training"] {
+    grid-column: auto;
+    min-height: 116px;
+    grid-template-columns: 54px 1fr auto;
+    grid-template-rows: auto;
+    align-items: center;
+    border-radius: 20px;
+    padding: 15px;
+  }
+  .cardIcon,
+  .studentCard[data-open="training"] .cardIcon {
+    grid-column: 1;
+    grid-row: 1;
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+    font-size: 23px;
+  }
+  .cardText,
+  .studentCard[data-open="training"] .cardText {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: center;
+  }
+  .cardArrow {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .studentCard[data-open="training"] .cardText b,
+  .cardText b { font-size: 16px; }
+  .manualPanelHead { gap: 14px; }
+  .backHomeBtn { width: 100%; }
+}
+
+
+/* Ajustes solicitados — cards menores no mobile e tela de carga/reps mais compacta */
+@media (max-width: 760px) {
+  .alunoPage {
+    width: min(100% - 16px, 1180px);
+    padding-top: 10px;
+  }
+
+  .alunoHero {
+    min-height: auto;
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .alunoHero h1 {
+    font-size: 24px;
+  }
+
+  .alunoHero p {
+    font-size: 13px;
+  }
+
+  .alunoPanel {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .studentHomeHead {
+    margin-bottom: 12px;
+  }
+
+  .panelHead h2 {
+    font-size: 20px;
+  }
+
+  .panelHead p {
+    font-size: 12.5px;
+  }
+
+  .studentGrid {
+    gap: 8px;
+  }
+
+  .studentCard,
+  .studentCard[data-open="training"] {
+    min-height: 78px;
+    grid-template-columns: 40px 1fr 28px;
+    gap: 9px;
+    padding: 10px;
+    border-radius: 15px;
+  }
+
+  .cardIcon,
+  .studentCard[data-open="training"] .cardIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 18px;
+  }
+
+  .cardText,
+  .studentCard[data-open="training"] .cardText {
+    gap: 2px;
+  }
+
+  .studentCard[data-open="training"] .cardText b,
+  .cardText b {
+    font-size: 14px;
+  }
+
+  .cardText small {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .cardArrow {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+
+  .manualPanelHead {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+
+  .workoutTabs {
+    gap: 6px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .workoutTab {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .workoutCard {
+    border-radius: 18px;
+  }
+
+  .workoutHead {
+    padding: 13px;
+    gap: 10px;
+  }
+
+  .workoutHead h2 {
+    font-size: 18px;
+  }
+
+  .workoutHead p {
+    font-size: 12.5px;
+    margin-top: 4px;
+  }
+
+  .saveWorkoutBtn,
+  .videoBtn,
+  .backHomeBtn {
+    min-height: 36px;
+    font-size: 12.5px;
+    border-radius: 11px;
+  }
+
+  .exerciseBlock {
+    padding: 10px;
+  }
+
+  .exerciseHeader {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .exerciseKicker {
+    font-size: 9px;
+    margin-bottom: 3px;
+  }
+
+  .exerciseHeader h3 {
+    font-size: 15px;
+  }
+
+  .exerciseHeader p,
+  .techniqueBox {
+    font-size: 12px;
+  }
+
+  .seriesTable {
+    border-radius: 12px;
+    background: transparent;
+    border: 0;
+    display: grid;
+    gap: 7px;
+  }
+
+  .seriesHead {
+    display: none;
+  }
+
+  .seriesRow {
+    display: grid;
+    grid-template-columns: 28px minmax(52px, 1fr) 66px 66px;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--rf-border);
+    border-radius: 12px;
+    background: #0f0f0f;
+  }
+
+  .seriesRow > span:first-child {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(206,172,94,.11);
+    color: var(--rf-gold);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .seriesRow > span:nth-child(2) {
+    font-size: 12px;
+    color: var(--rf-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .seriesRow label {
+    grid-column: auto;
+    min-width: 0;
+    padding: 5px 6px;
+    border-radius: 9px;
+  }
+
+  .seriesRow small {
+    font-size: 9px;
+  }
+
+  .seriesRow input {
+    font-size: 13px;
+    min-width: 0;
+    text-align: right;
+  }
+
+  .workoutObservationBox {
+    padding: 10px;
+  }
+
+  .workoutObservationBox textarea {
+    min-height: 76px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  .seriesRow {
+    grid-template-columns: 26px minmax(42px, 1fr) 58px 58px;
+    gap: 5px;
+    padding: 7px;
+  }
+
+  .seriesRow label {
+    padding: 5px;
+  }
+
+  .seriesRow small {
+    display: none;
+  }
+
+  .seriesRow input {
+    text-align: center;
+  }
+}

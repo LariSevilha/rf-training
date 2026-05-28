@@ -36,6 +36,7 @@ const documentsTab = document.getElementById("documentsTab");
 const manualTab = document.getElementById("manualTab");
 const documentsPanel = document.getElementById("panel-documents");
 const manualPanel = document.getElementById("panel-manual");
+const backHomeBtn = document.getElementById("backHomeBtn");
 
 let session = null;
 let deferredPrompt = null;
@@ -134,6 +135,11 @@ document.querySelectorAll("[data-student-tab]").forEach((btn) => {
   btn.addEventListener("click", () => setTab(btn.dataset.studentTab));
 });
 
+backHomeBtn?.addEventListener("click", () => {
+  setTab("documents");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
 function hasWrittenCardio() {
   return !!(cardioWritten.name || cardioWritten.time || cardioWritten.intensity || cardioWritten.days);
 }
@@ -151,16 +157,18 @@ function updateContentModeUI() {
   const hasAnyMaterial = hasAnyPdfCard() || hasManualWorkout;
 
   if (documentsTab) {
-    documentsTab.style.display = "inline-flex";
+    documentsTab.style.display = "none";
     documentsTab.textContent = "Início";
   }
 
   if (manualTab) {
-    manualTab.style.display = hasManualWorkout ? "inline-flex" : "none";
+    manualTab.style.display = "none";
+    manualTab.textContent = "Treino";
   }
 
   if (alunoTabs) {
-    alunoTabs.style.display = hasManualWorkout ? "flex" : "none";
+    alunoTabs.style.display = "none";
+    alunoTabs.setAttribute("hidden", "");
   }
 
   if (hasAnyMaterial) {
@@ -609,5 +617,5 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
 
   await Promise.allSettled([syncDocuments(), syncWorkouts(false), syncExtraItems()]);
   applyVisibility();
-  if (statusEl) statusEl.textContent = workouts.length ? "Seu treino manual está disponível." : "Escolha abaixo o que deseja acessar.";
+  if (statusEl) statusEl.textContent = workouts.length ? "Seu treino está disponível." : "Escolha abaixo o que deseja acessar.";
 })();

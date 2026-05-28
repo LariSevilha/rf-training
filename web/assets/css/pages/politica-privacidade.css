@@ -1,5 +1,163 @@
 
-.privacyPage {
+/* RF Fitness — Política de Privacidade */
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(206,172,94,.14), transparent 34%),
+    radial-gradient(circle at 90% 10%, rgba(255,255,255,.055), transparent 30%),
+    linear-gradient(180deg, #070707 0%, #0b0b0b 44%, #070707 100%);
+  color: #f5f5f5;
+}
+
+.rf-pol-wrap {
   width: min(920px, calc(100% - 28px));
-  margin: 32px auto;
+  margin: 0 auto;
+  padding: 28px 0 44px;
+}
+
+.rf-pol-header {
+  text-align: center;
+  padding: clamp(22px, 4vw, 38px);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.07), rgba(255,255,255,.025)),
+    linear-gradient(135deg, rgba(206,172,94,.15), transparent 42%),
+    #101010;
+  box-shadow: 0 24px 70px rgba(0,0,0,.34);
+}
+
+.rf-pol-logo {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(206,172,94,.30);
+  background: rgba(206,172,94,.10);
+}
+
+.rf-pol-logo img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.rf-pol-title {
+  margin: 0;
+  font-size: clamp(26px, 4vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+
+.rf-pol-subtitle {
+  margin: 10px 0 0;
+  color: rgba(245,245,245,.64);
+  font-size: 14px;
+}
+
+.rf-pol-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin: 18px 0;
+  padding: 0 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(17,17,17,.92);
+  color: #ceac5e;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.rf-pol-back:hover {
+  border-color: rgba(206,172,94,.55);
+  background: #171717;
+}
+
+.rf-pol-main {
+  padding: clamp(18px, 3vw, 30px);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 26px;
+  background: rgba(17,17,17,.94);
+  box-shadow: 0 20px 60px rgba(0,0,0,.28);
+}
+
+.rf-pol-highlight {
+  padding: 18px;
+  margin-bottom: 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(206,172,94,.28);
+  background: rgba(206,172,94,.09);
+}
+
+.rf-pol-h2 {
+  margin: 26px 0 8px;
+  color: #ceac5e;
+  font-size: 19px;
+  letter-spacing: -.015em;
+}
+
+.rf-pol-p {
+  margin: 0 0 12px;
+  color: rgba(245,245,245,.78);
+  line-height: 1.68;
+  font-size: 15px;
+}
+
+.rf-pol-list {
+  margin: 10px 0 18px;
+  padding-left: 20px;
+  color: rgba(245,245,245,.76);
+  line-height: 1.65;
+}
+
+.rf-pol-list li { margin-bottom: 7px; }
+
+.rf-pol-legal-ref {
+  margin: 26px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,.10);
+  color: rgba(245,245,245,.52);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .rf-pol-wrap {
+    width: min(100% - 18px, 920px);
+    padding-top: 12px;
+  }
+
+  .rf-pol-header {
+    padding: 20px 16px;
+    border-radius: 22px;
+  }
+
+  .rf-pol-logo {
+    width: 62px;
+    height: 62px;
+    border-radius: 18px;
+  }
+
+  .rf-pol-logo img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .rf-pol-main {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .rf-pol-highlight {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .rf-pol-title { font-size: 25px; }
+  .rf-pol-subtitle, .rf-pol-p, .rf-pol-list { font-size: 13px; }
+  .rf-pol-h2 { font-size: 16px; }
 }
