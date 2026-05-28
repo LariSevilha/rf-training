@@ -928,3 +928,217 @@
     text-align: center;
   }
 }
+
+/* Ajustes finais solicitados — topo, PDF e tela de cargas/reps */
+.alunoClean .alunoTopInner {
+  min-height: 74px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.alunoClean .topBrand {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-width: 0;
+}
+
+.alunoClean .topLogo {
+  height: 58px !important;
+  max-height: 58px !important;
+  width: auto !important;
+  object-fit: contain;
+}
+
+.alunoClean .topNavRight {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  width: auto !important;
+}
+
+.alunoClean #logoutBtn,
+.alunoClean #installBtn {
+  width: auto !important;
+  min-width: max-content;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+.pdfOverlay.show {
+  grid-template-rows: auto 1fr;
+  padding-top: env(safe-area-inset-top);
+}
+
+.pdfBar {
+  min-height: 72px;
+  padding: calc(16px + env(safe-area-inset-top)) 16px 14px !important;
+  align-items: center;
+}
+
+.pdfBar .backBtn,
+#pdfBack {
+  min-height: 44px;
+  border-radius: 999px;
+  padding-inline: 16px;
+  position: relative;
+  z-index: 3;
+}
+
+#pdfFrame {
+  min-height: calc(100vh - 88px) !important;
+}
+
+.workoutSaveFooter {
+  padding: 16px 18px 20px;
+  border-top: 1px solid var(--rf-border);
+  background: #101010;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.workoutSaveFooter .saveWorkoutBtn {
+  min-width: 220px;
+  border-color: var(--rf-gold);
+  background: var(--rf-gold);
+  color: #111;
+}
+
+@media (max-width: 760px) {
+  .alunoClean .alunoTopInner {
+    min-height: 70px;
+    padding: 8px 12px !important;
+  }
+
+  .alunoClean .topLogo {
+    height: 52px !important;
+    max-height: 52px !important;
+  }
+
+  .alunoClean .topNavRight {
+    display: flex !important;
+    flex-direction: row !important;
+    grid-template-columns: none !important;
+    gap: 7px !important;
+  }
+
+  .alunoClean #logoutBtn,
+  .alunoClean #installBtn {
+    width: auto !important;
+    min-height: 38px;
+    height: 38px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .pdfBar {
+    min-height: 82px;
+    padding-top: calc(22px + env(safe-area-inset-top)) !important;
+    gap: 10px;
+  }
+
+  .pdfTitle {
+    font-size: 13px;
+    max-width: 58vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #pdfFrame {
+    min-height: calc(100vh - 92px) !important;
+  }
+
+  .workoutHead {
+    padding: 14px !important;
+  }
+
+  .seriesTable {
+    gap: 10px !important;
+  }
+
+  .seriesRow {
+    grid-template-columns: 34px 1fr !important;
+    gap: 9px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .seriesRow > span:first-child {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 13px !important;
+  }
+
+  .seriesRow > span:nth-child(2) {
+    font-size: 14px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+
+  .seriesRow label {
+    grid-column: 1 / -1 !important;
+    min-height: 58px !important;
+    padding: 10px 12px !important;
+    border-radius: 13px !important;
+    display: grid !important;
+    grid-template-columns: 48px 1fr !important;
+    gap: 10px !important;
+  }
+
+  .seriesRow small {
+    display: inline-flex !important;
+    align-items: center;
+    font-size: 12px !important;
+    font-weight: 800;
+  }
+
+  .seriesRow input {
+    min-height: 38px !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
+    text-align: left !important;
+    padding: 4px 0 !important;
+  }
+
+  .workoutSaveFooter {
+    padding: 14px 10px 18px;
+  }
+
+  .workoutSaveFooter .saveWorkoutBtn {
+    width: 100% !important;
+    min-height: 50px;
+    font-size: 15px;
+    border-radius: 15px;
+  }
+}
+
+@media (max-width: 380px) {
+  .alunoClean .topLogo {
+    height: 46px !important;
+    max-height: 46px !important;
+  }
+
+  .alunoClean #logoutBtn,
+  .alunoClean #installBtn {
+    padding: 0 10px;
+  }
+
+  .seriesRow {
+    grid-template-columns: 32px 1fr !important;
+  }
+
+  .seriesRow label {
+    grid-template-columns: 44px 1fr !important;
+  }
+
+  .seriesRow input {
+    font-size: 20px !important;
+  }
+}

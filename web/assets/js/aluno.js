@@ -741,8 +741,6 @@ function renderWorkouts() {
           <h2>${escapeHtml(workout.title || "Treino")}</h2>
           ${workout.notes ? `<p>${escapeHtml(workout.notes)}</p>` : `<p>Preencha carga e repetições para registrar sua execução.</p>`}
         </div>
-
-        <button class="saveWorkoutBtn" id="saveWorkoutBtn" type="button">Salvar execução</button>
       </div>
 
       ${exercisesHtml || `<div class="emptyState inline"><h3>Treino sem exercícios</h3><p>Entre em contato com o personal.</p></div>`}
@@ -751,6 +749,10 @@ function renderWorkouts() {
         <div class="label">Observação do treino de hoje</div>
         <textarea id="workoutSessionNotes" rows="4" placeholder="Ex.: senti dificuldade em alguma série, dor, cansaço, evolução de carga...">${escapeHtml(workout.sessionNotes || "")}</textarea>
         <div class="smallHint">Essa observação fica salva no histórico para o personal acompanhar.</div>
+      </div>
+
+      <div class="workoutSaveFooter">
+        <button class="saveWorkoutBtn" id="saveWorkoutBtn" type="button">Salvar execução</button>
       </div>
     </div>
   `;
