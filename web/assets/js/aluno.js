@@ -50,6 +50,12 @@ const urls = { training: "", diet: "", supp: "", cardio: "", exams: "", stretch:
 const cardioWritten = { name: "", time: "", intensity: "", days: "" };
 const extraUrls = {};
 
+// Evita aparecerem todos os cards antes de carregar os dados.
+document.querySelectorAll(".studentCard[data-open]").forEach((btn) => {
+  btn.style.display = "none";
+});
+if (docsEmpty) docsEmpty.style.display = "none";
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -140,22 +146,26 @@ backHomeBtn?.addEventListener("click", () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
+function normalizeUrl(value) {
+  return String(value || "").trim();
+}
+
 function hasWrittenCardio() {
-  return !!(cardioWritten.name || cardioWritten.time || cardioWritten.intensity || cardioWritten.days);
+  return !!(
+    String(cardioWritten.name || "").trim() ||
+    String(cardioWritten.time || "").trim() ||
+    String(cardioWritten.intensity || "").trim() ||
+    String(cardioWritten.days || "").trim()
+  );
 }
 
-function hasAnyPdfCard() {
-  return ["training", "diet", "supp", "exams", "stretch"].some((type) => !!(urls[type] || "").trim()) || hasWrittenCardio() || extraItems.length > 0;
-}
-
-function hasSupportPdfCard() {
-  return ["diet", "supp", "exams", "stretch"].some((type) => !!(urls[type] || "").trim()) || hasWrittenCardio();
+function hasAnyVisibleMaterial() {
+  const hasManualWorkout = Array.isArray(workouts) && workouts.length > 0;
+  const hasAnyLink = ["training", "diet", "supp", "exams", "stretch"].some((type) => !!normalizeUrl(urls[type]));
+  return hasManualWorkout || hasAnyLink || hasWrittenCardio() || extraItems.length > 0;
 }
 
 function updateContentModeUI() {
-  const hasManualWorkout = workouts.length > 0;
-  const hasAnyMaterial = hasAnyPdfCard() || hasManualWorkout;
-
   if (documentsTab) {
     documentsTab.style.display = "none";
     documentsTab.textContent = "Início";
@@ -171,13 +181,7 @@ function updateContentModeUI() {
     alunoTabs.setAttribute("hidden", "");
   }
 
-  if (hasAnyMaterial) {
-    setTab("documents");
-    return;
-  }
-
-  if (documentsPanel) documentsPanel.classList.add("active");
-  if (manualPanel) manualPanel.classList.remove("active");
+  setTab("documents");
 }
 
 function lockMenu() {
@@ -188,30 +192,69 @@ function unlockMenu() {
   document.body.classList.add("ready");
   menuGrid?.classList.remove("menuLocked");
 }
+
+function renderExtraItemCards() {
+  if (!menuGrid) return;
+
+  menuGrid.querySelectorAll(".studentCard[data-extra-item]").forEach((el) => el.remove());
+
+  Object.keys(extraUrls).forEach((key) => delete extraUrls[key]);
+
+  extraItems
+    .filter((item) => item && item.active !== false && normalizeUrl(item.url))
+    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
+    .forEach((item) => {
+      const key = `extra-${item.id}`;
+      extraUrls[key] = normalizeUrl(item.url);
+
+      const btn = document.createElement("button");
+      btn.className = "studentCard";
+      btn.type = "button";
+      btn.dataset.open = key;
+      btn.dataset.extraItem = "true";
+      btn.style.display = "grid";
+      btn.innerHTML = `
+        <span class="cardIcon extraCardIcon" aria-hidden="true">📎</span>
+        <span class="cardText"><b>${escapeHtml(item.title || "Arquivo")}</b><small>${escapeHtml(item.notes || "Material extra")}</small></span>
+        <span class="cardArrow">›</span>
+      `;
+      menuGrid.appendChild(btn);
+    });
+}
+
 function applyVisibility() {
-  const hasManualWorkout = workouts.length > 0;
+  const hasManualWorkout = Array.isArray(workouts) && workouts.length > 0;
   renderExtraItemCards();
+
   const buttons = Array.from(document.querySelectorAll(".studentCard[data-open]"));
   let visible = 0;
 
   buttons.forEach((btn) => {
     const type = btn?.dataset?.open;
+    let show = false;
 
-    if (type === "training" && hasManualWorkout) {
-      btn.style.display = "grid";
+    if (type === "training") {
+      show = hasManualWorkout || !!normalizeUrl(urls.training);
       const title = btn.querySelector(".cardText b");
       const sub = btn.querySelector(".cardText small");
       if (title) title.textContent = "Treino";
-      if (sub) sub.textContent = "Abrir treino manual";
-      visible += 1;
-      return;
+      if (sub) sub.textContent = hasManualWorkout ? "Abrir treino manual" : "Plano de treino";
+    } else if (type === "diet") {
+      show = !!normalizeUrl(urls.diet);
+    } else if (type === "supp") {
+      show = !!normalizeUrl(urls.supp);
+    } else if (type === "cardio") {
+      show = hasWrittenCardio();
+    } else if (type === "exams") {
+      show = !!normalizeUrl(urls.exams);
+    } else if (type === "stretch") {
+      show = !!normalizeUrl(urls.stretch);
+    } else if (type && type.startsWith("extra-")) {
+      show = !!normalizeUrl(extraUrls[type]);
     }
 
-    const hasLink = !!(urls[type] || extraUrls[type] || "").trim();
-    const hasCardioText = type === "cardio" && hasWrittenCardio();
-    btn.style.display = (hasLink || hasCardioText) ? "grid" : "none";
-
-    if (hasLink || hasCardioText) visible += 1;
+    btn.style.display = show ? "grid" : "none";
+    if (show) visible += 1;
   });
 
   if (docsEmpty) docsEmpty.style.display = visible ? "none" : "grid";
@@ -262,35 +305,40 @@ function openPdf(type) {
     return;
   }
 
-  const titles = { training: "TREINO", diet: "DIETA", supp: "SUPLEMENTAÇÃO", cardio: "CARDIO / CORRIDA", exams: "EXAMES", stretch: "ALONGAMENTO" };
+  const titles = {
+    training: "TREINO",
+    diet: "DIETA",
+    supp: "SUPLEMENTAÇÃO",
+    cardio: "CARDIO / CORRIDA",
+    exams: "EXAMES",
+    stretch: "ALONGAMENTO",
+  };
+
   const extra = extraItems.find((item) => `extra-${item.id}` === type);
   if (pdfTitle) pdfTitle.textContent = extra?.title || titles[type] || "PDF";
   showLoading();
 
-  const rawUrl = (urls[type] || extraUrls[type] || "").trim();
-  if (!rawUrl && type === "cardio" && hasWrittenCardio()) {
+  const rawUrl = normalizeUrl(urls[type] || extraUrls[type] || "");
+
+  if (type === "cardio" && hasWrittenCardio()) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(cardioWrittenHtml());
     setTimeout(hideLoading, 250);
   } else if (!rawUrl) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholderHtml("PDF não configurado", "Entre em contato com o personal."));
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholderHtml("Material não configurado", "Entre em contato com o personal."));
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholderHtml("Você está offline", "Conecte-se para abrir este PDF."));
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholderHtml("Você está offline", "Conecte-se para abrir este material."));
     setTimeout(hideLoading, 250);
   } else {
-    const preview = driveToPreview(rawUrl);
-    if (!preview) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholderHtml("Link inválido", "Envie um link do Drive compatível."));
-      setTimeout(hideLoading, 250);
-    } else {
-      pdfFrame.src = preview;
-    }
+    const preview = driveToPreview(rawUrl) || rawUrl;
+    pdfFrame.src = preview;
   }
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
 }
+
 function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
@@ -299,8 +347,11 @@ function closePdf() {
   setTimeout(() => { if (pdfFrame) pdfFrame.src = "about:blank"; }, 200);
 }
 pdfBack?.addEventListener("click", closePdf);
-document.querySelectorAll(".studentCard[data-open]").forEach((btn) => {
-  btn.addEventListener("click", () => openPdf(btn.dataset.open));
+
+menuGrid?.addEventListener("click", (ev) => {
+  const btn = ev.target.closest(".studentCard[data-open]");
+  if (!btn) return;
+  openPdf(btn.dataset.open);
 });
 
 logoutBtn?.addEventListener("click", () => {
@@ -373,12 +424,6 @@ setupInstallFlow();
 
 function cleanRepsLabel(value) {
   return String(value || "").replace(/^\s*\d+\s*x\s*/i, "").trim();
-}
-
-function getSeriesLabel(serie) {
-  const count = Math.max(1, Number(serie?.count || 1));
-  const reps = cleanRepsLabel(serie?.targetReps || serie?.reps || "");
-  return reps ? `${count}x ${reps}` : `${count} série(s)`;
 }
 
 function getExpandedSets(serie) {
@@ -512,39 +557,43 @@ async function saveCurrentWorkout(workoutId) {
   }
 }
 
-
-function renderExtraItemCards() {
-  if (!menuGrid) return;
-  menuGrid.querySelectorAll(".studentCard[data-extra-item]").forEach((el) => el.remove());
-  extraItems.forEach((item) => {
-    const key = `extra-${item.id}`;
-    extraUrls[key] = item.url || "";
-    const btn = document.createElement("button");
-    btn.className = "studentCard";
-    btn.type = "button";
-    btn.dataset.open = key;
-    btn.dataset.extraItem = "true";
-    btn.innerHTML = `
-      <span class="cardIcon extraCardIcon" aria-hidden="true">📎</span>
-      <span class="cardText"><b>${escapeHtml(item.title || "Arquivo")}</b><small>${escapeHtml(item.notes || "Material extra")}</small></span>
-      <span class="cardArrow">›</span>
-    `;
-    btn.addEventListener("click", () => openPdf(key));
-    menuGrid.appendChild(btn);
-  });
-}
-
 async function syncExtraItems() {
   if (!session?.token) return;
   try {
     const data = await apiExtraItems(session.token);
-    extraItems = Array.isArray(data.items) ? data.items : [];
-    renderExtraItemCards();
-    applyVisibility();
+    extraItems = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
   } catch {
     extraItems = [];
-    renderExtraItemCards();
   }
+  applyVisibility();
+}
+
+function parseCardioFromDocuments(docs) {
+  cardioWritten.name = "";
+  cardioWritten.time = "";
+  cardioWritten.intensity = "";
+  cardioWritten.days = "";
+
+  const rawCardio = String(docs?.cardio || "").trim();
+
+  if (rawCardio) {
+    try {
+      const parsed = JSON.parse(rawCardio);
+      cardioWritten.name = String(parsed.name || "").trim();
+      cardioWritten.time = String(parsed.time || "").trim();
+      cardioWritten.intensity = String(parsed.intensity || "").trim();
+      cardioWritten.days = String(parsed.days || "").trim();
+      return;
+    } catch {
+      // Se for link antigo de cardio, deixa como URL apenas se não houver cardio escrito.
+      urls.cardio = rawCardio;
+    }
+  }
+
+  cardioWritten.name = String(docs?.cardioName || "").trim();
+  cardioWritten.time = String(docs?.cardioTime || "").trim();
+  cardioWritten.intensity = String(docs?.cardioIntensity || "").trim();
+  cardioWritten.days = String(docs?.cardioDays || "").trim();
 }
 
 async function syncDocuments() {
@@ -553,20 +602,17 @@ async function syncDocuments() {
   if (statusEl) statusEl.textContent = navigator.onLine ? "Sincronizando materiais…" : "Você está offline.";
   try {
     const docs = await apiDocuments(session.token);
-    urls.training = (docs.training || "").trim();
-    urls.diet = (docs.diet || "").trim();
-    urls.supp = (docs.supp || "").trim();
+    urls.training = normalizeUrl(docs.training);
+    urls.diet = normalizeUrl(docs.diet);
+    urls.supp = normalizeUrl(docs.supp);
     urls.cardio = "";
-    cardioWritten.name = (docs.cardioName || "").trim();
-    cardioWritten.time = (docs.cardioTime || "").trim();
-    cardioWritten.intensity = (docs.cardioIntensity || "").trim();
-    cardioWritten.days = (docs.cardioDays || "").trim();
-    urls.exams = (docs.exams || "").trim();
-    urls.stretch = (docs.stretch || "").trim();
+    urls.exams = normalizeUrl(docs.exams);
+    urls.stretch = normalizeUrl(docs.stretch);
+    parseCardioFromDocuments(docs);
     applyVisibility();
     if (statusEl) statusEl.textContent = "Materiais atualizados.";
   } catch (e) {
-    showMessage("error", "Erro ao carregar PDFs", e?.message || "Tente atualizar a página.");
+    showMessage("error", "Erro ao carregar materiais", e?.message || "Tente atualizar a página.");
     if (statusEl) statusEl.textContent = "Não foi possível sincronizar todos os dados.";
   } finally {
     unlockMenu();
@@ -596,8 +642,9 @@ async function syncWorkouts(showLoadingMessage = true) {
 
 async function refreshAll() {
   if (!session?.token) return;
-  showMessage("info", "Atualizando", "Buscando PDFs e treinos manuais.");
+  showMessage("info", "Atualizando", "Buscando materiais e treinos.");
   await Promise.allSettled([syncDocuments(), syncWorkouts(false), syncExtraItems()]);
+  applyVisibility();
   showMessage("ok", "Atualizado", "Seus materiais foram sincronizados.");
   hideMessage(3000);
 }
@@ -617,5 +664,5 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
 
   await Promise.allSettled([syncDocuments(), syncWorkouts(false), syncExtraItems()]);
   applyVisibility();
-  if (statusEl) statusEl.textContent = workouts.length ? "Seu treino está disponível." : "Escolha abaixo o que deseja acessar.";
+  if (statusEl) statusEl.textContent = hasAnyVisibleMaterial() ? "Escolha abaixo o que deseja acessar." : "Nenhum material liberado no momento.";
 })();
