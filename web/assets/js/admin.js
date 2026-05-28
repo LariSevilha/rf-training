@@ -48,6 +48,10 @@ import {
 const who = document.getElementById("who");
 const mName = document.getElementById("mName");
 const logoutBtn = document.getElementById("logoutBtn");
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+const footerAdminName = document.getElementById("footerAdminName");
+const footerAdminEmail = document.getElementById("footerAdminEmail");
+const adminAvatar = document.getElementById("adminAvatar");
 
 // Create
 const newName = document.getElementById("newName");
@@ -60,6 +64,10 @@ const createBtn = document.getElementById("createBtn");
 const search = document.getElementById("search");
 const refreshBtn = document.getElementById("refreshBtn");
 const userList = document.getElementById("userList");
+const studentsTotalCount = document.getElementById("studentsTotalCount");
+const studentsActiveCount = document.getElementById("studentsActiveCount");
+const studentsInactiveCount = document.getElementById("studentsInactiveCount");
+const studentsResultText = document.getElementById("studentsResultText");
 
 // Edit
 const studentName = document.getElementById("studentName");
@@ -122,6 +130,7 @@ const videoListBox = document.getElementById("videoListBox");
 const exerciseName = document.getElementById("exerciseName");
 const exerciseMuscleSelect = document.getElementById("exerciseMuscleSelect");
 const exerciseVideoSelect = document.getElementById("exerciseVideoSelect");
+const exerciseVideoSearch = document.getElementById("exerciseVideoSearch");
 const exerciseSaveBtn = document.getElementById("exerciseSaveBtn");
 const exerciseListBtn = document.getElementById("exerciseListBtn");
 const exerciseCancelEditBtn = document.getElementById("exerciseCancelEditBtn");
@@ -138,9 +147,6 @@ const workoutTechniqueSelect = document.getElementById("workoutTechniqueSelect")
 const workoutTechniqueNote = document.getElementById("workoutTechniqueNote");
 
 const extraStudentEmail = document.getElementById("extraStudentEmail");
-const extraStudentSearch = document.getElementById("extraStudentSearch");
-const extraStudentResults = document.getElementById("extraStudentResults");
-const extraSelectedStudentBox = document.getElementById("extraSelectedStudentBox");
 const extraTitle = document.getElementById("extraTitle");
 const extraUrl = document.getElementById("extraUrl");
 const extraNotes = document.getElementById("extraNotes");
@@ -151,6 +157,9 @@ const extraClearBtn = document.getElementById("extraClearBtn");
 const extraLoadBtn = document.getElementById("extraLoadBtn");
 const extraSaveBtn = document.getElementById("extraSaveBtn");
 const extraItemsBox = document.getElementById("extraItemsBox");
+const extraStudentSearch = document.getElementById("extraStudentSearch");
+const extraStudentsList = document.getElementById("extraStudentsList");
+const extraSelectedStudentBox = document.getElementById("extraSelectedStudentBox");
 
 const recordsEmail = document.getElementById("recordsEmail");
 let recordsStudentSelect = document.getElementById("recordsStudentSelect");
@@ -214,6 +223,7 @@ let dashboardFilterMeta = {};
 let workoutCatalogExercises = [];
 let workoutDraftExercises = [];
 let currentSeriesDraft = [];
+let editingSeriesIndex = null;
 let studentWorkoutList = [];
 let editingMuscleId = null;
 let editingVideoId = null;
@@ -222,9 +232,27 @@ let editingTechniqueId = null;
 let editingDraftExerciseIndex = null;
 let techniqueCatalog = [];
 let studentExtraItems = [];
-let extraStudentsCatalog = [];
+let extraStudents = [];
+let selectedExtraStudentEmail = "";
+
+
+// ===== Admin footer/profile =====
+function getInitials(nameOrEmail = "") {
+  const base = String(nameOrEmail || "").trim();
+  if (!base) return "RF";
+  const parts = base.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return base.slice(0, 2).toUpperCase();
+}
+
+function initTheme() {
+  // Tema claro/escuro removido. Mantém o painel no tema padrão escuro.
+  document.documentElement.removeAttribute("data-theme");
+  localStorage.removeItem("rf-admin-theme");
+}
 
 // ===== Helpers =====
+
 function clearEditFields() {
   if (training) training.value = "";
   if (diet) diet.value = "";
@@ -356,6 +384,7 @@ async function selectUser(email, isActive, name = "") {
   if (active) active.checked = !!isActive;
 
   clearEditFields();
+  setEditDocPanel("training");
 
   const docs = await apiAdminGetDocs(token, email);
   if (training) training.value = docs.training || "";
@@ -372,9 +401,6 @@ async function selectUser(email, isActive, name = "") {
   if (workoutStudentEmail) workoutStudentEmail.value = email;
   if (recordsStudentSelect) recordsStudentSelect.value = email;
   if (recordsEmail) recordsEmail.value = email;
-  if (extraStudentEmail) extraStudentEmail.value = email;
-  if (extraStudentSearch) extraStudentSearch.value = name || email;
-  if (extraSelectedStudentBox) extraSelectedStudentBox.innerHTML = `<b>${escapeHtml(name || "Aluno selecionado")}</b><br><span>${escapeHtml(email)}</span>`;
 
   try {
     const manual = await apiAdminGetWorkouts(token, email);
@@ -395,27 +421,57 @@ function renderUsers(users) {
   if (!userList) return;
   userList.innerHTML = "";
 
-  if (!users || users.length === 0) {
+  const list = Array.isArray(users) ? users : [];
+  const activeCount = list.filter((u) => !!u.active).length;
+  const inactiveCount = list.length - activeCount;
+  const query = (search?.value || "").trim();
+
+  if (studentsTotalCount) studentsTotalCount.textContent = String(list.length);
+  if (studentsActiveCount) studentsActiveCount.textContent = String(activeCount);
+  if (studentsInactiveCount) studentsInactiveCount.textContent = String(inactiveCount);
+  if (studentsResultText) {
+    studentsResultText.textContent = list.length
+      ? `${list.length} aluno${list.length > 1 ? "s" : ""} encontrado${list.length > 1 ? "s" : ""}${query ? ` para “${query}”` : ""}.`
+      : query
+        ? `Nenhum aluno encontrado para “${query}”.`
+        : "Nenhum aluno cadastrado ainda.";
+  }
+
+  if (list.length === 0) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="4" style="opacity:.7;padding:12px;">Nenhum aluno encontrado.</td>`;
+    tr.className = "studentsEmptyRow";
+    tr.innerHTML = `<td colspan="4"><div class="emptyStudentsState"><strong>Nenhum aluno encontrado</strong><span>Revise a busca ou cadastre um novo aluno.</span></div></td>`;
     userList.appendChild(tr);
     return;
   }
 
-  users.forEach((u) => {
+  list.forEach((u) => {
     const tr = document.createElement("tr");
     const nm = (u.name || "").trim();
+    const initials = (nm || u.email || "A")
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
 
     tr.innerHTML = `
-      <td style="width:92px;">${u.active ? "🟢" : "🔴"}</td>
-      <td style="opacity:${nm ? 1 : 0.6};">${nm || "—"}</td>
-      <td>${u.email}</td>
-      <td style="width:120px;">
-        <div style="display:flex; gap:8px; justify-content:flex-end;">
-          <button class="btnGhost" data-act="edit" title="Editar"
-            style="padding:10px 12px; border-radius:14px; min-width:auto;">✎</button>
-          <button class="btnGhost" data-act="del" title="Excluir"
-            style="padding:10px 12px; border-radius:14px; min-width:auto;">🗑</button>
+      <td data-label="Aluno">
+        <div class="studentCell">
+          <div class="studentAvatar">${escapeHtml(initials || "A")}</div>
+          <div class="studentIdentity">
+            <strong>${escapeHtml(nm || "Sem nome")}</strong>
+            <small>${u.active ? "Acesso liberado" : "Acesso bloqueado"}</small>
+          </div>
+        </div>
+      </td>
+      <td data-label="Email"><span class="studentEmailText">${escapeHtml(u.email)}</span></td>
+      <td data-label="Status"><span class="statusBadge ${u.active ? "isActive" : "isInactive"}">${u.active ? "Ativo" : "Inativo"}</span></td>
+      <td data-label="Ações">
+        <div class="studentActions">
+          <button class="iconAction" data-act="edit" title="Editar aluno" aria-label="Editar aluno">✎</button>
+          <button class="iconAction danger" data-act="del" title="Excluir aluno" aria-label="Excluir aluno">🗑</button>
         </div>
       </td>
     `;
@@ -450,12 +506,20 @@ function renderUsers(users) {
 
       try {
         await apiAdminDeleteUser(token, u.email);
-        toast("ok", "Aluno deletado", "Conta removida com sucesso.");
 
-        if ((studentEmail?.value || "").trim().toLowerCase() === u.email.toLowerCase()) {
-          if (studentEmail) studentEmail.value = "";
+        if ((studentEmail?.value || "").toLowerCase() === u.email.toLowerCase()) {
           if (studentName) studentName.value = "";
-          clearEditFields();
+          if (studentEmail) studentEmail.value = "";
+          if (active) active.checked = true;
+          if (training) training.value = "";
+          if (diet) diet.value = "";
+          if (supp) supp.value = "";
+          if (cardioName) cardioName.value = "";
+          if (cardioTime) cardioTime.value = "";
+          if (cardioIntensity) cardioIntensity.value = "";
+          if (cardioDays) cardioDays.value = "";
+          if (exams) exams.value = "";
+          if (stretch) stretch.value = "";
           studentWorkoutList = [];
           renderWorkoutList();
         }
@@ -620,9 +684,6 @@ async function loadDashboard() {
 
 // ===== ME (Admin) =====
 async function loadMe() {
-  const footerAdminName = document.getElementById("footerAdminName");
-  const footerAdminEmail = document.getElementById("footerAdminEmail");
-  const adminAvatar = document.getElementById("adminAvatar");
   try {
     const data = await apiMe(token);
 
@@ -637,28 +698,12 @@ async function loadMe() {
     if (meEmail) meEmail.value = (data.user.email || "").trim();
     if (who) who.textContent = data.user.email;
     if (mName) mName.textContent = data.user.name || "";
+    if (footerAdminName) footerAdminName.textContent = data.user.name || "Admin";
+    if (footerAdminEmail) footerAdminEmail.textContent = data.user.email || "";
+    if (adminAvatar) adminAvatar.textContent = getInitials(data.user.name || data.user.email || "RF");
 
     if (mePass1) mePass1.value = "";
     if (mePass2) mePass2.value = "";
-
-    if (footerAdminName) {
-      footerAdminName.textContent = data.user.name || "Admin";
-    }
-    
-    if (footerAdminEmail) {
-      footerAdminEmail.textContent = data.user.email || "—";
-    }
-    
-    if (adminAvatar) {
-      const initials = (data.user.name || data.user.email || "RF")
-        .split(" ")
-        .map((p) => p[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase();
-    
-      adminAvatar.textContent = initials;
-    }
   } catch (e) {
     toast("error", "Erro", e.message || "Erro ao carregar admin.");
   }
@@ -982,6 +1027,7 @@ document.querySelectorAll(".editDocTab[data-doc-panel]").forEach((btn) => {
     setEditDocPanel(btn.dataset.docPanel || "training");
   });
 });
+setEditDocPanel("training");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -1035,35 +1081,72 @@ function updateWorkoutExerciseButtonState() {
     : "Adicionar exercício ao treino";
 }
 
+function updateSeriesButtonState() {
+  if (!seriesAddBtn) return;
+  seriesAddBtn.textContent = editingSeriesIndex !== null ? "Atualizar série" : "Adicionar série";
+}
+
+
 function renderCurrentSeries() {
   if (!currentSeriesBox) return;
 
   if (!currentSeriesDraft.length) {
     currentSeriesBox.innerHTML = "Nenhuma série adicionada.";
+    updateSeriesButtonState();
     return;
   }
 
   currentSeriesBox.innerHTML = currentSeriesDraft
     .map((s, idx) => `
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin:6px 0;">
+      <div class="seriesDraftItem" style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin:6px 0;">
         <span><b>Bloco ${idx + 1}:</b> ${escapeHtml(formatSeriesLabel(s))}</span>
-        <button class="btnGhost" type="button" data-remove-series="${idx}" style="padding:6px 10px;min-width:auto;">Remover</button>
+        <span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btnGhost" type="button" data-edit-series="${idx}" style="padding:6px 10px;min-width:auto;">Editar</button>
+          <button class="btnGhost" type="button" data-remove-series="${idx}" style="padding:6px 10px;min-width:auto;">Remover</button>
+        </span>
       </div>
     `)
     .join("");
+
+  currentSeriesBox.querySelectorAll("[data-edit-series]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.editSeries);
+      const s = currentSeriesDraft[idx];
+      if (!s) return;
+
+      editingSeriesIndex = idx;
+      if (seriesCount) seriesCount.value = String(s.count || 1);
+      if (seriesTargetReps) seriesTargetReps.value = String(s.reps || s.targetReps || "");
+      updateSeriesButtonState();
+      toast("info", "Série carregada", "Altere séries/repetições e clique em Atualizar série.");
+    });
+  });
 
   currentSeriesBox.querySelectorAll("[data-remove-series]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = Number(btn.dataset.removeSeries);
       currentSeriesDraft.splice(idx, 1);
       currentSeriesDraft = currentSeriesDraft.map((s, i) => ({ ...s, order: i }));
+
+      if (editingSeriesIndex === idx) {
+        editingSeriesIndex = null;
+        if (seriesCount) seriesCount.value = "";
+        if (seriesTargetReps) seriesTargetReps.value = "";
+      } else if (editingSeriesIndex !== null && editingSeriesIndex > idx) {
+        editingSeriesIndex -= 1;
+      }
+
+      updateSeriesButtonState();
       renderCurrentSeries();
     });
   });
+
+  updateSeriesButtonState();
 }
 
 function resetExerciseDraft() {
   editingDraftExerciseIndex = null;
+  editingSeriesIndex = null;
   currentSeriesDraft = [];
   if (seriesCount) seriesCount.value = "";
   if (seriesTargetReps) seriesTargetReps.value = "";
@@ -1072,11 +1155,13 @@ function resetExerciseDraft() {
   if (workoutTechniqueNote) workoutTechniqueNote.value = "";
   if (workoutExerciseOrder) workoutExerciseOrder.value = String(workoutDraftExercises.length);
   renderCurrentSeries();
+  updateSeriesButtonState();
   updateWorkoutExerciseButtonState();
 }
 
 function resetWorkoutDraft() {
   editingDraftExerciseIndex = null;
+  editingSeriesIndex = null;
   workoutDraftExercises = [];
   currentSeriesDraft = [];
   if (workoutTitle) workoutTitle.value = "";
@@ -1090,7 +1175,9 @@ function resetWorkoutDraft() {
   if (seriesCount) seriesCount.value = "";
   if (seriesTargetReps) seriesTargetReps.value = "";
   renderCurrentSeries();
+  updateSeriesButtonState();
   renderWorkoutDraft();
+  updateSeriesButtonState();
   updateWorkoutExerciseButtonState();
 }
 
@@ -1104,10 +1191,10 @@ function renderWorkoutDraft() {
 
   workoutDraftBox.innerHTML = workoutDraftExercises
     .map((ex, idx) => `
-      <div style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:8px 0;">
+      <div draggable="true" data-draft-ex-index="${idx}" style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:8px 0;cursor:grab;">
         <div style="display:flex;justify-content:space-between;gap:10px;">
           <div>
-            <b>${idx + 1}. ${escapeHtml(ex.name)}</b>
+            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>
             <div>${escapeHtml(ex.muscleGroup || "Sem agrupamento")}${ex.videoUrl ? " · vídeo vinculado" : ""}</div>
             ${ex.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(ex.notes)}</div>` : ""}
             ${ex.techniqueName ? `<div style="margin-top:6px;"><b>Técnica:</b> ${escapeHtml(ex.techniqueName)}${ex.techniqueNote ? ` · ${escapeHtml(ex.techniqueNote)}` : ""}</div>` : ""}
@@ -1121,6 +1208,45 @@ function renderWorkoutDraft() {
       </div>
     `)
     .join("");
+
+
+  let draggedDraftIndex = null;
+  workoutDraftBox.querySelectorAll("[data-draft-ex-index]").forEach((card) => {
+    card.addEventListener("dragstart", (ev) => {
+      draggedDraftIndex = Number(card.dataset.draftExIndex);
+      card.style.opacity = "0.55";
+      ev.dataTransfer.effectAllowed = "move";
+    });
+
+    card.addEventListener("dragend", () => {
+      card.style.opacity = "1";
+      draggedDraftIndex = null;
+    });
+
+    card.addEventListener("dragover", (ev) => {
+      ev.preventDefault();
+      card.style.borderColor = "rgba(206,172,94,.85)";
+    });
+
+    card.addEventListener("dragleave", () => {
+      card.style.borderColor = "rgba(255,255,255,.10)";
+    });
+
+    card.addEventListener("drop", (ev) => {
+      ev.preventDefault();
+      card.style.borderColor = "rgba(255,255,255,.10)";
+      const targetIndex = Number(card.dataset.draftExIndex);
+      if (draggedDraftIndex === null || Number.isNaN(targetIndex) || draggedDraftIndex === targetIndex) return;
+      const [moved] = workoutDraftExercises.splice(draggedDraftIndex, 1);
+      workoutDraftExercises.splice(targetIndex, 0, moved);
+      workoutDraftExercises = workoutDraftExercises.map((ex, i) => ({ ...ex, order: i }));
+      if (workoutExerciseOrder) workoutExerciseOrder.value = String(workoutDraftExercises.length);
+      editingDraftExerciseIndex = null;
+      updateWorkoutExerciseButtonState();
+      renderWorkoutDraft();
+      toast("ok", "Ordem alterada", "Exercícios reorganizados no treino em montagem.");
+    });
+  });
 
   workoutDraftBox.querySelectorAll("[data-edit-draft-ex]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1313,22 +1439,37 @@ seriesAddBtn?.addEventListener("click", () => {
   if (!count || count < 1) return toast("error", "Atenção", "Informe a quantidade de séries.");
   if (!reps) return toast("error", "Atenção", "Informe as repetições.");
 
-  currentSeriesDraft.push({
+  const payload = {
     count,
     reps,
     targetReps: reps,
-    order: currentSeriesDraft.length,
-  });
+    order: editingSeriesIndex !== null ? editingSeriesIndex : currentSeriesDraft.length,
+  };
+
+  if (editingSeriesIndex !== null && currentSeriesDraft[editingSeriesIndex]) {
+    currentSeriesDraft[editingSeriesIndex] = payload;
+    toast("ok", "Série atualizada", "O bloco de séries/reps foi atualizado.");
+  } else {
+    currentSeriesDraft.push(payload);
+    toast("ok", "Série adicionada", "Bloco de séries/reps adicionado.");
+  }
+
+  currentSeriesDraft = currentSeriesDraft.map((s, i) => ({ ...s, order: i }));
+  editingSeriesIndex = null;
 
   if (seriesCount) seriesCount.value = "";
   if (seriesTargetReps) seriesTargetReps.value = "";
+
+  updateSeriesButtonState();
   renderCurrentSeries();
 });
 
 seriesClearBtn?.addEventListener("click", () => {
+  editingSeriesIndex = null;
   currentSeriesDraft = [];
   if (seriesCount) seriesCount.value = "";
   if (seriesTargetReps) seriesTargetReps.value = "";
+  updateSeriesButtonState();
   renderCurrentSeries();
 });
 
@@ -1346,8 +1487,10 @@ workoutExerciseAddBtn?.addEventListener("click", () => {
     videoTitle: ex.videoTitle || ex.name,
     notes: (workoutExerciseNotes?.value || "").trim(),
     techniqueId: (workoutTechniqueSelect?.value || "").trim(),
-    techniqueName: workoutTechniqueSelect?.selectedOptions?.[0]?.textContent?.trim() || "",
+    techniqueName: (workoutTechniqueSelect?.value ? workoutTechniqueSelect?.selectedOptions?.[0]?.textContent?.trim() : "") || "",
     techniqueNote: (workoutTechniqueNote?.value || "").trim(),
+    techniqueVideoUrl: techniqueCatalog.find((t) => String(t.id) === String(workoutTechniqueSelect?.value || ""))?.videoUrl || "",
+    techniqueNotes: techniqueCatalog.find((t) => String(t.id) === String(workoutTechniqueSelect?.value || ""))?.notes || "",
     order: Number(workoutExerciseOrder?.value || workoutDraftExercises.length),
     series: currentSeriesDraft.map((s, i) => ({
       count: Number(s.count || 1),
@@ -1515,7 +1658,8 @@ async function refreshVideos() {
   }
 
   if (exerciseVideoSelect) {
-    exerciseVideoSelect.innerHTML = `<option value="">Sem vídeo</option>` + items.map((v) => `<option value="${escapeHtml(v.id)}" data-url="${escapeHtml(v.url)}" data-title="${escapeHtml(v.title)}">${escapeHtml(v.title)}</option>`).join("");
+    window.__videoCatalog = items;
+    renderExerciseVideoOptions(items);
   }
 }
 
@@ -1696,6 +1840,9 @@ workoutSaveBtn?.addEventListener("click", async () => {
         videoTitle: ex.videoTitle || ex.name || "",
         notes: ex.notes || "",
         techniqueId: ex.techniqueId || null,
+        techniqueName: ex.techniqueName || "",
+        techniqueVideoUrl: ex.techniqueVideoUrl || "",
+        techniqueNotes: ex.techniqueNotes || "",
         techniqueNote: ex.techniqueNote || "",
         order: Number(ex.order ?? ei),
         series: (ex.series || []).map((serie, si) => ({
@@ -2104,69 +2251,15 @@ techniqueCancelEditBtn?.addEventListener("click", resetTechniqueEdit);
 techniqueRefreshBtn?.addEventListener("click", async () => { await refreshTechniques(); toast("ok", "Atualizado", "Técnicas carregadas."); });
 
 // ===== ITENS EXTRAS DO ALUNO =====
-
-async function refreshExtraStudents() {
-  if (!extraStudentSearch && !extraStudentResults) return;
-
-  try {
-    const data = await apiAdminListUsers(token, "");
-    extraStudentsCatalog = (data.users || []).filter((u) => u.role !== "admin");
-    renderExtraStudentResults();
-  } catch {
-    extraStudentsCatalog = [];
-    if (extraStudentResults) extraStudentResults.innerHTML = "Não foi possível carregar alunos.";
-  }
+function resetExtraSelection() {
+  selectedExtraStudentEmail = "";
+  if (extraStudentEmail) extraStudentEmail.value = "";
+  studentExtraItems = [];
+  clearExtraForm();
+  updateSelectedExtraStudentBox();
+  renderExtraStudentsList();
+  renderExtraItems();
 }
-
-function setExtraSelectedStudent(user) {
-  if (!user?.email) return;
-
-  if (extraStudentEmail) extraStudentEmail.value = String(user.email || "").trim().toLowerCase();
-  if (extraStudentSearch) extraStudentSearch.value = user.name || user.email;
-  if (extraSelectedStudentBox) {
-    extraSelectedStudentBox.innerHTML = `<b>${escapeHtml(user.name || "Sem nome")}</b><br><span>${escapeHtml(user.email)}</span>`;
-  }
-  if (extraStudentResults) extraStudentResults.innerHTML = "";
-
-  loadExtraItems().catch(() => {});
-}
-
-function renderExtraStudentResults() {
-  if (!extraStudentResults) return;
-
-  const q = normalizeText(extraStudentSearch?.value || "");
-
-  if (!q) {
-    extraStudentResults.innerHTML = "Digite o nome do aluno para buscar.";
-    return;
-  }
-
-  const matches = extraStudentsCatalog
-    .filter((u) => normalizeText(u.name || "").includes(q) || normalizeText(u.email || "").includes(q))
-    .slice(0, 8);
-
-  if (!matches.length) {
-    extraStudentResults.innerHTML = "Nenhum aluno encontrado.";
-    return;
-  }
-
-  extraStudentResults.innerHTML = matches.map((u) => `
-    <button class="btnGhost" type="button" data-extra-student-email="${escapeHtml(u.email)}" style="display:flex;width:100%;justify-content:space-between;margin:6px 0;padding:8px 10px;min-width:auto;text-align:left;">
-      <span><b>${escapeHtml(u.name || "Sem nome")}</b><br><small>${escapeHtml(u.email)}</small></span>
-      <span>Selecionar</span>
-    </button>
-  `).join("");
-
-  extraStudentResults.querySelectorAll("[data-extra-student-email]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const email = String(btn.dataset.extraStudentEmail || "").toLowerCase();
-      const user = extraStudentsCatalog.find((u) => String(u.email || "").toLowerCase() === email);
-      if (user) setExtraSelectedStudent(user);
-    });
-  });
-}
-
-extraStudentSearch?.addEventListener("input", renderExtraStudentResults);
 
 function clearExtraForm() {
   if (extraTitle) extraTitle.value = "";
@@ -2176,20 +2269,125 @@ function clearExtraForm() {
   if (extraActive) extraActive.checked = true;
 }
 
+function updateSelectedExtraStudentBox() {
+  if (!extraSelectedStudentBox) return;
+
+  if (!selectedExtraStudentEmail) {
+    extraSelectedStudentBox.innerHTML = `Selecione um aluno na lista antes de adicionar ou salvar itens extras.`;
+    return;
+  }
+
+  const student = extraStudents.find(
+    (u) => String(u.email || "").toLowerCase() === selectedExtraStudentEmail
+  );
+
+  extraSelectedStudentBox.innerHTML = student
+    ? `<b>${escapeHtml(student.name || "Sem nome")}</b><br><span>${escapeHtml(student.email)}</span>`
+    : `Aluno selecionado: ${escapeHtml(selectedExtraStudentEmail)}`;
+}
+
+async function refreshExtraStudents({ reset = false } = {}) {
+  if (!extraStudentsList) return;
+
+  extraStudentsList.innerHTML = `<div class="smallHint">Carregando alunos...</div>`;
+
+  try {
+    const data = await apiAdminListUsers(token, "");
+
+    // Algumas versões da API não retornam role. Por isso não filtramos por role aqui.
+    // O importante é carregar todos os cadastros disponíveis para seleção.
+    extraStudents = Array.isArray(data?.users) ? data.users : [];
+
+    if (reset) {
+      selectedExtraStudentEmail = "";
+      if (extraStudentEmail) extraStudentEmail.value = "";
+      studentExtraItems = [];
+      clearExtraForm();
+    }
+
+    renderExtraStudentsList();
+    updateSelectedExtraStudentBox();
+    renderExtraItems();
+  } catch (e) {
+    console.error("refreshExtraStudents error:", e);
+    extraStudents = [];
+    extraStudentsList.innerHTML = `
+      <div class="emptyState">
+        <h3>Erro ao carregar alunos</h3>
+        <p>${escapeHtml(e?.message || "Tente atualizar novamente.")}</p>
+      </div>
+    `;
+  }
+}
+
+function renderExtraStudentsList() {
+  if (!extraStudentsList) return;
+
+  const q = normalizeText(extraStudentSearch?.value || "");
+  const filtered = extraStudents.filter((u) => {
+    const name = normalizeText(u.name || "");
+    const email = normalizeText(u.email || "");
+    return !q || name.includes(q) || email.includes(q);
+  });
+
+  if (!filtered.length) {
+    extraStudentsList.innerHTML = `
+      <div class="emptyState">
+        <h3>Nenhum aluno encontrado</h3>
+        <p>Tente buscar por outro nome ou email.</p>
+      </div>
+    `;
+    return;
+  }
+
+  extraStudentsList.innerHTML = filtered
+    .map((u) => {
+      const email = String(u.email || "").toLowerCase();
+      const activeClass = email === selectedExtraStudentEmail ? "active" : "";
+
+      return `
+        <button class="extraStudentItem recordsStudentItem ${activeClass}" type="button" data-extra-student="${escapeHtml(email)}">
+          <span>
+            <b>${escapeHtml(u.name || "Sem nome")}</b>
+            <small>${escapeHtml(u.email)}</small>
+          </span>
+          <span>${u.active ? "🟢" : "🔴"}</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  extraStudentsList.querySelectorAll("[data-extra-student]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      selectedExtraStudentEmail = String(btn.dataset.extraStudent || "").trim().toLowerCase();
+      if (extraStudentEmail) extraStudentEmail.value = selectedExtraStudentEmail;
+      updateSelectedExtraStudentBox();
+      renderExtraStudentsList();
+      await loadExtraItems();
+    });
+  });
+}
+
 function renderExtraItems() {
   if (!extraItemsBox) return;
+
+  if (!selectedExtraStudentEmail) {
+    extraItemsBox.innerHTML = "Selecione um aluno para carregar os itens.";
+    return;
+  }
+
   if (!studentExtraItems.length) {
     extraItemsBox.innerHTML = "Nenhum item extra cadastrado para este aluno.";
     return;
   }
   extraItemsBox.innerHTML = studentExtraItems.map((item, idx) => `
-    <div style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:8px 0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-      <div>
+    <div style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px;margin:8px 0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+      <div style="min-width:0;">
         <b>${idx + 1}. ${escapeHtml(item.title)}</b>
-        <div>${item.active === false ? "Inativo" : "Ativo"} · ${escapeHtml(item.url)}</div>
-        ${item.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(item.notes)}</div>` : ""}
+        <div style="word-break:break-word;opacity:.78;">${item.active === false ? "Inativo" : "Ativo"} · ${escapeHtml(item.url)}</div>
+        ${item.notes ? `<div style="margin-top:6px;opacity:.78;">Obs.: ${escapeHtml(item.notes)}</div>` : ""}
       </div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
         <button class="btnGhost" type="button" data-edit-extra="${idx}" style="padding:6px 10px;min-width:auto;">Editar</button>
         <button class="btnGhost" type="button" data-remove-extra="${idx}" style="padding:6px 10px;min-width:auto;">Remover</button>
       </div>
@@ -2222,12 +2420,15 @@ function renderExtraItems() {
 }
 
 async function loadExtraItems() {
-  const em = (extraStudentEmail?.value || studentEmail?.value || "").trim().toLowerCase();
-  if (!em) return toast("error", "Atenção", "Busque e selecione o aluno.");
+  const em = (selectedExtraStudentEmail || extraStudentEmail?.value || "").trim().toLowerCase();
+  if (!em) return toast("error", "Atenção", "Selecione um aluno primeiro.");
+  selectedExtraStudentEmail = em;
   if (extraStudentEmail) extraStudentEmail.value = em;
   try {
     const data = await apiAdminGetExtraItems(token, em);
     studentExtraItems = Array.isArray(data.items) ? data.items : [];
+    updateSelectedExtraStudentBox();
+    renderExtraStudentsList();
     renderExtraItems();
     clearExtraForm();
     toast("ok", "Itens carregados", "Lista atualizada.");
@@ -2236,10 +2437,17 @@ async function loadExtraItems() {
   }
 }
 
+extraStudentSearch?.addEventListener("input", async () => {
+  if (!extraStudents.length) {
+    await refreshExtraStudents({ reset: false });
+    return;
+  }
+  renderExtraStudentsList();
+});
 extraLoadBtn?.addEventListener("click", loadExtraItems);
 extraSaveBtn?.addEventListener("click", async () => {
-  const em = (extraStudentEmail?.value || studentEmail?.value || "").trim().toLowerCase();
-  if (!em) return toast("error", "Atenção", "Busque e selecione o aluno.");
+  const em = (selectedExtraStudentEmail || extraStudentEmail?.value || "").trim().toLowerCase();
+  if (!em) return toast("error", "Atenção", "Selecione um aluno primeiro.");
   try {
     const cleanItems = studentExtraItems
       .map((item, idx) => ({
@@ -2250,15 +2458,17 @@ extraSaveBtn?.addEventListener("click", async () => {
         order: Number(item.order ?? idx),
       }))
       .filter((item) => item.title && item.url);
-    await apiAdminSaveExtraItems(token, em, cleanItems);
-    studentExtraItems = cleanItems;
+    const saved = await apiAdminSaveExtraItems(token, em, cleanItems);
+    studentExtraItems = Array.isArray(saved?.items) ? saved.items : cleanItems;
     renderExtraItems();
-    toast("ok", "Itens salvos", "Os itens extras foram atualizados para o aluno.");
+    await loadExtraItems();
+    toast("ok", "Itens salvos", "Os itens extras foram gravados no banco e recarregados.");
   } catch (e) {
     toast("error", "Erro", e.message || "Erro ao salvar itens.");
   }
 });
 extraAddBtn?.addEventListener("click", () => {
+  if (!selectedExtraStudentEmail) return toast("error", "Atenção", "Selecione um aluno antes de adicionar o item.");
   const title = (extraTitle?.value || "").trim();
   const url = (extraUrl?.value || "").trim();
   if (!title) return toast("error", "Atenção", "Informe o título do item.");
@@ -2326,23 +2536,14 @@ window.addEventListener("routechange", async (e) => {
   }
 
   if (r === "extra-items") {
-    await refreshExtraStudents();
-    if (extraStudentEmail && studentEmail?.value) {
-      extraStudentEmail.value = studentEmail.value;
-      const selected = extraStudentsCatalog.find((u) => String(u.email || "").toLowerCase() === String(studentEmail.value || "").toLowerCase());
-      if (selected && extraSelectedStudentBox) {
-        extraSelectedStudentBox.innerHTML = `<b>${escapeHtml(selected.name || "Sem nome")}</b><br><span>${escapeHtml(selected.email)}</span>`;
-        if (extraStudentSearch) extraStudentSearch.value = selected.name || selected.email;
-      }
-      await loadExtraItems().catch(() => {});
-    } else {
-      renderExtraItems();
-    }
+    if (extraStudentSearch) extraStudentSearch.value = "";
+    await refreshExtraStudents({ reset: true });
   }
 });
 
 // ===== Init =====
 (async function init() {
+  initTheme();
   const session = await requireAuth("admin");
   if (!session) return;
 
@@ -2354,6 +2555,7 @@ window.addEventListener("routechange", async (e) => {
   await loadMe().catch(() => {});
   await refreshList().catch(() => {});
   renderCurrentSeries();
+  updateSeriesButtonState();
   renderWorkoutDraft();
   renderWorkoutList();
   updateWorkoutExerciseButtonState();
@@ -2362,3 +2564,11 @@ window.addEventListener("routechange", async (e) => {
   ensureRecordsStudentSelect();
   updateTrainingModeUI();
 })();
+
+function renderExerciseVideoOptions(items){
+ if(!exerciseVideoSelect)return;
+ const q=normalizeText(exerciseVideoSearch?.value||"");
+ const filtered=(items||window.__videoCatalog||[]).filter(v=>!q||normalizeText(v.title||"").includes(q));
+ exerciseVideoSelect.innerHTML=`<option value="">Sem vídeo</option>`+filtered.map(v=>`<option value="${escapeHtml(v.id)}" data-url="${escapeHtml(v.url)}" data-title="${escapeHtml(v.title)}">${escapeHtml(v.title)}</option>`).join("");
+}
+exerciseVideoSearch?.addEventListener("input",()=>renderExerciseVideoOptions(window.__videoCatalog||[]));

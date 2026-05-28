@@ -1486,3 +1486,15 @@ tbody tr.selected { background: rgba(206,172,94,.12); }
     width: 100%;
   }
 }
+
+
+/* ===== Correções: Itens Extras + Selects legíveis ===== */
+select, select option { background:#0b0b0b !important; color:#fff !important; color-scheme: dark; }
+select { border:1px solid rgba(255,255,255,.14) !important; }
+.extraStudentsList, .proScrollList { display:flex; flex-direction:column; gap:8px; max-height:620px; overflow-y:auto; padding-right:4px; }
+.extraStudentItem, .recordsStudentItem { width:100%; display:flex; justify-content:space-between; align-items:center; gap:12px; text-align:left; border:1px solid rgba(255,255,255,.09); background:rgba(255,255,255,.035); border-radius:14px; padding:12px; color:rgba(255,255,255,.92); cursor:pointer; }
+.extraStudentItem:hover, .recordsStudentItem:hover { border-color:rgba(206,172,94,.35); background:rgba(255,255,255,.055); }
+.extraStudentItem.active, .recordsStudentItem.active { border-color:rgba(206,172,94,.65); background:rgba(206,172,94,.12); }
+.extraStudentItem b, .recordsStudentItem b { display:block; font-size:14px; }
+.extraStudentItem small, .recordsStudentItem small { display:block; margin-top:3px; color:rgba(255,255,255,.55); font-size:12px; }
+#exerciseVideoSearch { margin-bottom:10px; }
