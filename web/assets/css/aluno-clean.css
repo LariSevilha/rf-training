@@ -1275,87 +1275,127 @@ body,
 }
 
 
-/* =========================================================
-FIX FINAL iOS — LOGO + SAIR + BOTAO ATUALIZAR
-========================================================= */
-
-/* Remove conflito antigo */
-.alunoClean .alunoTop{
-  padding-top:0 !important;
-}
-
-.alunoClean .alunoTopInner{
-  padding-top:0 !important;
-}
-
-/* iPhone / iOS */
-@supports (-webkit-touch-callout:none){
-
-  .alunoClean .alunoTop{
-    padding-top: calc(env(safe-area-inset-top,0px) + 18px) !important;
-    padding-bottom:8px !important;
-  }
-
-  .alunoClean .alunoTopInner{
-    min-height:auto !important;
-    padding-top:0 !important;
-    align-items:center !important;
-  }
-
-  .alunoClean .topLogo{
-    height:54px !important;
-    max-height:54px !important;
-  }
-
-  .alunoClean .topNavRight{
-    align-items:center !important;
-    display:flex !important;
-    flex-direction:row !important;
-    gap:8px !important;
-  }
-
-  .alunoClean #logoutBtn,
-  .alunoClean .installPill{
-    min-height:38px !important;
-    height:38px !important;
-    margin:0 !important;
-    position:relative !important;
-    top:0 !important;
-  }
-}
 
 /* =========================================================
-ATUALIZAR MENOR E MAIS LIMPO
-========================================================= */
- 
-.alunoClean .softRefresh{
-  min-height:34px !important;
-  height:34px !important;
-  padding:0 12px !important;
-  border-radius:12px !important;
-  font-size:12px !important;
-  font-weight:800 !important;
-  flex-shrink:0 !important;
-  margin-left:auto !important;
+   AJUSTE FINAL — PDF VOLTAR iOS + BOTÃO ATUALIZAR PEQUENO
+   Cole no final do aluno-clean.css
+   ========================================================= */
+
+/* Mantém botão atualizar pequeno e alinhado ao lado do texto */
+.alunoClean .alunoHero {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-direction: row !important;
+  gap: 14px !important;
 }
 
-@media (max-width:640px){
+.alunoClean .alunoHero > div {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
 
-  .alunoClean .softRefresh{
-    min-height:32px !important;
-    height:32px !important;
-    padding:0 10px !important;
-    font-size:11px !important;
+.alunoClean #refreshStudentBtn,
+.alunoClean .softRefresh {
+  width: auto !important;
+  min-width: auto !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+/* No mobile continua pequeno, não ocupa largura total */
+@media (max-width: 760px) {
+  .alunoClean .alunoHero {
+    flex-direction: row !important;
+    align-items: center !important;
   }
 
-  @supports (-webkit-touch-callout:none){
+  .alunoClean #refreshStudentBtn,
+  .alunoClean .softRefresh {
+    width: auto !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
+}
 
-    .alunoClean .alunoTop{
-      padding-top: calc(env(safe-area-inset-top,0px) + 16px) !important;
+/* PDF: estrutura segura */
+.alunoClean .pdfOverlay.show {
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 9999 !important;
+}
+
+.alunoClean .pdfBar {
+  position: relative !important;
+  z-index: 10010 !important;
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  align-items: end !important;
+  gap: 12px !important;
+  min-height: 82px !important;
+  padding: 22px 14px 12px !important;
+  background: rgba(8,8,8,.96) !important;
+}
+
+.alunoClean #pdfBack,
+.alunoClean .pdfBar .backBtn {
+  position: relative !important;
+  z-index: 10020 !important;
+  pointer-events: auto !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.alunoClean .pdfTitle {
+  align-self: center !important;
+}
+
+/* iOS: desce mais o botão Voltar do PDF, sem mexer no Sair */
+@supports (-webkit-touch-callout: none) {
+  .alunoClean .pdfBar {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 38px) !important;
+    min-height: calc(env(safe-area-inset-top, 0px) + 104px) !important;
+    padding-bottom: 14px !important;
+    align-items: end !important;
+  }
+
+  .alunoClean #pdfBack,
+  .alunoClean .pdfBar .backBtn {
+    margin-top: 18px !important;
+    top: auto !important;
+    transform: none !important;
+  }
+
+  .alunoClean .pdfFrameWrap {
+    height: calc(100vh - (env(safe-area-inset-top, 0px) + 104px)) !important;
+  }
+}
+
+/* iOS mobile: mais respiro ainda no topo do PDF */
+@media (max-width: 640px) {
+  @supports (-webkit-touch-callout: none) {
+    .alunoClean .pdfBar {
+      padding-top: calc(env(safe-area-inset-top, 0px) + 42px) !important;
+      min-height: calc(env(safe-area-inset-top, 0px) + 112px) !important;
     }
 
-    .alunoClean .topLogo{
-      height:50px !important;
+    .alunoClean #pdfBack,
+    .alunoClean .pdfBar .backBtn {
+      margin-top: 20px !important;
+    }
+
+    .alunoClean .pdfFrameWrap {
+      height: calc(100vh - (env(safe-area-inset-top, 0px) + 112px)) !important;
     }
   }
 }
