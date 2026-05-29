@@ -1399,3 +1399,78 @@ body,
     }
   }
 }
+
+/* =========================================================
+   CORREÇÃO iOS — topo seguro + hero só na tela inicial
+   ========================================================= */
+
+/* Quando o aluno entra na tela de treino/cargas, a saudação some de verdade,
+   mesmo com regras antigas usando display:flex !important. */
+.alunoClean.studentManualMode #alunoHero,
+.alunoClean #alunoHero[hidden] {
+  display: none !important;
+}
+
+.alunoClean.studentHomeMode #alunoHero {
+  display: flex !important;
+}
+
+/* O ajuste abaixo é aplicado apenas em WebKit/iOS. Android continua usando
+   o alinhamento que já estava correto. */
+@supports (-webkit-touch-callout: none) {
+  .alunoClean .alunoTop {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  .alunoClean .alunoTopInner {
+    min-height: 72px !important;
+    padding-top: 12px !important;
+    padding-bottom: 10px !important;
+    align-items: center !important;
+  }
+
+  .alunoClean .topBrand {
+    min-height: 58px !important;
+  }
+
+  .alunoClean .topLogo {
+    height: 62px !important;
+    max-height: 62px !important;
+    max-width: 190px !important;
+  }
+
+  .alunoClean .topNavRight {
+    align-items: center !important;
+  }
+
+  .alunoClean #logoutBtn,
+  .alunoClean .topNavRight .pill {
+    transform: translateY(2px) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  @supports (-webkit-touch-callout: none) {
+    .alunoClean .alunoTopInner {
+      min-height: 76px !important;
+      padding: 12px 12px 10px !important;
+    }
+
+    .alunoClean .topBrand {
+      min-height: 62px !important;
+    }
+
+    .alunoClean .topLogo {
+      height: 64px !important;
+      max-height: 64px !important;
+      max-width: 178px !important;
+    }
+
+    .alunoClean #logoutBtn,
+    .alunoClean .topNavRight .pill {
+      height: 40px !important;
+      min-height: 40px !important;
+      transform: translateY(3px) !important;
+    }
+  }
+}

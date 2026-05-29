@@ -195,6 +195,9 @@ offlineTryBtn?.addEventListener("click", setOfflineUI);
 function setTab(name) {
   const target = name === "manual" ? "manual" : "documents";
 
+  document.body.classList.toggle("studentManualMode", target === "manual");
+  document.body.classList.toggle("studentHomeMode", target !== "manual");
+
   document.querySelectorAll("[data-student-tab]").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.studentTab === target);
   });
@@ -207,7 +210,8 @@ function setTab(name) {
 
   const hero = document.getElementById("alunoHero");
   if (hero) {
-    hero.style.display = target === "manual" ? "none" : "flex";
+    hero.hidden = target === "manual";
+    hero.setAttribute("aria-hidden", target === "manual" ? "true" : "false");
   }
 }
 
