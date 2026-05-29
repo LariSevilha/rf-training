@@ -313,8 +313,7 @@ function renderHomeMenu() {
     cards.push({
       key: "training",
       icon: "🏋️",
-      title: "Treino",
-      subtitle: hasManualWorkout ? "Abrir treino" : "Plano de treino",
+      title: "Treino"
     });
   }
 
@@ -322,8 +321,7 @@ function renderHomeMenu() {
     cards.push({
       key: "diet",
       icon: "🍽️",
-      title: "Alimentação",
-      subtitle: "Plano alimentar",
+      title: "Alimentação"
     });
   }
 
@@ -331,8 +329,7 @@ function renderHomeMenu() {
     cards.push({
       key: "supp",
       icon: "💊",
-      title: "Suplementação",
-      subtitle: "Orientações",
+      title: "Suplementação"
     });
   }
 
@@ -340,8 +337,7 @@ function renderHomeMenu() {
     cards.push({
       key: "cardio",
       icon: "🏃",
-      title: "Cardio",
-      subtitle: "Corrida e orientações",
+      title: "Cardio"
     });
   }
 
@@ -349,8 +345,7 @@ function renderHomeMenu() {
     cards.push({
       key: "exams",
       icon: "🧾",
-      title: "Exames",
-      subtitle: "Arquivos e avaliações",
+      title: "Exames"
     });
   }
 
@@ -358,8 +353,7 @@ function renderHomeMenu() {
     cards.push({
       key: "stretch",
       icon: "🤸",
-      title: "Alongamento",
-      subtitle: "Mobilidade e cuidados",
+      title: "Alongamento"
     });
   }
 
@@ -372,8 +366,7 @@ function renderHomeMenu() {
       cards.push({
         key,
         icon: "📎",
-        title: item.title || "Arquivo",
-        subtitle: item.notes || "Material extra",
+        title: item.title || "Arquivo"
       });
     });
 
@@ -690,7 +683,6 @@ function renderWorkouts() {
       <article class="exerciseBlock">
         <div class="exerciseHeader">
           <div>
-            <div class="exerciseKicker">${escapeHtml(exercise.muscleGroup || "Exercício")}</div>
             <h3>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</h3>
             ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
             ${item.technique ? `
@@ -873,7 +865,7 @@ async function syncDocuments() {
 
     if (statusEl) {
       statusEl.textContent = hasAnyMaterial()
-        ? "Escolha abaixo o que deseja acessar."
+        ? ""
         : "Nenhum material disponível no momento.";
     }
   } catch (e) {
@@ -971,7 +963,7 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
 
   if (statusEl) {
     statusEl.textContent = hasAnyMaterial()
-      ? "Escolha abaixo o que deseja acessar."
+      ? ""
       : "Nenhum material disponível no momento.";
   }
 })();
