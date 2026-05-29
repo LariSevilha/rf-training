@@ -3,7 +3,7 @@ import { getToken, clearSession } from "./state.js";
 
 function go(path) {
   if (location.pathname === path) return; // corta loop
-  window.location.href = path;
+  window.location.replace(path);
 }
 
 export async function requireAuth(requiredRole) {

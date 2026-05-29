@@ -1187,3 +1187,66 @@
     font-size: 13px !important;
   }
 }
+
+
+/* ===== FIX VOLTAR / PDF / TREINO ===== */
+.alunoClean .manualPanelHead {
+  align-items: flex-start !important;
+  gap: 14px !important;
+  padding-top: 10px !important;
+}
+
+.alunoClean .backHomeBtn {
+  position: relative !important;
+  z-index: 8 !important;
+  margin-top: 8px !important;
+  min-height: 44px !important;
+  pointer-events: auto !important;
+}
+
+.alunoClean .pdfBar {
+  min-height: 68px !important;
+  padding-top: max(18px, env(safe-area-inset-top)) !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  align-items: flex-end !important;
+  z-index: 10010 !important;
+}
+
+.alunoClean .pdfBar .backBtn,
+.alunoClean #pdfBack {
+  margin-top: 10px !important;
+  min-height: 44px !important;
+  position: relative !important;
+  z-index: 10020 !important;
+  pointer-events: auto !important;
+}
+
+.alunoClean .pdfFrameWrap {
+  height: calc(100vh - 68px) !important;
+}
+
+.alunoClean .pdfOverlay.show {
+  z-index: 9999 !important;
+}
+
+@media (max-width: 640px) {
+  .alunoClean .manualPanelHead {
+    padding-top: 14px !important;
+  }
+
+  .alunoClean .backHomeBtn {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: 10px !important;
+  }
+
+  .alunoClean .pdfBar {
+    min-height: 76px !important;
+    padding-top: max(24px, env(safe-area-inset-top)) !important;
+  }
+
+  .alunoClean .pdfFrameWrap {
+    height: calc(100vh - 76px) !important;
+  }
+}

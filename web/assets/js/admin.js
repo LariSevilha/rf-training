@@ -1267,14 +1267,38 @@ function renderWorkoutDraft() {
         return (exId && itemId === exId) || itemName === exName;
       });
 
+      if (workoutExerciseSearch) {
+        workoutExerciseSearch.value = "";
+      }
+      renderWorkoutExerciseOptions("");
+
       if (workoutExerciseSelect) {
-        workoutExerciseSelect.value = found?.id || ex.exerciseId || "";
+        const selectedId = found?.id || ex.exerciseId || "";
+        workoutExerciseSelect.value = selectedId;
       }
 
       if (workoutExerciseOrder) workoutExerciseOrder.value = String(ex.order ?? idx);
       if (workoutExerciseNotes) workoutExerciseNotes.value = ex.notes || "";
-      if (workoutTechniqueSelect) workoutTechniqueSelect.value = ex.techniqueId || "";
-      if (workoutTechniqueNote) workoutTechniqueNote.value = ex.techniqueNote || "";
+
+      const techniqueId = ex.techniqueId || ex.technique?.id || "";
+      const techniqueName = ex.techniqueName || ex.technique?.name || "";
+
+      if (workoutTechniqueSelect) {
+        if (
+          techniqueId &&
+          ![...workoutTechniqueSelect.options].some((opt) => String(opt.value) === String(techniqueId))
+        ) {
+          const opt = document.createElement("option");
+          opt.value = techniqueId;
+          opt.textContent = techniqueName || "Técnica cadastrada";
+          workoutTechniqueSelect.appendChild(opt);
+        }
+        workoutTechniqueSelect.value = techniqueId || "";
+      }
+
+      if (workoutTechniqueNote) {
+        workoutTechniqueNote.value = ex.techniqueNote || ex.technique?.exerciseNote || "";
+      }
 
       currentSeriesDraft = Array.isArray(ex.series)
         ? ex.series.map((s, i) => ({
@@ -1407,6 +1431,8 @@ function renderWorkoutList() {
 
       editingDraftExerciseIndex = null;
       updateWorkoutExerciseButtonState();
+      refreshExercises().catch(() => {});
+      refreshTechniques().catch(() => {});
       workoutDraftExercises = Array.isArray(w.exercises) ? JSON.parse(JSON.stringify(w.exercises)) : [];
       studentWorkoutList.splice(idx, 1);
       updateWorkoutOrdersFromList();
@@ -2525,6 +2551,11 @@ window.addEventListener("routechange", async (e) => {
     await refreshExercises();
   }
 
+  if (r === "edit") {
+    await refreshExercises().catch(() => {});
+    await refreshTechniques().catch(() => {});
+  }
+
   if (r === "records") {
     await refreshRecordsStudents();
     await loadWorkoutRecords();
@@ -2672,7 +2703,24 @@ function renderExerciseVideoOptions(items) {
   }
 }
 
-workoutExerciseSearch?.addEventListener("input", () => {
+
+async function ensureWorkoutExerciseCatalogLoaded() {
+  if (Array.isArray(workoutCatalogExercises) && workoutCatalogExercises.length) return;
+  try {
+    const data = await apiAdminListExercises(token, "");
+    workoutCatalogExercises = data.exercises || [];
+    renderWorkoutExerciseOptions(workoutExerciseSearch?.value || "");
+  } catch (e) {
+    console.warn("Não foi possível carregar exercícios para busca:", e);
+  }
+}
+
+workoutExerciseSearch?.addEventListener("focus", async () => {
+  await ensureWorkoutExerciseCatalogLoaded();
+});
+
+workoutExerciseSearch?.addEventListener("input", async () => {
+  await ensureWorkoutExerciseCatalogLoaded();
   renderWorkoutExerciseOptions(workoutExerciseSearch.value || "");
 });
 

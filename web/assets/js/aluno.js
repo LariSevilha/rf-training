@@ -215,7 +215,9 @@ document.querySelectorAll("[data-student-tab]").forEach((btn) => {
   btn.addEventListener("click", () => setTab(btn.dataset.studentTab));
 });
 
-backHomeBtn?.addEventListener("click", () => {
+backHomeBtn?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
   setTab("documents");
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
@@ -512,7 +514,11 @@ function closePdf() {
   }, 200);
 }
 
-pdfBack?.addEventListener("click", closePdf);
+pdfBack?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  closePdf();
+});
 
 logoutBtn?.addEventListener("click", () => {
   clearSession();

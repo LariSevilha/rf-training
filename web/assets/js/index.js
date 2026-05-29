@@ -12,7 +12,7 @@ const ok = document.getElementById("ok");
 const status = document.getElementById("status");
 
 function goRole(role) {
-  window.location.href = role === "admin" ? "/pages/admin.html" : "/pages/aluno.html";
+  window.location.replace(role === "admin" ? "/pages/admin.html" : "/pages/aluno.html");
 }
 
 loginBtn?.addEventListener("click", async (e) => {
