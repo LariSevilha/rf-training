@@ -1190,6 +1190,22 @@
 
 
 /* ===== FIX VOLTAR / PDF / TREINO ===== */
+
+/* iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  #pdfBack,
+  .pdfBackBtn,
+  .backBtn {
+    margin-top: calc(env(safe-area-inset-top) + 18px) !important;
+  }
+
+  .pdfHeader,
+  .pdfTopBar,
+  .pdfToolbar {
+    padding-top: calc(env(safe-area-inset-top) + 10px) !important;
+  }
+}
+
 .alunoClean .manualPanelHead {
   align-items: flex-start !important;
   gap: 14px !important;
