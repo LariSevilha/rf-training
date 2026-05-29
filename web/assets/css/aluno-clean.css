@@ -1474,3 +1474,56 @@ body,
     }
   }
 }
+
+/* =========================================================
+   AJUSTE — botão Voltar ao início alinhado com “Seu treino”
+   ========================================================= */
+.alunoClean .manualPanelHead {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  column-gap: 12px !important;
+  row-gap: 6px !important;
+}
+
+.alunoClean .manualPanelHead > div {
+  min-width: 0 !important;
+}
+
+.alunoClean .manualPanelHead .backHomeBtn {
+  width: auto !important;
+  min-width: 0 !important;
+  margin-top: 24px !important; /* desce da linha do selo para alinhar com o h2 */
+  justify-self: end !important;
+  align-self: start !important;
+  padding-inline: 14px !important;
+  min-height: 38px !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 640px) {
+  .alunoClean .manualPanelHead {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    column-gap: 8px !important;
+    padding-top: 10px !important;
+  }
+
+  .alunoClean .manualPanelHead h2 {
+    font-size: 20px !important;
+    line-height: 1.1 !important;
+  }
+
+  .alunoClean .manualPanelHead p {
+    font-size: 12.5px !important;
+    line-height: 1.25 !important;
+  }
+
+  .alunoClean .manualPanelHead .backHomeBtn {
+    width: auto !important;
+    margin-top: 22px !important;
+    padding-inline: 10px !important;
+    min-height: 34px !important;
+    font-size: 12px !important;
+    border-radius: 10px !important;
+  }
+}
