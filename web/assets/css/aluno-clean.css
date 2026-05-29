@@ -1277,188 +1277,125 @@ body,
 
 
 /* =========================================================
-   FIX DEFINITIVO iOS — TOPO LOGO + SAIR
-   Mantém tudo dentro da área segura do iPhone.
-   Cole sempre no FINAL do aluno-clean.css.
+   AJUSTE FINAL — PDF VOLTAR iOS + BOTÃO ATUALIZAR PEQUENO
+   Cole no final do aluno-clean.css
    ========================================================= */
 
-/* Topo geral */
-.alunoClean .alunoTop {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 50 !important;
-  background: rgba(8,8,8,.94) !important;
-  border-bottom: 1px solid rgba(255,255,255,.10) !important;
-  overflow: visible !important;
-}
-
-/* Container do topo */
-.alunoClean .alunoTopInner {
+/* Mantém botão atualizar pequeno e alinhado ao lado do texto */
+.alunoClean .alunoHero {
   display: flex !important;
-  flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
-  flex-wrap: nowrap !important;
-  gap: 12px !important;
-  max-width: 1080px !important;
-  margin: 0 auto !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
+  flex-direction: row !important;
+  gap: 14px !important;
 }
 
-/* Logo */
-.alunoClean .topBrand {
-  display: inline-flex !important;
-  align-items: center !important;
+.alunoClean .alunoHero > div {
   min-width: 0 !important;
   flex: 1 1 auto !important;
 }
 
-.alunoClean .topLogo {
-  display: block !important;
+.alunoClean #refreshStudentBtn,
+.alunoClean .softRefresh {
   width: auto !important;
-  object-fit: contain !important;
+  min-width: auto !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
 }
 
-/* Área do botão sair */
-.alunoClean .topNavRight {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  gap: 8px !important;
-  flex: 0 0 auto !important;
-  margin-left: auto !important;
-  position: relative !important;
-  z-index: 60 !important;
+/* No mobile continua pequeno, não ocupa largura total */
+@media (max-width: 760px) {
+  .alunoClean .alunoHero {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .alunoClean #refreshStudentBtn,
+  .alunoClean .softRefresh {
+    width: auto !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
 }
 
-/* Botão sair */
-.alunoClean #logoutBtn,
-.alunoClean .topNavRight .pill {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  white-space: nowrap !important;
-  flex: 0 0 auto !important;
+/* PDF: estrutura segura */
+.alunoClean .pdfOverlay.show {
+  display: flex !important;
+  flex-direction: column !important;
+  z-index: 9999 !important;
+}
+
+.alunoClean .pdfBar {
   position: relative !important;
-  top: auto !important;
-  right: auto !important;
+  z-index: 10010 !important;
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  align-items: end !important;
+  gap: 12px !important;
+  min-height: 82px !important;
+  padding: 22px 14px 12px !important;
+  background: rgba(8,8,8,.96) !important;
+}
+
+.alunoClean #pdfBack,
+.alunoClean .pdfBar .backBtn {
+  position: relative !important;
+  z-index: 10020 !important;
+  pointer-events: auto !important;
+  min-height: 46px !important;
+  height: 46px !important;
   margin: 0 !important;
   transform: none !important;
-  z-index: 70 !important;
 }
 
-/* Android/Desktop: comportamento normal */
-.alunoClean .alunoTop {
-  padding-top: 0 !important;
+.alunoClean .pdfTitle {
+  align-self: center !important;
 }
 
-.alunoClean .alunoTopInner {
-  padding: 12px 18px !important;
-  min-height: 74px !important;
-}
-
-.alunoClean .topLogo {
-  height: 54px !important;
-  max-height: 54px !important;
-}
-
-.alunoClean #logoutBtn,
-.alunoClean .topNavRight .pill {
-  height: 40px !important;
-  min-height: 40px !important;
-  padding: 0 14px !important;
-  border-radius: 14px !important;
-}
-
-/* iOS: desce o topo inteiro para fora da barra do sistema */
+/* iOS: desce mais o botão Voltar do PDF, sem mexer no Sair */
 @supports (-webkit-touch-callout: none) {
-  .alunoClean .alunoTop {
-    padding-top: env(safe-area-inset-top, 0px) !important;
+  .alunoClean .pdfBar {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 38px) !important;
+    min-height: calc(env(safe-area-inset-top, 0px) + 104px) !important;
+    padding-bottom: 14px !important;
+    align-items: end !important;
   }
 
-  .alunoClean .alunoTopInner {
-    padding-top: 22px !important;
-    padding-bottom: 12px !important;
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-    min-height: 88px !important;
+  .alunoClean #pdfBack,
+  .alunoClean .pdfBar .backBtn {
+    margin-top: 18px !important;
+    top: auto !important;
+    transform: none !important;
   }
 
-  .alunoClean .topLogo {
-    height: 52px !important;
-    max-height: 52px !important;
-  }
-
-  .alunoClean #logoutBtn,
-  .alunoClean .topNavRight .pill {
-    height: 40px !important;
-    min-height: 40px !important;
-    padding: 0 14px !important;
+  .alunoClean .pdfFrameWrap {
+    height: calc(100vh - (env(safe-area-inset-top, 0px) + 104px)) !important;
   }
 }
 
-/* iPhone/mobile */
+/* iOS mobile: mais respiro ainda no topo do PDF */
 @media (max-width: 640px) {
-  .alunoClean .alunoTopInner {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    gap: 10px !important;
-  }
-
-  .alunoClean .topLogo {
-    height: 48px !important;
-    max-height: 48px !important;
-    max-width: 155px !important;
-  }
-
-  .alunoClean #logoutBtn,
-  .alunoClean .topNavRight .pill {
-    height: 38px !important;
-    min-height: 38px !important;
-    padding: 0 12px !important;
-    font-size: 13px !important;
-  }
-
   @supports (-webkit-touch-callout: none) {
-    .alunoClean .alunoTop {
-      padding-top: env(safe-area-inset-top, 0px) !important;
+    .alunoClean .pdfBar {
+      padding-top: calc(env(safe-area-inset-top, 0px) + 42px) !important;
+      min-height: calc(env(safe-area-inset-top, 0px) + 112px) !important;
     }
 
-    .alunoClean .alunoTopInner {
-      padding-top: 24px !important;
-      padding-bottom: 12px !important;
-      min-height: 92px !important;
-      align-items: center !important;
+    .alunoClean #pdfBack,
+    .alunoClean .pdfBar .backBtn {
+      margin-top: 20px !important;
     }
 
-    .alunoClean .topLogo {
-      height: 48px !important;
-      max-height: 48px !important;
+    .alunoClean .pdfFrameWrap {
+      height: calc(100vh - (env(safe-area-inset-top, 0px) + 112px)) !important;
     }
-
-    .alunoClean #logoutBtn,
-    .alunoClean .topNavRight .pill {
-      height: 38px !important;
-      min-height: 38px !important;
-      align-self: center !important;
-    }
-  }
-}
-
-/* Telas bem pequenas */
-@media (max-width: 380px) {
-  .alunoClean .topLogo {
-    height: 44px !important;
-    max-height: 44px !important;
-    max-width: 135px !important;
-  }
-
-  .alunoClean #logoutBtn,
-  .alunoClean .topNavRight .pill {
-    padding: 0 10px !important;
-    font-size: 12px !important;
   }
 }
