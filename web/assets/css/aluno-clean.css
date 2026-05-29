@@ -1250,3 +1250,10 @@
     height: calc(100vh - 76px) !important;
   }
 }
+
+/* Evita scroll lateral em qualquer tela */
+body,
+.alunoPage,
+.pdfOverlay {
+  max-width: 100vw;
+}
