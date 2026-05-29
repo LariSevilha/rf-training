@@ -1350,8 +1350,8 @@ body,
   position: relative !important;
   z-index: 10020 !important;
   pointer-events: auto !important;
-  min-height: 10px !important;
-  height: 10px !important;
+  min-height: 42px !important;
+  height: 42px !important;
   margin: 0 !important;
   transform: none !important;
 }
@@ -1360,42 +1360,42 @@ body,
   align-self: center !important;
 }
 
-/* iOS: desce mais o botão Voltar do PDF, sem mexer no Sair */
+/* iOS: aproxima o botão Voltar do PDF do topo, sem alterar o tamanho do botão */
 @supports (-webkit-touch-callout: none) {
   .alunoClean .pdfBar {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 26px) !important;
-    min-height: calc(env(safe-area-inset-top, 0px) + 90px) !important;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
+    min-height: calc(env(safe-area-inset-top, 0px) + 78px) !important;
     padding-bottom: 14px !important;
     align-items: end !important;
   }
 
   .alunoClean #pdfBack,
   .alunoClean .pdfBar .backBtn {
-    margin-top: 6px !important;
+    margin-top: 0 !important;
     top: auto !important;
     transform: none !important;
   }
 
   .alunoClean .pdfFrameWrap {
-    height: calc(100vh - (env(safe-area-inset-top, 0px) + 90px)) !important;
+    height: calc(100vh - (env(safe-area-inset-top, 0px) + 78px)) !important;
   }
 }
 
-/* iOS mobile: mais respiro ainda no topo do PDF */
+/* iOS mobile: mantém o botão mais próximo do topo no PDF */
 @media (max-width: 640px) {
   @supports (-webkit-touch-callout: none) {
     .alunoClean .pdfBar {
-      padding-top: calc(env(safe-area-inset-top, 0px) + 28px) !important;
-      min-height: calc(env(safe-area-inset-top, 0px) + 94px) !important;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 16px) !important;
+      min-height: calc(env(safe-area-inset-top, 0px) + 82px) !important;
     }
 
     .alunoClean #pdfBack,
     .alunoClean .pdfBar .backBtn {
-      margin-top: 8px !important;
+      margin-top: 0 !important;
     }
 
     .alunoClean .pdfFrameWrap {
-      height: calc(100vh - (env(safe-area-inset-top, 0px) + 94px)) !important;
+      height: calc(100vh - (env(safe-area-inset-top, 0px) + 82px)) !important;
     }
   }
 }
