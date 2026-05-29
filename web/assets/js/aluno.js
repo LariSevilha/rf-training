@@ -398,116 +398,31 @@ function cardioWrittenHtml() {
   const days = escapeHtml(cardioWritten.days || "Não informado");
 
   return `
-  <!doctype html>
-  <html lang="pt-BR">
-  <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-  body{
-    margin:0;
-    background:#0f0f0f;
-    color:#f5f5f5;
-    font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:100vh;
-    padding:24px;
-    box-sizing:border-box
-  }
-  
-  .card{
-    width:min(620px,100%);
-    background:#151515;
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:24px;
-    padding:24px;
-    box-shadow:0 20px 60px rgba(0,0,0,.35)
-  }
-  
-  .eyebrow{
-    color:#ceac5e;
-    text-transform:uppercase;
-    font-size:12px;
-    font-weight:900;
-    letter-spacing:.12em;
-    margin-bottom:8px
-  }
-  
-  h1{
-    font-size:32px;
-    line-height:1.05;
-    margin:0 0 18px
-  }
-  
-  .row{
-    position:relative;
-    border:1px solid rgba(255,255,255,.10);
-    border-radius:16px;
-    padding:16px;
-    margin-top:12px;
-    background:rgba(255,255,255,.035)
-  }
-  
-  .label{
-    font-size:12px;
-    color:rgba(255,255,255,.58);
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    margin-bottom:4px
-  }
-  
-  .value{
-    font-size:20px;
-    font-weight:850
-  }
-  
-  /* TARJA VERMELHA */
-  .daysBadge{
-    position:absolute;
-    top:14px;
-    right:14px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    background:#ff343d;
-    color:#fff;
-    font-size:13px;
-    font-weight:900;
-    padding:8px 14px;
-    border-radius:999px;
-    box-shadow:0 8px 20px rgba(255,52,61,.28);
-  }
-  </style>
-  </head>
-  
-  <body>
-  <main class="card">
-    <div class="eyebrow">Cardio</div>
-  
-    <h1>${name}</h1>
-  
-    <div class="row">
-      <div class="label">Tempo</div>
-      <div class="value">${time}</div>
-    </div>
-  
-    <div class="row">
-      <div class="label">Intensidade</div>
-      <div class="value">${intensity}</div>
-    </div>
-  
-    <div class="row">
-      <div class="daysBadge">Dias por semana</div>
-      <div class="label">Frequência</div>
-      <div class="value">${days}</div>
-    </div>
-  
-  </main>
-  </body>
-  </html>
+    <!doctype html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          body{margin:0;background:#0f0f0f;color:#f5f5f5;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;box-sizing:border-box}
+          .card{width:min(620px,100%);background:#151515;border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+          .eyebrow{color:#ceac5e;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:.12em;margin-bottom:8px}
+          h1{font-size:32px;line-height:1.05;margin:0 0 18px}
+          .row{border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:16px;margin-top:12px;background:rgba(255,255,255,.035)}
+          .label{font-size:12px;color:rgba(255,255,255,.58);font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+          .value{font-size:20px;font-weight:850}
+        </style>
+      </head>
+      <body>
+        <main class="card">
+          <div class="eyebrow ">Cardio</div>
+          <h1>${name}</h1>
+          <div class="row"><div class="label">Tempo</div><div class="value">${time}</div></div>
+          <div class="row"><div class="label">Intensidade</div><div class="value">${intensity}</div></div>
+          <div class="row cardioDaysBadge"><div class="label">frequência / dias por semana</div><div class="value">${days}</div></div>
+        </main>
+      </body>
+    </html>
   `;
 }
 
