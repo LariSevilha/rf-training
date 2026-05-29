@@ -415,7 +415,7 @@ function cardioWrittenHtml() {
       </head>
       <body>
         <main class="card">
-          <div class="eyebrow">Cardio / Corrida</div>
+          <div class="eyebrow">Cardio</div>
           <h1>${name}</h1>
           <div class="row"><div class="label">Tempo</div><div class="value">${time}</div></div>
           <div class="row"><div class="label">Intensidade</div><div class="value">${intensity}</div></div>
@@ -482,7 +482,7 @@ function openContent(type) {
   }
 
   if (type === "cardio" && hasWrittenCardio()) {
-    openHtmlOverlay("CARDIO / CORRIDA", cardioWrittenHtml());
+    openHtmlOverlay("CARDIO", cardioWrittenHtml());
     return;
   }
 
