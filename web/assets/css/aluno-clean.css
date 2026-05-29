@@ -1350,8 +1350,8 @@ body,
   position: relative !important;
   z-index: 10020 !important;
   pointer-events: auto !important;
-  min-height: 46px !important;
-  height: 46px !important;
+  min-height: 42px !important;
+  height: 42px !important;
   margin: 0 !important;
   transform: none !important;
 }
@@ -1363,21 +1363,21 @@ body,
 /* iOS: desce mais o botão Voltar do PDF, sem mexer no Sair */
 @supports (-webkit-touch-callout: none) {
   .alunoClean .pdfBar {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 38px) !important;
-    min-height: calc(env(safe-area-inset-top, 0px) + 104px) !important;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 26px) !important;
+    min-height: calc(env(safe-area-inset-top, 0px) + 90px) !important;
     padding-bottom: 14px !important;
     align-items: end !important;
   }
 
   .alunoClean #pdfBack,
   .alunoClean .pdfBar .backBtn {
-    margin-top: 18px !important;
+    margin-top: 6px !important;
     top: auto !important;
     transform: none !important;
   }
 
   .alunoClean .pdfFrameWrap {
-    height: calc(100vh - (env(safe-area-inset-top, 0px) + 104px)) !important;
+    height: calc(100vh - (env(safe-area-inset-top, 0px) + 90px)) !important;
   }
 }
 
@@ -1385,17 +1385,17 @@ body,
 @media (max-width: 640px) {
   @supports (-webkit-touch-callout: none) {
     .alunoClean .pdfBar {
-      padding-top: calc(env(safe-area-inset-top, 0px) + 42px) !important;
-      min-height: calc(env(safe-area-inset-top, 0px) + 112px) !important;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 28px) !important;
+      min-height: calc(env(safe-area-inset-top, 0px) + 94px) !important;
     }
 
     .alunoClean #pdfBack,
     .alunoClean .pdfBar .backBtn {
-      margin-top: 20px !important;
+      margin-top: 8px !important;
     }
 
     .alunoClean .pdfFrameWrap {
-      height: calc(100vh - (env(safe-area-inset-top, 0px) + 112px)) !important;
+      height: calc(100vh - (env(safe-area-inset-top, 0px) + 94px)) !important;
     }
   }
 }
