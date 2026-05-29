@@ -1350,8 +1350,8 @@ body,
   position: relative !important;
   z-index: 10020 !important;
   pointer-events: auto !important;
-  min-height: 42px !important;
-  height: 42px !important;
+  min-height: 36px !important;
+  height: 36px !important;
   margin: 0 !important;
   transform: none !important;
 }
