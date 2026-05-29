@@ -177,6 +177,10 @@ export async function apiSaveWorkoutLogs(token, workoutId, logs, notes = "") {
   });
 }
 
+export async function apiWorkoutHistory(token) {
+  return apiFetch("/student/workouts/history", { headers: authHeaders(token) });
+}
+
 
 export async function apiAdminListMuscleGroups(token) {
   return apiFetch("/admin/muscle-groups", { headers: authHeaders(token) });

@@ -1,5 +1,5 @@
 import { requireAuth } from "./guard.js";
-import { apiDocuments, apiMe, apiWorkouts, apiSaveWorkoutLogs, apiExtraItems } from "./api.js";
+import { apiDocuments, apiMe, apiWorkouts, apiSaveWorkoutLogs, apiWorkoutHistory, apiExtraItems } from "./api.js";
 import { clearSession } from "./state.js";
 import { driveToPreview, placeholderHtml } from "./pdf.js";
 
@@ -85,6 +85,8 @@ let fallbackTimer = null;
 let workouts = [];
 let extraItems = [];
 let activeWorkoutIndex = 0;
+let workoutHistory = [];
+let historyOpen = false;
 
 const urls = {
   training: "",
@@ -663,6 +665,41 @@ function renderWorkoutTabs() {
   });
 }
 
+
+function formatDateTimeBR(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function renderStudentHistory(records = []) {
+  if (!records.length) {
+    return `<div class="studentHistoryEmpty">Nenhum histórico salvo ainda. Quando você registrar cargas e reps, elas aparecerão aqui.</div>`;
+  }
+
+  return records.slice(0, 12).map((record) => `
+    <article class="studentHistoryCard">
+      <div class="studentHistoryHead">
+        <div>
+          <b>${escapeHtml(record.workoutTitle || "Treino")}</b>
+          <span>${formatDateTimeBR(record.date)}</span>
+        </div>
+      </div>
+      ${record.notes ? `<div class="studentHistoryNote">${escapeHtml(record.notes)}</div>` : ""}
+      <div class="studentHistoryRows">
+        ${(record.logs || []).map((log) => `
+          <div class="studentHistoryRow">
+            <span>${escapeHtml(log.exerciseName || "Exercício")}</span>
+            <small>Série ${Number(log.setIndex || 0) + 1} · Alvo ${escapeHtml(log.targetReps || "—")}</small>
+            <b>${log.weight ?? "—"} kg · ${log.performedReps ?? "—"} reps</b>
+          </div>
+        `).join("")}
+      </div>
+    </article>
+  `).join("");
+}
+
 function renderWorkouts() {
   if (!workoutArea || !workoutsEmpty) return;
 
@@ -761,10 +798,25 @@ function renderWorkouts() {
       <div class="workoutSaveFooter">
         <button class="saveWorkoutBtn" id="saveWorkoutBtn" type="button">Salvar execução</button>
       </div>
+
+      <section class="studentHistoryBox ${historyOpen ? "open" : ""}">
+        <button class="studentHistoryToggle" id="studentHistoryToggle" type="button">
+          <span>Histórico de evolução</span>
+          <small>${historyOpen ? "Ocultar" : "Ver cargas anteriores"}</small>
+        </button>
+        <div class="studentHistoryContent" id="studentHistoryContent">
+          ${historyOpen ? renderStudentHistory(workoutHistory) : ""}
+        </div>
+      </section>
     </div>
   `;
 
   document.getElementById("saveWorkoutBtn")?.addEventListener("click", () => saveCurrentWorkout(workout.id));
+  document.getElementById("studentHistoryToggle")?.addEventListener("click", async () => {
+    historyOpen = !historyOpen;
+    if (historyOpen && !workoutHistory.length) await syncWorkoutHistory(false);
+    renderWorkouts();
+  });
 }
 
 async function saveCurrentWorkout(workoutId) {
@@ -822,6 +874,7 @@ async function saveCurrentWorkout(workoutId) {
     hideMessage(4000);
 
     await syncWorkouts(false);
+    await syncWorkoutHistory(false);
   } catch (e) {
     showMessage("error", "Erro ao salvar", e?.message || "Tente novamente em alguns segundos.");
   } finally {
@@ -829,6 +882,19 @@ async function saveCurrentWorkout(workoutId) {
       btn.disabled = false;
       btn.textContent = "Salvar execução";
     }
+  }
+}
+
+
+async function syncWorkoutHistory(showErrors = false) {
+  if (!session?.token) return;
+
+  try {
+    const data = await apiWorkoutHistory(session.token);
+    workoutHistory = Array.isArray(data.records) ? data.records : [];
+  } catch (e) {
+    workoutHistory = [];
+    if (showErrors) showMessage("warn", "Histórico indisponível", e?.message || "Não foi possível carregar o histórico agora.");
   }
 }
 
@@ -893,6 +959,7 @@ async function syncWorkouts(showLoadingMessage = true) {
   try {
     const data = await apiWorkouts(session.token);
     workouts = Array.isArray(data.workouts) ? data.workouts : [];
+    await syncWorkoutHistory(false);
 
     if (activeWorkoutIndex >= workouts.length) {
       activeWorkoutIndex = 0;

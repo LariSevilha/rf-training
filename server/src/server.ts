@@ -534,7 +534,7 @@ async function main() {
     const seriesIds = workouts.flatMap((w: any) => w.exercises.flatMap((we: any) => we.series.map((s: any) => s.id)));
     const logs = seriesIds.length
       ? await (prisma as any).studentWorkoutLog.findMany({
-          where: { userId: user.id, seriesId: { in: seriesIds }, createdAt: { gte: currentWeekStart } },
+          where: { userId: user.id, seriesId: { in: seriesIds } },
           orderBy: { createdAt: "desc" },
         })
       : [];
@@ -628,8 +628,16 @@ async function main() {
     const seriesIds = body.logs.map((l) => l.seriesId);
     const validSeries = await (prisma as any).workoutSeries.findMany({
       where: { id: { in: seriesIds }, workoutExercise: { workoutId } },
-      select: { id: true },
+      include: {
+        workoutExercise: {
+          include: {
+            exercise: { include: { muscleGroup: true } },
+            workout: { select: { title: true } },
+          },
+        },
+      },
     });
+    const validById = new Map<string, any>(validSeries.map((s: any) => [s.id, s]));
     const validSet = new Set(validSeries.map((s: any) => s.id));
 
     const weekStart = startOfWeek();
@@ -653,6 +661,10 @@ async function main() {
           setIndex: Number.isFinite(setRaw) && setRaw >= 0 ? Math.trunc(setRaw) : 0,
           weight: Number.isFinite(wRaw as number) ? wRaw : null,
           performedReps: Number.isFinite(rRaw as number) ? Math.trunc(rRaw as number) : null,
+          workoutTitle: validById.get(l.seriesId)?.workoutExercise?.workout?.title || workout.title || null,
+          exerciseName: validById.get(l.seriesId)?.workoutExercise?.exercise?.name || null,
+          muscleGroup: validById.get(l.seriesId)?.workoutExercise?.exercise?.muscleGroup?.name || null,
+          targetReps: validById.get(l.seriesId)?.targetReps || null,
         };
       })
       .filter((l) => l.weight !== null || l.performedReps !== null);
@@ -661,6 +673,64 @@ async function main() {
 
     await (prisma as any).studentWorkoutLog.createMany({ data });
     return { ok: true, saved: data.length };
+  });
+
+
+  app.get(`${API_PREFIX}/student/workouts/history`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    const payload = req.user as JwtPayload;
+
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user) return reply.code(404).send({ message: "Usuário não encontrado" });
+    if (!user.active) return reply.code(403).send({ message: "Usuário desativado" });
+
+    const logs = await (prisma as any).studentWorkoutLog.findMany({
+      where: { userId: payload.sub },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: {
+        workout: { select: { title: true } },
+        session: { select: { id: true, notes: true, createdAt: true, weekStart: true } },
+        series: {
+          include: {
+            workoutExercise: {
+              include: { exercise: { include: { muscleGroup: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    const grouped = new Map<string, any>();
+
+    for (const log of logs) {
+      const created = new Date(log.createdAt);
+      const fallbackKey = `${created.toISOString().slice(0, 16)}:${log.workoutTitle || log.workout?.title || "Treino"}`;
+      const key = log.sessionId || fallbackKey;
+
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          id: key,
+          date: log.session?.createdAt || log.createdAt,
+          weekStart: log.session?.weekStart || null,
+          workoutTitle: log.workoutTitle || log.workout?.title || "Treino",
+          notes: log.session?.notes || "",
+          logs: [],
+        });
+      }
+
+      grouped.get(key).logs.push({
+        id: log.id,
+        date: log.createdAt,
+        setIndex: log.setIndex ?? 0,
+        weight: log.weight,
+        performedReps: log.performedReps,
+        targetReps: log.targetReps || log.series?.targetReps || "",
+        exerciseName: log.exerciseName || log.series?.workoutExercise?.exercise?.name || "",
+        muscleGroup: log.muscleGroup || log.series?.workoutExercise?.exercise?.muscleGroup?.name || "",
+      });
+    }
+
+    return { records: Array.from(grouped.values()).slice(0, 80) };
   });
 
   // ===== TREINOS MANUAIS - ADMIN =====
@@ -1081,49 +1151,57 @@ async function main() {
       if (to) where.createdAt.lte = to;
     }
 
-    const sessions = await (prisma as any).studentWorkoutSession.findMany({
+    const logs = await (prisma as any).studentWorkoutLog.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      take: 200,
+      take: 1000,
       include: {
         user: { select: { name: true, email: true } },
         workout: { select: { title: true } },
-        logs: {
-          orderBy: [{ createdAt: "asc" }, { setIndex: "asc" }],
+        session: { select: { id: true, notes: true, createdAt: true, weekStart: true } },
+        series: {
           include: {
-            series: {
-              include: {
-                workoutExercise: {
-                  include: { exercise: { include: { muscleGroup: true } } },
-                },
-              },
+            workoutExercise: {
+              include: { exercise: { include: { muscleGroup: true } } },
             },
           },
         },
       },
     });
 
-    return {
-      records: sessions.map((session: any) => ({
-        id: session.id,
-        date: session.createdAt,
-        weekStart: session.weekStart,
-        studentName: session.user?.name || "",
-        studentEmail: session.user?.email || "",
-        workoutTitle: session.workout?.title || "Treino",
-        notes: session.notes || "",
-        logs: (session.logs || []).map((log: any) => ({
-          id: log.id,
-          date: log.createdAt,
-          setIndex: log.setIndex ?? 0,
-          weight: log.weight,
-          performedReps: log.performedReps,
-          targetReps: log.series?.targetReps || "",
-          exerciseName: log.series?.workoutExercise?.exercise?.name || "",
-          muscleGroup: log.series?.workoutExercise?.exercise?.muscleGroup?.name || "",
-        })),
-      })),
-    };
+    const grouped = new Map<string, any>();
+
+    for (const log of logs) {
+      const created = new Date(log.createdAt);
+      const fallbackKey = `${log.userId}:${created.toISOString().slice(0, 16)}:${log.workoutTitle || log.workout?.title || "Treino"}`;
+      const key = log.sessionId || fallbackKey;
+
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          id: key,
+          date: log.session?.createdAt || log.createdAt,
+          weekStart: log.session?.weekStart || null,
+          studentName: log.user?.name || "",
+          studentEmail: log.user?.email || "",
+          workoutTitle: log.workoutTitle || log.workout?.title || "Treino",
+          notes: log.session?.notes || "",
+          logs: [],
+        });
+      }
+
+      grouped.get(key).logs.push({
+        id: log.id,
+        date: log.createdAt,
+        setIndex: log.setIndex ?? 0,
+        weight: log.weight,
+        performedReps: log.performedReps,
+        targetReps: log.targetReps || log.series?.targetReps || "",
+        exerciseName: log.exerciseName || log.series?.workoutExercise?.exercise?.name || "",
+        muscleGroup: log.muscleGroup || log.series?.workoutExercise?.exercise?.muscleGroup?.name || "",
+      });
+    }
+
+    return { records: Array.from(grouped.values()).slice(0, 200) };
   });
 
   app.delete(`${API_PREFIX}/admin/users/:email`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
