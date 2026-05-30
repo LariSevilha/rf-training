@@ -677,8 +677,17 @@ async function main() {
 
     if (!data.length) return reply.code(400).send({ message: "Nenhum registro válido para salvar" });
 
-    await (prisma as any).studentWorkoutLog.createMany({ data });
-    return { ok: true, saved: data.length };
+    // Não usar createMany aqui.
+    // Em alguns bancos já atualizados, o Prisma/adapter-pg pode gerar ON CONFLICT
+    // para createMany. Como removemos a chave única semanal das sessões, isso pode
+    // causar: "there is no unique or exclusion constraint matching the ON CONFLICT specification".
+    // Criando item por item dentro de transaction, evitamos ON CONFLICT e preservamos
+    // cada série da execução como histórico real.
+    await (prisma as any).$transaction(
+      data.map((item: any) => (prisma as any).studentWorkoutLog.create({ data: item }))
+    );
+
+    return { ok: true, saved: data.length, sessionId: session.id };
   });
 
 
