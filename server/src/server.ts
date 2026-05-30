@@ -1,5 +1,6 @@
 import "dotenv/config";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
@@ -673,17 +674,43 @@ async function main() {
     // Com Prisma 7 + @prisma/adapter-pg, createMany pode gerar ON CONFLICT mesmo sem skipDuplicates,
     // e isso quebra quando a constraint única antiga foi removida para permitir múltiplas execuções.
     const result = await (prisma as any).$transaction(async (tx: any) => {
-      const session = await tx.studentWorkoutSession.create({
-        data: { userId: payload.sub, workoutId, weekStart, notes: body.notes || null },
-      });
+      const sessionId = randomUUID();
+
+      // SQL direto para evitar erro do Prisma/Postgres:
+      // "there is no unique or exclusion constraint matching the ON CONFLICT specification".
+      await tx.$executeRawUnsafe(
+        `INSERT INTO "StudentWorkoutSession" ("id", "userId", "workoutId", "weekStart", "notes", "createdAt")
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+        sessionId,
+        payload.sub,
+        workoutId,
+        weekStart,
+        body.notes || null
+      );
 
       for (const item of baseData) {
-        await tx.studentWorkoutLog.create({
-          data: { ...item, sessionId: session.id },
-        });
+        await tx.$executeRawUnsafe(
+          `INSERT INTO "StudentWorkoutLog"
+            ("id", "userId", "workoutId", "seriesId", "sessionId", "setIndex", "weight", "performedReps",
+             "workoutTitle", "exerciseName", "muscleGroup", "targetReps", "createdAt")
+           VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)`,
+          randomUUID(),
+          item.userId,
+          item.workoutId,
+          item.seriesId,
+          sessionId,
+          item.setIndex,
+          item.weight,
+          item.performedReps,
+          item.workoutTitle,
+          item.exerciseName,
+          item.muscleGroup,
+          item.targetReps
+        );
       }
 
-      return { sessionId: session.id, saved: baseData.length };
+      return { sessionId, saved: baseData.length };
     });
 
     return { ok: true, ...result };
