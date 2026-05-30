@@ -19,6 +19,16 @@ ALTER TABLE "StudentWorkoutLog"
   ADD CONSTRAINT "StudentWorkoutLog_sessionId_fkey"
   FOREIGN KEY ("sessionId") REFERENCES "StudentWorkoutSession"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+
+ALTER TABLE "StudentWorkoutLog" DROP CONSTRAINT IF EXISTS "StudentWorkoutLog_workoutId_fkey";
+ALTER TABLE "StudentWorkoutLog"
+  ADD CONSTRAINT "StudentWorkoutLog_workoutId_fkey"
+  FOREIGN KEY ("workoutId") REFERENCES "Workout"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "StudentWorkoutSession" DROP CONSTRAINT IF EXISTS "StudentWorkoutSession_userId_workoutId_weekStart_key";
+CREATE INDEX IF NOT EXISTS "StudentWorkoutSession_userId_workoutId_weekStart_idx"
+  ON "StudentWorkoutSession"("userId", "workoutId", "weekStart");
+
 -- Índices para histórico do aluno/admin ficar rápido.
 CREATE INDEX IF NOT EXISTS "StudentWorkoutLog_userId_createdAt_idx"
   ON "StudentWorkoutLog"("userId", "createdAt");

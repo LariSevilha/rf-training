@@ -542,6 +542,7 @@ async function main() {
     const sessions = workouts.length
       ? await (prisma as any).studentWorkoutSession.findMany({
           where: { userId: user.id, workoutId: { in: workouts.map((w: any) => w.id) }, weekStart: currentWeekStart },
+          orderBy: { createdAt: "desc" },
         })
       : [];
       interface Session {
@@ -549,9 +550,12 @@ async function main() {
         notes?: string | null;
       }
 
-      const sessionByWorkout = new Map<string, { notes?: string | null }>(
-        sessions.map((s: Session) => [s.workoutId, { notes: s.notes }])
-      );
+      const sessionByWorkout = new Map<string, { notes?: string | null }>();
+      for (const s of sessions as Session[]) {
+        if (!sessionByWorkout.has(s.workoutId)) {
+          sessionByWorkout.set(s.workoutId, { notes: s.notes });
+        }
+      }
     const lastBySeriesSet = new Map<string, any>();
     for (const log of logs) {
       const key = `${log.seriesId}:${log.setIndex ?? 0}`;
@@ -641,10 +645,12 @@ async function main() {
     const validSet = new Set(validSeries.map((s: any) => s.id));
 
     const weekStart = startOfWeek();
-    const session = await (prisma as any).studentWorkoutSession.upsert({
-      where: { userId_workoutId_weekStart: { userId: payload.sub, workoutId, weekStart } },
-      update: { notes: body.notes || null },
-      create: { userId: payload.sub, workoutId, weekStart, notes: body.notes || null },
+
+    // Cada clique em “Salvar execução” precisa virar uma sessão própria.
+    // Antes era usado upsert por semana, então salvamentos diferentes ficavam misturados
+    // no mesmo histórico e pareciam não ter sido gravados.
+    const session = await (prisma as any).studentWorkoutSession.create({
+      data: { userId: payload.sub, workoutId, weekStart, notes: body.notes || null },
     });
 
     const data = body.logs
@@ -705,12 +711,12 @@ async function main() {
     for (const log of logs) {
       const created = new Date(log.createdAt);
       const fallbackKey = `${created.toISOString().slice(0, 16)}:${log.workoutTitle || log.workout?.title || "Treino"}`;
-      const key = log.sessionId || fallbackKey;
+      const key = log.sessionId ? `${log.sessionId}:${created.toISOString().slice(0, 16)}` : fallbackKey;
 
       if (!grouped.has(key)) {
         grouped.set(key, {
           id: key,
-          date: log.session?.createdAt || log.createdAt,
+          date: log.createdAt,
           weekStart: log.session?.weekStart || null,
           workoutTitle: log.workoutTitle || log.workout?.title || "Treino",
           notes: log.session?.notes || "",
@@ -1174,12 +1180,12 @@ async function main() {
     for (const log of logs) {
       const created = new Date(log.createdAt);
       const fallbackKey = `${log.userId}:${created.toISOString().slice(0, 16)}:${log.workoutTitle || log.workout?.title || "Treino"}`;
-      const key = log.sessionId || fallbackKey;
+      const key = log.sessionId ? `${log.sessionId}:${created.toISOString().slice(0, 16)}` : fallbackKey;
 
       if (!grouped.has(key)) {
         grouped.set(key, {
           id: key,
-          date: log.session?.createdAt || log.createdAt,
+          date: log.createdAt,
           weekStart: log.session?.weekStart || null,
           studentName: log.user?.name || "",
           studentEmail: log.user?.email || "",

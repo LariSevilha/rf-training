@@ -673,31 +673,71 @@ function formatDateTimeBR(value) {
   return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function groupHistoryLogsByExercise(logs = []) {
+  const grouped = new Map();
+
+  (logs || []).forEach((log) => {
+    const exerciseName = log.exerciseName || "Exercício";
+    const muscleGroup = log.muscleGroup || "";
+    const key = `${exerciseName}__${muscleGroup}`;
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        exerciseName,
+        muscleGroup,
+        sets: [],
+      });
+    }
+
+    grouped.get(key).sets.push(log);
+  });
+
+  return [...grouped.values()].map((exercise) => ({
+    ...exercise,
+    sets: exercise.sets.sort((a, b) => Number(a.setIndex || 0) - Number(b.setIndex || 0)),
+  }));
+}
+
 function renderStudentHistory(records = []) {
   if (!records.length) {
     return `<div class="studentHistoryEmpty">Nenhum histórico salvo ainda. Quando você registrar cargas e reps, elas aparecerão aqui.</div>`;
   }
 
-  return records.slice(0, 12).map((record) => `
-    <article class="studentHistoryCard">
-      <div class="studentHistoryHead">
-        <div>
-          <b>${escapeHtml(record.workoutTitle || "Treino")}</b>
-          <span>${formatDateTimeBR(record.date)}</span>
-        </div>
-      </div>
-      ${record.notes ? `<div class="studentHistoryNote">${escapeHtml(record.notes)}</div>` : ""}
-      <div class="studentHistoryRows">
-        ${(record.logs || []).map((log) => `
-          <div class="studentHistoryRow">
-            <span>${escapeHtml(log.exerciseName || "Exercício")}</span>
-            <small>Série ${Number(log.setIndex || 0) + 1} · Alvo ${escapeHtml(log.targetReps || "—")}</small>
-            <b>${log.weight ?? "—"} kg · ${log.performedReps ?? "—"} reps</b>
+  return records.slice(0, 12).map((record) => {
+    const groupedExercises = groupHistoryLogsByExercise(record.logs || []);
+
+    return `
+      <article class="studentHistoryCard">
+        <div class="studentHistoryHead">
+          <div>
+            <b>${escapeHtml(record.workoutTitle || "Treino")}</b>
+            <span>${formatDateTimeBR(record.date)}</span>
           </div>
-        `).join("")}
-      </div>
-    </article>
-  `).join("");
+          <small>${groupedExercises.length} exercício(s)</small>
+        </div>
+        ${record.notes ? `<div class="studentHistoryNote">${escapeHtml(record.notes)}</div>` : ""}
+        <div class="studentHistoryExercises">
+          ${groupedExercises.map((exercise) => `
+            <div class="studentHistoryExercise">
+              <div class="studentHistoryExerciseHead">
+                <strong>${escapeHtml(exercise.exerciseName || "Exercício")}</strong>
+                ${exercise.muscleGroup ? `<small>${escapeHtml(exercise.muscleGroup)}</small>` : ""}
+              </div>
+              <div class="studentHistorySets">
+                ${exercise.sets.map((log) => `
+                  <div class="studentHistorySet">
+                    <span>Série ${Number(log.setIndex || 0) + 1}</span>
+                    <small>Alvo: ${escapeHtml(log.targetReps || "—")}</small>
+                    <b>${log.weight ?? "—"} kg · ${log.performedReps ?? "—"} reps</b>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderWorkouts() {
