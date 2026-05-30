@@ -560,13 +560,7 @@ async function main() {
         const validById = new Map(validSeries.map((s) => [s.id, s]));
         const validSet = new Set(validSeries.map((s) => s.id));
         const weekStart = startOfWeek();
-        // Cada clique em “Salvar execução” precisa virar uma sessão própria.
-        // Antes era usado upsert por semana, então salvamentos diferentes ficavam misturados
-        // no mesmo histórico e pareciam não ter sido gravados.
-        const session = await prisma.studentWorkoutSession.create({
-            data: { userId: payload.sub, workoutId, weekStart, notes: body.notes || null },
-        });
-        const data = body.logs
+        const baseData = body.logs
             .filter((l) => validSet.has(l.seriesId))
             .map((l) => {
             const wRaw = l.weight === "" || l.weight === null || typeof l.weight === "undefined" ? null : Number(l.weight);
@@ -575,7 +569,6 @@ async function main() {
             return {
                 userId: payload.sub,
                 workoutId,
-                sessionId: session.id,
                 seriesId: l.seriesId,
                 setIndex: Number.isFinite(setRaw) && setRaw >= 0 ? Math.trunc(setRaw) : 0,
                 weight: Number.isFinite(wRaw) ? wRaw : null,
@@ -587,16 +580,23 @@ async function main() {
             };
         })
             .filter((l) => l.weight !== null || l.performedReps !== null);
-        if (!data.length)
+        if (!baseData.length)
             return reply.code(400).send({ message: "Nenhum registro válido para salvar" });
-        // Não usar createMany aqui.
-        // Em alguns bancos já atualizados, o Prisma/adapter-pg pode gerar ON CONFLICT
-        // para createMany. Como removemos a chave única semanal das sessões, isso pode
-        // causar: "there is no unique or exclusion constraint matching the ON CONFLICT specification".
-        // Criando item por item dentro de transaction, evitamos ON CONFLICT e preservamos
-        // cada série da execução como histórico real.
-        await prisma.$transaction(data.map((item) => prisma.studentWorkoutLog.create({ data: item })));
-        return { ok: true, saved: data.length, sessionId: session.id };
+        // IMPORTANTE: não usar createMany aqui.
+        // Com Prisma 7 + @prisma/adapter-pg, createMany pode gerar ON CONFLICT mesmo sem skipDuplicates,
+        // e isso quebra quando a constraint única antiga foi removida para permitir múltiplas execuções.
+        const result = await prisma.$transaction(async (tx) => {
+            const session = await tx.studentWorkoutSession.create({
+                data: { userId: payload.sub, workoutId, weekStart, notes: body.notes || null },
+            });
+            for (const item of baseData) {
+                await tx.studentWorkoutLog.create({
+                    data: { ...item, sessionId: session.id },
+                });
+            }
+            return { sessionId: session.id, saved: baseData.length };
+        });
+        return { ok: true, ...result };
     });
     app.get(`${API_PREFIX}/student/workouts/history`, { preHandler: app.auth }, async (req, reply) => {
         const payload = req.user;
