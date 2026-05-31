@@ -1779,3 +1779,201 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Registros dos alunos: fluxo em duas páginas (listagem -> detalhe) */
+.recordsListPage,
+.recordsDetailPage {
+  width: 100%;
+}
+
+.recordsListPage .recordsListPanel,
+.recordsDetailPage .recordsDetailPanel {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.recordsListPage .proHero,
+.recordsDetailPage .proHero,
+.recordsListPage .proPanel,
+.recordsDetailPage .proPanel,
+.recordsDetailPage .recordsResultPanel {
+  width: 100%;
+}
+
+.recordsSearchTop {
+  margin-top: 16px !important;
+  margin-bottom: 18px !important;
+}
+
+.recordsStudentGrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
+
+.recordsStudentCard {
+  position: relative;
+  min-height: 92px !important;
+  display: grid !important;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "avatar info status"
+    "avatar info open";
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 6px;
+  padding: 16px !important;
+  text-align: left;
+}
+
+.recordsStudentAvatar {
+  grid-area: avatar;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid rgba(206,172,94,.26);
+  background: linear-gradient(135deg, rgba(206,172,94,.20), rgba(255,255,255,.035));
+  color: #f4d992;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+
+.recordsStudentInfo {
+  grid-area: info;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.recordsStudentInfo b {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.recordsStudentInfo small {
+  color: rgba(255,255,255,.58);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recordsStudentStatus {
+  grid-area: status;
+  justify-self: end;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.recordsStudentStatus.isActive {
+  color: #9ff0c2;
+  background: rgba(34,197,94,.10);
+  border-color: rgba(34,197,94,.22);
+}
+
+.recordsStudentStatus.isInactive {
+  color: #ffb4b4;
+  background: rgba(239,68,68,.10);
+  border-color: rgba(239,68,68,.22);
+}
+
+.recordsStudentOpen {
+  grid-area: open;
+  justify-self: end;
+  color: #ceac5e;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.recordsFilterGrid {
+  margin-top: 14px;
+}
+
+.recordsDetailPage .recordsResultPanel {
+  margin-top: 18px;
+}
+
+@media (max-width: 860px) {
+  .recordsStudentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .recordsStudentCard {
+    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-areas:
+      "avatar info"
+      "status open";
+  }
+  .recordsStudentAvatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+  .recordsStudentStatus {
+    justify-self: start;
+  }
+  .recordsStudentOpen {
+    justify-self: end;
+  }
+}
+
+
+/* Expansão visual — Registros dos alunos em largura total */
+.recordsListPage .recordsListPanel,
+.recordsDetailPage .recordsDetailPanel {
+  padding: 24px;
+  border-radius: 24px;
+}
+
+.recordsListPage .recordsStudentsList,
+.recordsDetailPage .recordsListBox {
+  width: 100%;
+}
+
+.recordsDetailPage .recordsFilterGrid {
+  grid-template-columns: repeat(2, minmax(220px, 320px));
+  gap: 14px;
+}
+
+.recordsDetailPage .recordsResultPanel {
+  padding: 18px;
+}
+
+.recordsDetailPage .recordHistoryCard {
+  padding: 18px;
+}
+
+.recordsDetailPage .recordSeriesGrid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 1280px) {
+  .recordsListPage .recordsStudentGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .recordsListPage .recordsStudentGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .recordsDetailPage .recordsFilterGrid {
+    grid-template-columns: 1fr;
+  }
+}

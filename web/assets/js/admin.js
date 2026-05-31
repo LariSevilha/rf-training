@@ -171,6 +171,7 @@ const recordsTo = document.getElementById("recordsTo");
 const recordsApplyBtn = document.getElementById("recordsApplyBtn");
 const recordsRefreshBtn = document.getElementById("recordsRefreshBtn");
 const recordsPdfBtn = document.getElementById("recordsPdfBtn");
+const recordsBackBtn = document.getElementById("recordsBackBtn");
 const recordsListBox = document.getElementById("recordsListBox");
 
 const recordsStudentSearch = document.getElementById("recordsStudentSearch");
@@ -2002,12 +2003,14 @@ function renderRecordsStudentsList() {
       const activeClass = email === selectedRecordsStudentEmail ? "active" : "";
 
       return `
-        <button class="recordsStudentItem ${activeClass}" type="button" data-record-student="${escapeHtml(email)}">
-          <span>
+        <button class="recordsStudentItem recordsStudentCard ${activeClass}" type="button" data-record-student="${escapeHtml(email)}">
+          <span class="recordsStudentAvatar">${escapeHtml(getInitials(u.name || u.email || "RF"))}</span>
+          <span class="recordsStudentInfo">
             <b>${escapeHtml(u.name || "Sem nome")}</b>
             <small>${escapeHtml(u.email)}</small>
           </span>
-          <span>${u.active ? "🟢" : "🔴"}</span>
+          <span class="recordsStudentStatus ${u.active ? "isActive" : "isInactive"}">${u.active ? "Ativo" : "Inativo"}</span>
+          <span class="recordsStudentOpen">Abrir histórico ›</span>
         </button>
       `;
     })
@@ -2021,7 +2024,12 @@ function renderRecordsStudentsList() {
 
       updateSelectedRecordStudentBox();
       renderRecordsStudentsList();
-      await loadWorkoutRecords();
+
+      if (window.__setRoute) {
+        window.__setRoute("records-detail");
+      } else {
+        await loadWorkoutRecords();
+      }
     });
   });
 }
@@ -2252,6 +2260,10 @@ recordsRefreshBtn?.addEventListener("click", async () => {
 });
 
 recordsPdfBtn?.addEventListener("click", printWorkoutRecordsPdf);
+
+recordsBackBtn?.addEventListener("click", () => {
+  if (window.__setRoute) window.__setRoute("records");
+});
 
 
 
@@ -2623,6 +2635,11 @@ window.addEventListener("routechange", async (e) => {
 
   if (r === "records") {
     await refreshRecordsStudents();
+  }
+
+  if (r === "records-detail") {
+    if (!recordsStudents.length) await refreshRecordsStudents();
+    updateSelectedRecordStudentBox();
     await loadWorkoutRecords();
   }
 

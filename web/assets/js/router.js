@@ -8,6 +8,7 @@ const LIBRARY_ROUTES = [
   "techniques",
   "extra-items",
   "records",
+  "records-detail",
 ];
 
 const VALID_ROUTES = [

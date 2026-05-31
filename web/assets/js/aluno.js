@@ -720,7 +720,8 @@ function renderStudentHistory(records = []) {
           ${groupedExercises.map((exercise) => `
             <div class="studentHistoryExercise">
               <div class="studentHistoryExerciseHead">
-                <strong>${escapeHtml(exercise.exerciseName || "Exercício")}</strong> 
+                <strong>${escapeHtml(exercise.exerciseName || "Exercício")}</strong>
+                ${exercise.muscleGroup ? `<small>${escapeHtml(exercise.muscleGroup)}</small>` : ""}
               </div>
               <div class="studentHistorySets">
                 ${exercise.sets.map((log) => `

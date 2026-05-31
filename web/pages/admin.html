@@ -767,79 +767,94 @@
           </div>
         </section>
 
-        <!-- VIEW: RECORDS -->
+        <!-- VIEW: RECORDS: LISTAGEM DE ALUNOS -->
         <section class="view" id="view-records">
-          <div class="proPage librarySubPage">
+          <div class="proPage librarySubPage recordsListPage">
             <div class="proHero compactHero subHero">
               <div>
                 <span class="sectionKicker">Histórico de evolução</span>
                 <h2>Registros dos alunos</h2>
-                <p>Visualize cargas, repetições e observações registradas nos treinos, com filtro por aluno e período.</p>
+                <p>Primeiro selecione o aluno. Depois, em uma página separada, aparecem os registros agrupados por treino, exercício e série.</p>
               </div>
               <div class="heroActions">
-                <button class="btnGhost" id="recordsRefreshBtn" type="button">Atualizar</button>
+                <button class="btnGhost" id="recordsRefreshBtn" type="button">Atualizar alunos</button>
+              </div>
+            </div>
+
+            <section class="proPanel recordsListPanel">
+              <div class="panelTitleRow spaceBetween">
+                <div class="panelTitleInline">
+                  <span class="panelIcon">👥</span>
+                  <div>
+                    <h3>Selecione um aluno</h3>
+                    <p>Busque pelo nome ou email para abrir o histórico em outra página.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="searchWrap fullSearch recordsSearchTop">
+                <span>🔎</span>
+                <input id="recordsStudentSearch" type="text" placeholder="Buscar aluno..." />
+              </div>
+
+              <div id="recordsStudentsList" class="recordsStudentsList recordsStudentGrid">
+                <div class="smallHint">Carregando alunos...</div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- VIEW: RECORDS DETAIL: HISTÓRICO DO ALUNO -->
+        <section class="view" id="view-records-detail">
+          <div class="proPage librarySubPage recordsDetailPage">
+            <div class="proHero compactHero subHero">
+              <div>
+                <span class="sectionKicker">Histórico individual</span>
+                <h2>Dados do aluno</h2>
+                <p>Registros organizados na mesma lógica do aluno: treino, exercício e série.</p>
+              </div>
+              <div class="heroActions">
+                <button class="btnGhost" id="recordsBackBtn" type="button">Voltar para alunos</button>
                 <button class="btn" id="recordsPdfBtn" type="button">Baixar PDF</button>
               </div>
             </div>
 
-            <div class="proGrid twoCols recordsProGrid">
-              <section class="proPanel librarySidePanel">
-                <div class="panelTitleRow">
-                  <span class="panelIcon">👥</span>
+            <section class="proPanel accentPanel recordsDetailPanel">
+              <div class="panelTitleRow spaceBetween">
+                <div class="panelTitleInline">
+                  <span class="panelIcon">📊</span>
                   <div>
-                    <h3>Selecionar aluno</h3>
-                    <p>Busque pelo nome e clique para carregar o histórico.</p>
+                    <h3>Histórico do aluno</h3>
+                    <p>Filtre por data e carregue os registros de execução.</p>
                   </div>
                 </div>
+                <button class="btn panelAction" id="recordsApplyBtn" type="button">Carregar registros</button>
+              </div>
 
-                <div class="searchWrap fullSearch">
-                  <span>🔎</span>
-                  <input id="recordsStudentSearch" type="text" placeholder="Buscar aluno..." />
-                </div>
+              <div class="selectedBox proSelectedBox" id="recordsSelectedStudentBox">
+                Nenhum aluno selecionado.
+              </div>
 
-                <div id="recordsStudentsList" class="recordsStudentsList proScrollList">
-                  <div class="smallHint">Carregando alunos...</div>
+              <div class="formGrid compactDateGrid recordsFilterGrid">
+                <div class="fieldGroup">
+                  <div class="label">De</div>
+                  <input id="recordsFrom" type="date" />
                 </div>
-              </section>
+                <div class="fieldGroup">
+                  <div class="label">Até</div>
+                  <input id="recordsTo" type="date" />
+                </div>
+              </div>
 
-              <section class="proPanel accentPanel libraryMainPanel">
-                <div class="panelTitleRow spaceBetween">
-                  <div class="panelTitleInline">
-                    <span class="panelIcon">📊</span>
-                    <div>
-                      <h3>Histórico do aluno</h3>
-                      <p>Filtre por data e carregue os registros de execução.</p>
-                    </div>
-                  </div>
-                  <button class="btn panelAction" id="recordsApplyBtn" type="button">Carregar registros</button>
+              <div id="recordsListBox" class="recordsResultPanel">
+                <div class="emptyState">
+                  <h3>Nenhum aluno selecionado</h3>
+                  <p>Volte para a listagem e selecione um aluno para abrir os registros.</p>
                 </div>
-
-                <div class="formGrid compactDateGrid">
-                  <div class="fieldGroup">
-                    <div class="label">De</div>
-                    <input id="recordsFrom" type="date" />
-                  </div>
-                  <div class="fieldGroup">
-                    <div class="label">Até</div>
-                    <input id="recordsTo" type="date" />
-                  </div>
-                </div>
-
-                <div class="selectedBox proSelectedBox" id="recordsSelectedStudentBox">
-                  Selecione um aluno na lista para ver os registros.
-                </div>
-
-                <div id="recordsListBox" class="recordsResultPanel">
-                  <div class="emptyState">
-                    <h3>Nenhum aluno selecionado</h3>
-                    <p>Clique em um aluno à esquerda para carregar o histórico.</p>
-                  </div>
-                </div>
-              </section>
-            </div>
+              </div>
+            </section>
           </div>
         </section>
-
 
         <!-- VIEW: MUSCLES -->
         <section class="view" id="view-muscles">
