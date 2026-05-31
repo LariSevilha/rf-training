@@ -1205,6 +1205,7 @@ function renderWorkoutDraft() {
           </div>
           <div style="display:flex;gap:8px;height:max-content;flex-wrap:wrap;justify-content:flex-end;">
             <button class="btnGhost" type="button" data-edit-draft-ex="${idx}" style="padding:8px 10px;min-width:auto;">Editar</button>
+            <button class="btnGhost" type="button" data-duplicate-draft-ex="${idx}" style="padding:8px 10px;min-width:auto;">Duplicar</button>
             <button class="btnGhost" type="button" data-remove-draft-ex="${idx}" style="padding:8px 10px;min-width:auto;">Remover</button>
           </div>
         </div>
@@ -1248,6 +1249,36 @@ function renderWorkoutDraft() {
       updateWorkoutExerciseButtonState();
       renderWorkoutDraft();
       toast("ok", "Ordem alterada", "Exercícios reorganizados no treino em montagem.");
+    });
+  });
+
+  workoutDraftBox.querySelectorAll("[data-duplicate-draft-ex]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.duplicateDraftEx);
+      const ex = workoutDraftExercises[idx];
+      if (!ex) return;
+
+      const duplicated = JSON.parse(JSON.stringify(ex));
+      duplicated.id = undefined;
+      duplicated.workoutExerciseId = undefined;
+      duplicated.order = idx + 1;
+      duplicated.series = Array.isArray(duplicated.series)
+        ? duplicated.series.map((s, i) => ({
+            ...s,
+            id: undefined,
+            workoutSeriesId: undefined,
+            order: Number(s.order ?? i),
+          }))
+        : [];
+
+      workoutDraftExercises.splice(idx + 1, 0, duplicated);
+      workoutDraftExercises = workoutDraftExercises.map((item, i) => ({ ...item, order: i }));
+
+      editingDraftExerciseIndex = null;
+      if (workoutExerciseOrder) workoutExerciseOrder.value = String(workoutDraftExercises.length);
+      updateWorkoutExerciseButtonState();
+      renderWorkoutDraft();
+      toast("ok", "Exercício duplicado", "Exercício, séries, técnica e observações foram copiados.");
     });
   });
 
@@ -2628,11 +2659,17 @@ function renderSearchResultList({ box, items, type }) {
     box.querySelectorAll("[data-pick-exercise]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.pickExercise || "";
-        if (workoutExerciseSelect) workoutExerciseSelect.value = id;
+
         if (workoutExerciseSearch) {
-          const found = workoutCatalogExercises.find((e) => String(e.id || e.name) === String(id));
-          workoutExerciseSearch.value = found?.name || "";
+          workoutExerciseSearch.value = "";
         }
+
+        renderWorkoutExerciseOptions("");
+
+        if (workoutExerciseSelect) {
+          workoutExerciseSelect.value = id;
+        }
+
         box.innerHTML = "";
         box.style.display = "none";
       });
