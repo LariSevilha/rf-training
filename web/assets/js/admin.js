@@ -2052,6 +2052,34 @@ function formatDateTimeBR(value) {
   return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function groupRecordLogsByExercise(logs = []) {
+  const grouped = new Map();
+
+  (logs || []).forEach((log) => {
+    const exerciseName = log.exerciseName || "Exercício";
+    const muscleGroup = log.muscleGroup || "";
+    const key = `${exerciseName}__${muscleGroup}`;
+
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        exerciseName,
+        muscleGroup,
+        exerciseOrder: Number(log.exerciseOrder ?? 999),
+        sets: [],
+      });
+    }
+
+    grouped.get(key).sets.push(log);
+  });
+
+  return [...grouped.values()]
+    .sort((a, b) => Number(a.exerciseOrder ?? 999) - Number(b.exerciseOrder ?? 999))
+    .map((exercise) => ({
+      ...exercise,
+      sets: exercise.sets.sort((a, b) => Number(a.setIndex || 0) - Number(b.setIndex || 0)),
+    }));
+}
+
 function renderWorkoutRecords(records = []) {
   lastWorkoutRecords = records;
   if (!recordsListBox) return;
@@ -2067,43 +2095,49 @@ function renderWorkoutRecords(records = []) {
   }
 
   recordsListBox.innerHTML = records
-    .map((record) => `
-      <div class="rf-block recordBlock">
-        <div class="rf-blockHeader">
-          <div>
-            <div class="rf-blockTitle">${escapeHtml(record.studentName || record.studentEmail)} · ${escapeHtml(record.workoutTitle || "Treino")}</div>
-            <div class="rf-blockMeta">${escapeHtml(record.studentEmail)} · ${formatDateTimeBR(record.date)} · Semana: ${formatDateTimeBR(record.weekStart).split(",")[0]}</div>
+    .map((record) => {
+      const groupedExercises = groupRecordLogsByExercise(record.logs || []);
+      const weekLabel = record.weekStart ? formatDateTimeBR(record.weekStart).split(",")[0] : "—";
+
+      return `
+        <article class="recordHistoryCard">
+          <div class="recordHistoryHead">
+            <div>
+              <span class="recordStudentName">${escapeHtml(record.studentName || record.studentEmail || "Aluno")}</span>
+              <b>${escapeHtml(record.workoutTitle || "Treino")}</b>
+              <small>${escapeHtml(record.studentEmail || "")} · ${formatDateTimeBR(record.date)} · Semana: ${weekLabel}</small>
+            </div>
+            <span class="recordExerciseCount">${groupedExercises.length} exercício(s)</span>
           </div>
-        </div>
 
-        ${record.notes ? `<div class="recordNote"><b>Observação do aluno:</b><br>${escapeHtml(record.notes)}</div>` : `<div class="recordNote muted">Sem observação do aluno.</div>`}
+          ${record.notes ? `<div class="recordNote"><b>Observação do aluno:</b><br>${escapeHtml(record.notes)}</div>` : `<div class="recordNote muted">Sem observação do aluno.</div>`}
 
-        <div class="tableWrap" style="margin-top:10px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Exercício</th>
-                <th>Série</th>
-                <th>Reps alvo</th>
-                <th>Carga</th>
-                <th>Reps feitas</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${(record.logs || []).map((log) => `
-                <tr>
-                  <td>${escapeHtml(log.exerciseName || "—")}<br><span class="smallHint">${escapeHtml(log.muscleGroup || "")}</span></td>
-                  <td>${Number(log.setIndex || 0) + 1}</td>
-                  <td>${escapeHtml(log.targetReps || "—")}</td>
-                  <td>${log.weight ?? "—"}</td>
-                  <td>${log.performedReps ?? "—"}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `)
+          <div class="recordExerciseList">
+            ${groupedExercises.map((exercise, exIndex) => `
+              <section class="recordExerciseGroup">
+                <div class="recordExerciseHead">
+                  <div>
+                    <strong>${exIndex + 1}. ${escapeHtml(exercise.exerciseName || "Exercício")}</strong>
+                    ${exercise.muscleGroup ? `<small>${escapeHtml(exercise.muscleGroup)}</small>` : ""}
+                  </div>
+                  <span>${exercise.sets.length} série(s)</span>
+                </div>
+
+                <div class="recordSeriesGrid">
+                  ${exercise.sets.map((log) => `
+                    <div class="recordSeriesItem">
+                      <span>Série ${Number(log.setIndex || 0) + 1}</span>
+                      <small>Alvo: ${escapeHtml(log.targetReps || "—")}</small>
+                      <b>${log.weight ?? "—"} kg · ${log.performedReps ?? "—"} reps</b>
+                    </div>
+                  `).join("")}
+                </div>
+              </section>
+            `).join("")}
+          </div>
+        </article>
+      `;
+    })
     .join("");
 }
 
@@ -2163,41 +2197,41 @@ function printWorkoutRecordsPdf() {
       h1{margin:0 0 8px}
       .muted{color:#666}
       .session{border:1px solid #ddd;border-radius:12px;padding:14px;margin:14px 0;break-inside:avoid}
-      table{width:100%;border-collapse:collapse;margin-top:10px}
-      th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left;font-size:12px}
-      th{background:#f4f4f4}
+      .session h2{margin:0 0 6px;font-size:18px}
       .note{background:#fafafa;border-left:4px solid #ceac5e;padding:10px;margin-top:10px}
+      .exercise{border:1px solid #e4e4e4;border-radius:10px;margin-top:12px;padding:10px;break-inside:avoid}
+      .exercise h3{margin:0 0 3px;font-size:14px}
+      .series{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+      .serie{border:1px solid #e7e7e7;border-radius:8px;padding:8px;font-size:12px;background:#fafafa}
+      .serie b{display:block;margin-top:4px;font-size:13px}
+      @media print{.series{grid-template-columns:repeat(2,minmax(0,1fr))}}
     </style>
     </head><body><h1>Registros dos alunos</h1><p class="muted">Gerado em ${new Date().toLocaleString("pt-BR")}</p>
-    ${records.map((record) => `
-      <div class="session">
-        <h2>${escapeHtml(record.studentName || record.studentEmail)} · ${escapeHtml(record.workoutTitle || "Treino")}</h2>
-        <p class="muted">${escapeHtml(record.studentEmail)} · ${formatDateTimeBR(record.date)}</p>
-        ${record.notes ? `<div class="note"><b>Observação:</b><br>${escapeHtml(record.notes)}</div>` : ""}
-        <table>
-          <thead>
-            <tr>
-              <th>Exercício</th>
-              <th>Série</th>
-              <th>Reps alvo</th>
-              <th>Carga</th>
-              <th>Reps feitas</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(record.logs || []).map((log) => `
-              <tr>
-                <td>${escapeHtml(log.exerciseName || "—")}</td>
-                <td>${Number(log.setIndex || 0) + 1}</td>
-                <td>${escapeHtml(log.targetReps || "—")}</td>
-                <td>${log.weight ?? "—"}</td>
-                <td>${log.performedReps ?? "—"}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    `).join("")}
+    ${records.map((record) => {
+      const groupedExercises = groupRecordLogsByExercise(record.logs || []);
+      return `
+        <div class="session">
+          <h2>${escapeHtml(record.studentName || record.studentEmail)} · ${escapeHtml(record.workoutTitle || "Treino")}</h2>
+          <p class="muted">${escapeHtml(record.studentEmail)} · ${formatDateTimeBR(record.date)}</p>
+          ${record.notes ? `<div class="note"><b>Observação:</b><br>${escapeHtml(record.notes)}</div>` : ""}
+          ${groupedExercises.map((exercise, exIndex) => `
+            <div class="exercise">
+              <h3>${exIndex + 1}. ${escapeHtml(exercise.exerciseName || "Exercício")}</h3>
+              ${exercise.muscleGroup ? `<div class="muted">${escapeHtml(exercise.muscleGroup)}</div>` : ""}
+              <div class="series">
+                ${exercise.sets.map((log) => `
+                  <div class="serie">
+                    <span>Série ${Number(log.setIndex || 0) + 1}</span><br>
+                    <span>Alvo: ${escapeHtml(log.targetReps || "—")}</span>
+                    <b>${log.weight ?? "—"} kg · ${log.performedReps ?? "—"} reps</b>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }).join("")}
     </body></html>`;
 
   const w = window.open("", "_blank");

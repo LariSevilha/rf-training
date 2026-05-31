@@ -1641,3 +1641,141 @@
     box-shadow: 0 0 0 4px rgba(255,255,255,.035);
   }
 }
+
+/* Histórico do aluno no admin: agrupado por treino > exercício > série */
+.recordHistoryCard {
+  border: 1px solid rgba(255,255,255,.09);
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 14px 30px rgba(0,0,0,.18);
+}
+
+.recordHistoryHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+
+.recordHistoryHead > div {
+  display: grid;
+  gap: 4px;
+}
+
+.recordStudentName {
+  color: #ceac5e;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.recordHistoryHead b {
+  color: #fff;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.recordHistoryHead small,
+.recordExerciseHead small {
+  color: rgba(255,255,255,.58);
+  font-size: 12px;
+}
+
+.recordExerciseCount,
+.recordExerciseHead span {
+  flex: 0 0 auto;
+  border: 1px solid rgba(206,172,94,.22);
+  background: rgba(206,172,94,.10);
+  color: #f4d992;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.recordExerciseList {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.recordExerciseGroup {
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(0,0,0,.18);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.recordExerciseHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.recordExerciseHead > div {
+  display: grid;
+  gap: 3px;
+}
+
+.recordExerciseHead strong {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.recordSeriesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.recordSeriesItem {
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.035);
+  border-radius: 14px;
+  padding: 10px;
+  display: grid;
+  gap: 3px;
+}
+
+.recordSeriesItem span {
+  color: #ceac5e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.recordSeriesItem small {
+  color: rgba(255,255,255,.58);
+  font-size: 12px;
+}
+
+.recordSeriesItem b {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+@media (max-width: 900px) {
+  .recordSeriesGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .recordHistoryHead,
+  .recordExerciseHead {
+    flex-direction: column;
+  }
+
+  .recordSeriesGrid {
+    grid-template-columns: 1fr;
+  }
+}
