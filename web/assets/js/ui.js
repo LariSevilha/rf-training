@@ -69,6 +69,7 @@ export function openModal({
   mode = "confirm",
   placeholder = "",
   okText = "Confirmar",
+  cancelText = "Cancelar",
 }) {
   const mask = document.getElementById("modalMask");
   const t = document.getElementById("modalTitle");
@@ -91,6 +92,7 @@ export function openModal({
   t.textContent = title || "Confirmação";
   p.textContent = text || "—";
   ok.textContent = okText || "Confirmar";
+  cancel.textContent = cancelText || "Cancelar";
 
   if (inputWrap) inputWrap.style.display = isPrompt ? "block" : "none";
 

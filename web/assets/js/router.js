@@ -83,8 +83,28 @@ function updateListTools(route) {
   }
 }
 
+let currentRoute = null;
+
 function setRoute(route, options = {}) {
   const nextRoute = isValidRoute(route) ? route : DEFAULT_ROUTE;
+
+  if (currentRoute === nextRoute) {
+    return true;
+  }
+
+  const beforeEvent = new CustomEvent("beforeRouteChange", {
+    cancelable: true,
+    detail: {
+      from: currentRoute,
+      route: nextRoute,
+    },
+  });
+
+  if (!options.force && !window.dispatchEvent(beforeEvent)) {
+    return false;
+  }
+
+  currentRoute = nextRoute;
 
   setActiveMenu(nextRoute);
   setActiveView(nextRoute);
@@ -99,6 +119,8 @@ function setRoute(route, options = {}) {
       detail: { route: nextRoute },
     })
   );
+
+  return true;
 }
 
 document.querySelectorAll(".navBtn[data-route]").forEach((btn) => {

@@ -239,6 +239,102 @@ let studentExtraItems = [];
 let extraStudents = [];
 let selectedExtraStudentEmail = "";
 
+const UNSAVED_WORKOUT_MESSAGE = "Deseja mesmo sair sem salvar?";
+let workoutListHasUnsavedChanges = false;
+let workoutDiscardModalOpen = false;
+
+function setWorkoutUnsaved() {
+  workoutListHasUnsavedChanges = true;
+}
+
+function clearWorkoutUnsaved() {
+  workoutListHasUnsavedChanges = false;
+}
+
+function hasWorkoutDraftContent() {
+  const textFields = [
+    workoutTitle,
+    workoutNotes,
+    workoutExerciseNotes,
+    workoutTechniqueNote,
+    seriesCount,
+    seriesTargetReps,
+  ];
+
+  const hasTypedText = textFields.some((el) => String(el?.value || "").trim());
+  const activeChanged = workoutActive ? workoutActive.checked === false : false;
+
+  return Boolean(
+    hasTypedText ||
+    activeChanged ||
+    workoutDraftExercises.length ||
+    currentSeriesDraft.length ||
+    editingDraftExerciseIndex !== null ||
+    editingSeriesIndex !== null
+  );
+}
+
+function hasUnsavedWorkoutChanges() {
+  return Boolean(workoutListHasUnsavedChanges || hasWorkoutDraftContent());
+}
+
+function isManualWorkoutBuilderActive() {
+  const editViewIsActive = document.getElementById("view-edit")?.classList.contains("active");
+  const manualMode = (trainingMode?.value || "pdf") === "manual";
+  const manualVisible = manualTrainingBox && getComputedStyle(manualTrainingBox).display !== "none";
+  return Boolean(editViewIsActive && manualMode && manualVisible);
+}
+
+function shouldProtectWorkoutExit(fromRoute = "") {
+  return Boolean(fromRoute === "edit" && isManualWorkoutBuilderActive() && hasUnsavedWorkoutChanges());
+}
+
+async function confirmDiscardWorkoutChanges() {
+  if (!hasUnsavedWorkoutChanges()) return true;
+
+  const ok = await openModal({
+    title: "Sair sem salvar?",
+    text: UNSAVED_WORKOUT_MESSAGE,
+    mode: "confirm",
+    okText: "Sair sem salvar",
+    cancelText: "Continuar editando",
+  });
+
+  if (ok) {
+    clearWorkoutUnsaved();
+  }
+
+  return ok;
+}
+
+window.addEventListener("beforeRouteChange", (event) => {
+  const fromRoute = event?.detail?.from || "";
+  const nextRoute = event?.detail?.route || "";
+
+  if (!shouldProtectWorkoutExit(fromRoute)) return;
+
+  event.preventDefault();
+
+  if (workoutDiscardModalOpen) return;
+  workoutDiscardModalOpen = true;
+
+  confirmDiscardWorkoutChanges()
+    .then((ok) => {
+      if (ok && nextRoute && window.__setRoute) {
+        window.__setRoute(nextRoute, { force: true });
+      }
+    })
+    .finally(() => {
+      workoutDiscardModalOpen = false;
+    });
+});
+
+window.addEventListener("beforeunload", (event) => {
+  if (!isManualWorkoutBuilderActive() || !hasUnsavedWorkoutChanges()) return;
+
+  event.preventDefault();
+  event.returnValue = "";
+});
 
 // ===== Admin footer/profile =====
 function getInitials(nameOrEmail = "") {
@@ -786,7 +882,12 @@ async function saveMe() {
 }
 
 // ===== Events =====
-logoutBtn?.addEventListener("click", () => {
+logoutBtn?.addEventListener("click", async () => {
+  if (isManualWorkoutBuilderActive() && hasUnsavedWorkoutChanges()) {
+    const ok = await confirmDiscardWorkoutChanges();
+    if (!ok) return;
+  }
+
   clearSession();
   window.location.href = "/pages/index.html";
 });
@@ -1436,6 +1537,7 @@ function renderWorkoutList() {
       const [moved] = studentWorkoutList.splice(draggedIndex, 1);
       studentWorkoutList.splice(targetIndex, 0, moved);
       updateWorkoutOrdersFromList();
+      setWorkoutUnsaved();
       renderWorkoutList();
       toast("ok", "Ordem alterada", "Clique em Salvar treinos manuais para gravar.");
     });
@@ -1446,6 +1548,7 @@ function renderWorkoutList() {
       const idx = Number(btn.dataset.removeWorkout);
       studentWorkoutList.splice(idx, 1);
       updateWorkoutOrdersFromList();
+      setWorkoutUnsaved();
       renderWorkoutList();
     });
   });
@@ -1468,6 +1571,7 @@ function renderWorkoutList() {
       workoutDraftExercises = Array.isArray(w.exercises) ? JSON.parse(JSON.stringify(w.exercises)) : [];
       studentWorkoutList.splice(idx, 1);
       updateWorkoutOrdersFromList();
+      setWorkoutUnsaved();
       renderWorkoutDraft();
       renderWorkoutList();
       toast("info", "Treino carregado para edição", "Ajuste e adicione novamente à lista do aluno.");
@@ -1517,6 +1621,7 @@ seriesAddBtn?.addEventListener("click", () => {
 
   currentSeriesDraft = currentSeriesDraft.map((s, i) => ({ ...s, order: i }));
   editingSeriesIndex = null;
+  setWorkoutUnsaved();
 
   if (seriesCount) seriesCount.value = "";
   if (seriesTargetReps) seriesTargetReps.value = "";
@@ -1532,6 +1637,7 @@ seriesClearBtn?.addEventListener("click", () => {
   if (seriesTargetReps) seriesTargetReps.value = "";
   updateSeriesButtonState();
   renderCurrentSeries();
+  setWorkoutUnsaved();
 });
 
 workoutExerciseAddBtn?.addEventListener("click", () => {
@@ -1570,6 +1676,7 @@ workoutExerciseAddBtn?.addEventListener("click", () => {
   }
 
   workoutDraftExercises.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  setWorkoutUnsaved();
   resetExerciseDraft();
   renderWorkoutDraft();
 });
@@ -1596,6 +1703,7 @@ workoutAddBtn?.addEventListener("click", () => {
   });
 
   studentWorkoutList.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  setWorkoutUnsaved();
   renderWorkoutList();
   resetWorkoutDraft();
   toast("ok", "Treino adicionado", "Não esqueça de clicar em Salvar treinos manuais.");
@@ -1863,6 +1971,10 @@ exerciseListBtn?.addEventListener("click", async () => {
 });
 
 workoutLoadBtn?.addEventListener("click", async () => {
+  if (hasUnsavedWorkoutChanges()) {
+    const ok = await confirmDiscardWorkoutChanges();
+    if (!ok) return;
+  }
   const em = (workoutStudentEmail?.value || studentEmail?.value || "").trim().toLowerCase();
   if (!em) return toast("error", "Atenção", "Informe o email do aluno.");
 
@@ -1873,6 +1985,7 @@ workoutLoadBtn?.addEventListener("click", async () => {
     studentWorkoutList = Array.isArray(manual.workouts) ? manual.workouts : [];
     renderWorkoutList();
     resetWorkoutDraft();
+    clearWorkoutUnsaved();
     toast("ok", "Treinos carregados", "Treinos manuais atualizados na tela.");
   } catch (e) {
     toast("error", "Erro", e.message || "Erro ao carregar treinos.");
@@ -1914,6 +2027,8 @@ workoutSaveBtn?.addEventListener("click", async () => {
     await apiAdminSaveWorkouts(token, em, cleanWorkouts);
     studentWorkoutList = cleanWorkouts;
     renderWorkoutList();
+    resetWorkoutDraft();
+    clearWorkoutUnsaved();
     toast("ok", "Treinos salvos", "Treinos manuais do aluno atualizados.");
   } catch (e) {
     toast("error", "Erro ao salvar", e.message || "Erro ao salvar treinos.");
