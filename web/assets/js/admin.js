@@ -1469,6 +1469,44 @@ function updateWorkoutOrdersFromList() {
   if (workoutOrder) workoutOrder.value = String(studentWorkoutList.length);
 }
 
+function cloneWorkoutForDuplicate(workout = {}, index = 0) {
+  const duplicated = JSON.parse(JSON.stringify(workout || {}));
+
+  delete duplicated.id;
+  delete duplicated.workoutId;
+  delete duplicated.createdAt;
+  delete duplicated.updatedAt;
+
+  duplicated.title = `${duplicated.title || `Treino ${index + 1}`} - cópia`;
+  duplicated.order = index + 1;
+  duplicated.exercises = Array.isArray(duplicated.exercises)
+    ? duplicated.exercises.map((ex, exIndex) => {
+        const cleanExercise = { ...ex };
+        delete cleanExercise.id;
+        delete cleanExercise.workoutExerciseId;
+        delete cleanExercise.createdAt;
+        delete cleanExercise.updatedAt;
+
+        cleanExercise.order = Number(cleanExercise.order ?? exIndex);
+        cleanExercise.series = Array.isArray(cleanExercise.series)
+          ? cleanExercise.series.map((serie, serieIndex) => {
+              const cleanSerie = { ...serie };
+              delete cleanSerie.id;
+              delete cleanSerie.workoutSeriesId;
+              delete cleanSerie.createdAt;
+              delete cleanSerie.updatedAt;
+              cleanSerie.order = Number(cleanSerie.order ?? serieIndex);
+              return cleanSerie;
+            })
+          : [];
+
+        return cleanExercise;
+      })
+    : [];
+
+  return duplicated;
+}
+
 function renderWorkoutList() {
   if (!workoutListBox) return;
 
@@ -1490,6 +1528,7 @@ function renderWorkoutList() {
           </div>
           <div style="display:flex;gap:8px;height:max-content;">
             <button class="btnGhost" type="button" data-edit-workout="${idx}" style="padding:8px 10px;min-width:auto;">Editar</button>
+            <button class="btnGhost" type="button" data-duplicate-workout="${idx}" style="padding:8px 10px;min-width:auto;">Duplicar treino</button>
             <button class="btnGhost" type="button" data-remove-workout="${idx}" style="padding:8px 10px;min-width:auto;">Remover</button>
           </div>
         </div>
@@ -1550,6 +1589,21 @@ function renderWorkoutList() {
       updateWorkoutOrdersFromList();
       setWorkoutUnsaved();
       renderWorkoutList();
+    });
+  });
+
+  workoutListBox.querySelectorAll("[data-duplicate-workout]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.duplicateWorkout);
+      const workout = studentWorkoutList[idx];
+      if (!workout) return;
+
+      const duplicated = cloneWorkoutForDuplicate(workout, idx);
+      studentWorkoutList.splice(idx + 1, 0, duplicated);
+      updateWorkoutOrdersFromList();
+      setWorkoutUnsaved();
+      renderWorkoutList();
+      toast("ok", "Treino duplicado", "O treino completo foi copiado. Clique em Salvar treinos manuais para gravar.");
     });
   });
 
