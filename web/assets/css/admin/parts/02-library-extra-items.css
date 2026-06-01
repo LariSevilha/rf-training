@@ -1,0 +1,276 @@
+/* Refinamento final — telas internas da Biblioteca */
+  .librarySubPage {
+    gap: 18px;
+  }
+  .subHero {
+    min-height: 148px;
+  }
+  .libraryFormGrid {
+    align-items: start;
+    grid-template-columns: minmax(360px, .92fr) minmax(420px, 1.08fr) !important;
+  }
+  .librarySidePanel,
+  .libraryMainPanel,
+  .libraryListPanel {
+    min-width: 0;
+  }
+  .libraryListPanel {
+    min-height: 290px;
+  }
+  .libraryFooterActions {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .libraryFooterActions .btn,
+  .libraryFooterActions .btnGhost {
+    min-width: 150px;
+  }
+  .libraryListBox {
+    display: grid;
+    gap: 10px;
+    max-height: min(58vh, 560px);
+    overflow: auto;
+    padding-right: 4px;
+  }
+  .libraryListBox > .smallHint {
+    margin: 0 !important;
+    padding: 14px !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(255,255,255,.085) !important;
+    background: rgba(255,255,255,.032) !important;
+    color: rgba(255,255,255,.72) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .libraryListBox > .smallHint:hover {
+    border-color: rgba(206,172,94,.25) !important;
+    background: rgba(206,172,94,.055) !important;
+  }
+  .libraryListBox > .smallHint b {
+    color: #fff;
+  }
+  .libraryListBox > .smallHint span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .libraryListBox > .smallHint span:last-child {
+    flex: 0 0 auto;
+  }
+  .libraryListBox .btnGhost {
+    min-height: 34px !important;
+    border-radius: 10px !important;
+  }
+  .fullSearch {
+    width: 100% !important;
+    margin-bottom: 12px !important;
+  }
+  .proScrollList {
+    max-height: min(58vh, 560px);
+    overflow: auto;
+    padding-right: 4px;
+  }
+  .recordsProGrid {
+    grid-template-columns: minmax(320px, .78fr) minmax(500px, 1.22fr) !important;
+  }
+  .compactDateGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 14px;
+  }
+  .proSelectedBox {
+    margin-top: 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(206,172,94,.20);
+    background: rgba(206,172,94,.06);
+  }
+  .recordsResultPanel {
+    margin-top: 14px;
+    padding: 14px;
+    min-height: 220px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(5,5,5,.24);
+  }
+  .recordsResultPanel .emptyState {
+    border: 0;
+    background: transparent;
+  }
+  
+  @media (max-width: 1180px) {
+    .libraryFormGrid,
+    .recordsProGrid {
+      grid-template-columns: 1fr !important;
+    }
+    .libraryListBox,
+    .proScrollList {
+      max-height: none;
+    }
+  }
+  
+  @media (max-width: 720px) {
+    .subHero {
+      min-height: auto;
+    }
+    .libraryFooterActions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .libraryFooterActions .btn,
+    .libraryFooterActions .btnGhost,
+    .panelAction {
+      width: 100%;
+    }
+    .compactDateGrid {
+      grid-template-columns: 1fr;
+    }
+    .libraryListBox > .smallHint {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    .libraryListBox > .smallHint span:last-child {
+      width: 100%;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .libraryListBox .btnGhost {
+      flex: 1 1 120px;
+    }
+  }
+  
+  /* Refinamento final — Itens extras do aluno */
+  .extraItemsPage .subHero {
+    min-height: 150px;
+  }
+  .extraItemsPage .extraManagerGrid {
+    grid-template-columns: minmax(320px, 410px) minmax(0, 1fr) !important;
+    align-items: start;
+  }
+  .extraItemsPage .fullSearch {
+    display: flex;
+    margin-bottom: 14px;
+  }
+  .extraItemsPage .extraStudentsList {
+    max-height: min(62vh, 620px);
+  }
+  .extraItemsPage .extraStudentItem {
+    min-height: 64px;
+    padding: 13px 14px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.026);
+  }
+  .extraItemsPage .extraStudentItem.active,
+  .extraItemsPage .extraStudentItem:hover {
+    background: linear-gradient(135deg, rgba(206,172,94,.11), rgba(255,255,255,.028));
+    border-color: rgba(206,172,94,.34);
+  }
+  .extraItemsPage .selectedBox {
+    margin-bottom: 16px;
+    min-height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(206,172,94,.10), rgba(255,255,255,.025));
+  }
+  .extraFormBlock {
+    margin-top: 0;
+    padding: 18px;
+    background: rgba(7,7,7,.38);
+  }
+  .compactPanelTitle {
+    margin-bottom: 16px;
+  }
+  .smallPanelIcon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 13px;
+    font-weight: 900;
+  }
+  .extraFormGrid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(110px, .35fr) minmax(180px, .55fr);
+  }
+  .extraFormGrid .fieldFull {
+    grid-column: 1 / -1;
+  }
+  .extraActiveCheck {
+    min-height: 44px;
+    margin-top: 0 !important;
+    padding: 0 12px;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 14px;
+    background: rgba(255,255,255,.026);
+    display: flex;
+    align-items: center;
+  }
+  .itemsListHeader {
+    margin: 18px 0 10px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .itemsListHeader h3 {
+    margin: 0 0 4px;
+    color: #fff;
+    font-size: 16px;
+  }
+  .itemsListHeader p {
+    margin: 0;
+    color: var(--rf-muted);
+    font-size: 13px;
+  }
+  .extraItemsBox {
+    display: grid;
+    gap: 10px;
+    min-height: 78px;
+    padding: 12px !important;
+    border-radius: 18px !important;
+    border: 1px dashed rgba(255,255,255,.14) !important;
+    background: rgba(255,255,255,.018) !important;
+  }
+  .extraItemsPage #extraItemsBox > div {
+    border-radius: 16px !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,.036), rgba(255,255,255,.016)) !important;
+    padding: 14px !important;
+  }
+  .extraItemsPage .extraSaveFooter {
+    position: sticky;
+    bottom: 14px;
+    z-index: 3;
+    box-shadow: 0 18px 50px rgba(0,0,0,.28);
+    backdrop-filter: blur(12px);
+  }
+  @media (max-width: 1180px) {
+    .extraFormGrid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 980px) {
+    .extraItemsPage .extraManagerGrid {
+      grid-template-columns: 1fr !important;
+    }
+    .extraItemsPage .extraStudentsList {
+      max-height: 340px;
+    }
+  }
+  @media (max-width: 720px) {
+    .extraFormGrid {
+      grid-template-columns: 1fr !important;
+    }
+    .extraItemsPage .extraSaveFooter {
+      position: static;
+    }
+    .extraItemsPage .libraryFooterActions .btn,
+    .extraItemsPage .libraryFooterActions .btnGhost {
+      width: 100%;
+    }
+  }

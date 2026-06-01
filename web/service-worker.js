@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-05-28-01";
+const VERSION = "rf-fitness-v2026-06-01-aluno-modular";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -13,6 +13,11 @@ const APP_SHELL = [
   "/assets/css/main.css",
   "/assets/css/aluno-clean.css",
   "/assets/js/aluno.js",
+  "/assets/js/aluno/parts/00-service-worker-elements-state.js",
+  "/assets/js/aluno/parts/01-tabs-menu-documents-overlay.js",
+  "/assets/js/aluno/parts/02-install-flow.js",
+  "/assets/js/aluno/parts/03-workouts-history.js",
+  "/assets/js/aluno/parts/04-sync-and-init.js",
   "/assets/js/api.js",
   "/assets/js/guard.js",
   "/assets/js/state.js",

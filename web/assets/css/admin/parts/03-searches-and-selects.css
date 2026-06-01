@@ -1,0 +1,112 @@
+/* ===== Correções: Itens Extras + Selects legíveis ===== */
+  select, select option { background:#0b0b0b !important; color:#fff !important; color-scheme: dark; }
+  select { border:1px solid rgba(255,255,255,.14) !important; }
+  .extraStudentsList, .proScrollList { display:flex; flex-direction:column; gap:8px; max-height:620px; overflow-y:auto; padding-right:4px; }
+  .extraStudentItem, .recordsStudentItem { width:100%; display:flex; justify-content:space-between; align-items:center; gap:12px; text-align:left; border:1px solid rgba(255,255,255,.09); background:rgba(255,255,255,.035); border-radius:14px; padding:12px; color:rgba(255,255,255,.92); cursor:pointer; }
+  .extraStudentItem:hover, .recordsStudentItem:hover { border-color:rgba(206,172,94,.35); background:rgba(255,255,255,.055); }
+  .extraStudentItem.active, .recordsStudentItem.active { border-color:rgba(206,172,94,.65); background:rgba(206,172,94,.12); }
+  .extraStudentItem b, .recordsStudentItem b { display:block; font-size:14px; }
+  .extraStudentItem small, .recordsStudentItem small { display:block; margin-top:3px; color:rgba(255,255,255,.55); font-size:12px; }
+  #exerciseVideoSearch { margin-bottom:10px; }
+  
+  
+  /* ===== BUSCAS COM LISTAGEM: EXERCÍCIO E VÍDEO ===== */
+  .adminSearchBox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 12px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 14px;
+    background: #101010;
+    box-sizing: border-box;
+  }
+  
+  .adminSearchBox span {
+    opacity: .75;
+    flex: 0 0 auto;
+  }
+  
+  .adminSearchBox input {
+    width: 100%;
+    min-width: 0;
+    border: 0 !important;
+    background: transparent !important;
+    color: #fff !important;
+    outline: none !important;
+    min-height: 42px;
+    padding: 0 !important;
+  }
+  
+  .adminSearchBox input::placeholder {
+    color: rgba(255,255,255,.45);
+  }
+  
+  .searchResultList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 8px 0 10px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  
+  .searchResultItem {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    border: 1px solid rgba(255,255,255,.09);
+    background: rgba(255,255,255,.035);
+    border-radius: 14px;
+    padding: 11px 12px;
+    color: rgba(255,255,255,.92);
+    cursor: pointer;
+  }
+  
+  .searchResultItem:hover {
+    border-color: rgba(206,172,94,.45);
+    background: rgba(206,172,94,.10);
+  }
+  
+  .searchResultItem b {
+    display: block;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+  
+  .searchResultItem small {
+    display: block;
+    max-width: 420px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 3px;
+    color: rgba(255,255,255,.55);
+    font-size: 12px;
+  }
+  
+  .searchResultArrow {
+    flex: 0 0 auto;
+    color: #ceac5e;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  
+  .searchResultEmpty {
+    border: 1px dashed rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: rgba(255,255,255,.58);
+    font-size: 13px;
+  }
+  
+  select,
+  select option {
+    background: #0b0b0b !important;
+    color: #fff !important;
+  }

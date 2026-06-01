@@ -1,0 +1,451 @@
+/* Refinamento profissional — Dashboard, Criar aluno, Meu Admin e Biblioteca */
+  .proPage {
+    display: grid;
+    gap: 18px;
+  }
+  .proHero {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 24px;
+    border-radius: 24px;
+    border: 1px solid rgba(206,172,94,.20);
+    background:
+      radial-gradient(circle at 12% -10%, rgba(206,172,94,.18), transparent 34%),
+      radial-gradient(circle at 92% 8%, rgba(255,255,255,.055), transparent 24%),
+      linear-gradient(135deg, rgba(255,255,255,.046), rgba(255,255,255,.014));
+    box-shadow: 0 18px 58px rgba(0,0,0,.24);
+    overflow: hidden;
+    position: relative;
+  }
+  .proHero::after {
+    content: "";
+    position: absolute;
+    inset: auto -80px -120px auto;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: rgba(206,172,94,.08);
+    filter: blur(3px);
+    pointer-events: none;
+  }
+  .proHero > * { position: relative; z-index: 1; }
+  .proHero h2 {
+    margin: 10px 0 7px;
+    font-size: clamp(28px, 3vw, 42px);
+    line-height: .98;
+    letter-spacing: -.055em;
+  }
+  .proHero p {
+    margin: 0;
+    max-width: 680px;
+    color: var(--rf-muted) !important;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .compactHero { align-items: center; }
+  .heroActions,
+  .heroAction {
+    align-self: center;
+    white-space: nowrap;
+  }
+  .heroActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .heroMiniCard {
+    width: min(340px, 100%);
+    min-height: 106px;
+    padding: 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(206,172,94,.22);
+    background: rgba(5,5,5,.42);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+  }
+  .heroMiniCard strong {
+    color: #fff;
+    font-size: 14px;
+  }
+  .heroMiniCard span {
+    color: var(--rf-muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .proGrid {
+    display: grid;
+    gap: 18px;
+  }
+  .proGrid.twoCols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proPanel {
+    padding: 20px;
+    border-radius: 22px;
+    border: 1px solid var(--rf-line);
+    background: linear-gradient(180deg, rgba(255,255,255,.032), rgba(255,255,255,.014)), rgba(12,12,12,.72);
+    box-shadow: 0 16px 48px rgba(0,0,0,.20);
+  }
+  .accentPanel {
+    border-color: rgba(206,172,94,.18);
+    background: linear-gradient(180deg, rgba(206,172,94,.06), rgba(255,255,255,.014)), rgba(12,12,12,.72);
+  }
+  .panelTitleRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .panelTitleRow.spaceBetween {
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .panelTitleInline {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .panelTitleRow h3 {
+    margin: 0 0 4px;
+    color: #fff;
+    font-size: 16px;
+    letter-spacing: -.03em;
+  }
+  .panelTitleRow p {
+    margin: 0;
+    color: var(--rf-muted) !important;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .panelIcon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    border: 1px solid rgba(206,172,94,.24);
+    background: rgba(206,172,94,.105);
+    color: var(--rf-gold-2);
+  }
+  .formGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .fieldGroup { min-width: 0; }
+  .fieldFull { grid-column: 1 / -1; }
+  .infoStrip {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 15px;
+    border: 1px solid rgba(206,172,94,.18);
+    background: rgba(206,172,94,.075);
+    color: rgba(255,255,255,.68);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .createStudentPanel { max-width: 980px; }
+  .createFormGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .createFooter {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.025);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .proCheck {
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+  }
+  .proCheck span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .proCheck b {
+    color: #fff;
+    font-size: 14px;
+  }
+  .proCheck small {
+    color: var(--rf-muted);
+    font-size: 12px;
+  }
+  .createMainBtn { min-width: 180px; }
+  .proStats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .proStatCard {
+    min-height: 122px;
+    padding: 18px !important;
+    border-radius: 22px !important;
+    background: rgba(12,12,12,.72) !important;
+  }
+  .goldStat {
+    border-color: rgba(206,172,94,.26) !important;
+    background: linear-gradient(135deg, rgba(206,172,94,.12), rgba(255,255,255,.026)) !important;
+  }
+  .proFilters {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-columns: 130px 130px 180px minmax(220px, 1fr) 180px;
+    gap: 12px !important;
+    align-items: end;
+    background: transparent !important;
+    border: 0 !important;
+  }
+  .proFilters .fItem { min-width: 0 !important; }
+  .growField { min-width: 0 !important; }
+  .panelAction { min-width: 150px; }
+  .tablePanel { overflow: hidden; }
+  .dashTableWrap {
+    margin-top: 0 !important;
+    border-radius: 18px !important;
+    overflow: auto;
+  }
+  .dashTable { min-width: 660px; }
+  .proLibraryGrid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+  .proLibraryCard {
+    min-height: 124px !important;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .proLibraryCard::after {
+    content: "";
+    position: absolute;
+    right: -42px;
+    bottom: -58px;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: rgba(206,172,94,.055);
+    pointer-events: none;
+  }
+  .proLibraryCard:hover::after { background: rgba(206,172,94,.10); }
+  .proLibraryCard > * { position: relative; z-index: 1; }
+  
+  @media (max-width: 1180px) {
+    .proStats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .proFilters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .proLibraryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  }
+  
+  @media (max-width: 860px) {
+    .proHero,
+    .compactHero {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 20px;
+      border-radius: 22px;
+    }
+    .heroActions,
+    .heroAction { width: 100%; justify-content: stretch; }
+    .heroActions .btn,
+    .heroActions .btnGhost,
+    .heroAction { width: 100%; }
+    .heroMiniCard { width: 100%; min-height: auto; }
+    .proGrid.twoCols,
+    .formGrid,
+    .createFormGrid { grid-template-columns: 1fr; }
+    .fieldFull { grid-column: auto; }
+    .panelTitleRow.spaceBetween { flex-direction: column; align-items: stretch; }
+    .panelAction { width: 100%; }
+    .createFooter { flex-direction: column; align-items: stretch; }
+    .createMainBtn { width: 100%; }
+  }
+  
+  @media (max-width: 720px) {
+    .proStats,
+    .proFilters,
+    .proLibraryGrid { grid-template-columns: 1fr !important; }
+    .proPanel { padding: 16px; border-radius: 20px; }
+    .proHero h2 { font-size: 31px; }
+    .proStatCard { min-height: 96px; }
+    .dashTable { min-width: 0; width: 100%; border-collapse: separate; border-spacing: 0 10px; padding: 8px; }
+    .dashTable thead { display: none; }
+    .dashTable tbody tr {
+      display: grid;
+      gap: 8px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.09);
+      background: rgba(255,255,255,.028);
+    }
+    .dashTable td {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 !important;
+      border: 0;
+    }
+    .dashTable td:nth-child(1)::before { content: "Mês"; }
+    .dashTable td:nth-child(2)::before { content: "Total"; }
+    .dashTable td:nth-child(3)::before { content: "Ativos"; }
+    .dashTable td:nth-child(4)::before { content: "Inativos"; }
+    .dashTable td::before {
+      color: var(--rf-muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .045em;
+    }
+  }
+  
+  /* Editar aluno — acabamento profissional */
+  .editStudentPage {
+    display: grid;
+    gap: 18px;
+  }
+  .editStudentHero {
+    align-items: stretch;
+  }
+  .editStudentGrid {
+    display: grid;
+    grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .editProfilePanel,
+  .editMaterialsPanel {
+    min-width: 0;
+  }
+  .editProfilePanel {
+    position: sticky;
+    top: 22px;
+  }
+  .editProfileGrid {
+    grid-template-columns: 1fr;
+  }
+  .editStatusBox {
+    margin-top: 16px;
+    padding: 15px;
+    border-radius: 18px;
+    border: 1px solid rgba(206,172,94,.20);
+    background: rgba(206,172,94,.065);
+  }
+  .editMaterialsPanel .editDocTabs {
+    margin-bottom: 16px;
+  }
+  .editDocTabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+  }
+  .editDocTab {
+    white-space: nowrap;
+  }
+  .docPanelHead {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .docPanelHead h3 {
+    margin: 0 0 4px !important;
+    color: #fff;
+    font-size: 16px;
+  }
+  .docPanelHead p {
+    margin: 0;
+    color: var(--rf-muted) !important;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .docPanelIcon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    border: 1px solid rgba(206,172,94,.22);
+    background: rgba(206,172,94,.10);
+  }
+  .editSaveBar {
+    padding: 16px;
+    border-radius: 22px;
+    border: 1px solid rgba(206,172,94,.24);
+    background: linear-gradient(135deg, rgba(206,172,94,.105), rgba(255,255,255,.025));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.18);
+  }
+  .editSaveBar b,
+  .editSaveBar small {
+    display: block;
+  }
+  .editSaveBar b {
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .editSaveBar small {
+    color: var(--rf-muted);
+    line-height: 1.4;
+  }
+  .editSaveActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .dangerGhost {
+    border-color: rgba(239,68,68,.24) !important;
+    color: rgba(255,255,255,.9) !important;
+  }
+  .dangerGhost:hover {
+    border-color: rgba(239,68,68,.48) !important;
+    background: rgba(239,68,68,.08) !important;
+  }
+  
+  @media (max-width: 1120px) {
+    .editStudentGrid {
+      grid-template-columns: 1fr;
+    }
+    .editProfilePanel {
+      position: static;
+    }
+  }
+  @media (max-width: 720px) {
+    .editStudentHero,
+    .editSaveBar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .editHeroCard {
+      width: 100%;
+    }
+    .editSaveActions,
+    .editSaveActions .btn,
+    .editSaveActions .btnGhost {
+      width: 100%;
+    }
+    .editDocPanel {
+      padding: 15px;
+      border-radius: 16px;
+    }
+    .docPanelHead {
+      gap: 10px;
+    }
+  }
