@@ -118,6 +118,39 @@ function renderStudentHistory(records = []) {
   }).join("");
 }
 
+
+function getTechniqueData(item) {
+  if (item?.technique) return item.technique;
+
+  const name = item?.techniqueName || "";
+  if (!name) return null;
+
+  return {
+    id: item.techniqueId || "",
+    name,
+    videoUrl: item.techniqueVideoUrl || "",
+    notes: item.techniqueNotes || "",
+    exerciseNote: item.techniqueNote || "",
+  };
+}
+
+function buildStudentTechniqueHtml(item) {
+  const technique = getTechniqueData(item);
+  if (!technique?.name) return "";
+
+  return `
+    <div class="techniqueBox techniqueBox--highlight">
+      <div class="techniqueBoxTitle">
+        <span>Técnica</span>
+        <strong>${escapeHtml(technique.name || "")}</strong>
+      </div>
+      ${technique.exerciseNote ? `<div class="techniqueBoxNote">${escapeHtml(technique.exerciseNote)}</div>` : ""}
+      ${technique.notes ? `<small>${escapeHtml(technique.notes)}</small>` : ""}
+      ${technique.videoUrl ? `<a class="videoBtn" href="${escapeHtml(technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+    </div>
+  `;
+}
+
 function renderWorkouts() {
   if (!workoutArea || !workoutsEmpty) return;
 
@@ -144,14 +177,7 @@ function renderWorkouts() {
           <div>
             <h3>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</h3>
             ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
-            ${item.technique ? `
-              <div class="techniqueBox">
-                <b>Técnica:</b> ${escapeHtml(item.technique.name || "")}
-                ${item.technique.exerciseNote ? ` · ${escapeHtml(item.technique.exerciseNote)}` : ""}
-                ${item.technique.notes ? `<br><small>${escapeHtml(item.technique.notes)}</small>` : ""}
-                ${item.technique.videoUrl ? `<br><a class="videoBtn" href="${escapeHtml(item.technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
-              </div>
-            ` : ""}
+            ${buildStudentTechniqueHtml(item)}
           </div>
 
           ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}

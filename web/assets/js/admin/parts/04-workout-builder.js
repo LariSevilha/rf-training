@@ -7,6 +7,26 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+
+function buildTechniqueBadgeHtml(source) {
+  const name = source?.techniqueName || source?.technique?.name || "";
+  const note = source?.techniqueNote || source?.technique?.exerciseNote || "";
+  const details = source?.techniqueNotes || source?.technique?.notes || "";
+  const videoUrl = source?.techniqueVideoUrl || source?.technique?.videoUrl || "";
+
+  if (!name) return "";
+
+  return `
+    <div class="techniqueHighlightBadge">
+      <span class="techniqueHighlightBadge__label">Técnica</span>
+      <span class="techniqueHighlightBadge__name">${escapeHtml(name)}</span>
+      ${note ? `<span class="techniqueHighlightBadge__note">${escapeHtml(note)}</span>` : ""}
+      ${details ? `<span class="techniqueHighlightBadge__details">${escapeHtml(details)}</span>` : ""}
+      ${videoUrl ? `<a class="techniqueHighlightBadge__link" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+    </div>
+  `;
+}
+
 function formatSeriesLabel(s) {
   if (!s) return "";
 
@@ -166,7 +186,7 @@ function renderWorkoutDraft() {
             <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>
             <div>${escapeHtml(ex.muscleGroup || "Sem agrupamento")}${ex.videoUrl ? " · vídeo vinculado" : ""}</div>
             ${ex.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(ex.notes)}</div>` : ""}
-            ${ex.techniqueName ? `<div style="margin-top:6px;"><b>Técnica:</b> ${escapeHtml(ex.techniqueName)}${ex.techniqueNote ? ` · ${escapeHtml(ex.techniqueNote)}` : ""}</div>` : ""}
+            ${buildTechniqueBadgeHtml(ex)}
             <div style="margin-top:6px;">Séries: ${ex.series.map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</div>
           </div>
           <div style="display:flex;gap:8px;height:max-content;flex-wrap:wrap;justify-content:flex-end;">
@@ -398,8 +418,9 @@ function renderWorkoutList() {
         </div>
         <div style="margin-top:8px;">
           ${(w.exercises || []).map((ex, exIdx) => `
-            <div style="margin:6px 0;">
-              ${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
+            <div class="studentWorkoutExerciseLine">
+              <div>${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</div>
+              ${buildTechniqueBadgeHtml(ex)}
             </div>
           `).join("")}
         </div>
