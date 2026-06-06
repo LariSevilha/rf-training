@@ -1605,3 +1605,223 @@ body,
 .techniqueInlineLink:hover {
   text-decoration: underline !important;
 }
+
+
+/* Observações visíveis para o aluno */
+.exerciseDescription {
+  margin-top: 7px !important;
+  color: rgba(255, 255, 255, .70) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.techniqueDescription {
+  margin-top: 8px !important;
+  display: grid !important;
+  gap: 4px !important;
+  color: rgba(255, 255, 255, .76) !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+}
+
+.techniqueDescription strong {
+  color: #ceac5e !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+}
+
+.techniqueDescription span,
+.techniqueDescription small {
+  color: rgba(255, 255, 255, .74) !important;
+  font-size: 12.5px !important;
+}
+
+.techniqueDescription small {
+  opacity: .82 !important;
+}
+
+
+/* ===== RF: Técnica mais visível para o aluno ===== */
+.alunoClean .exerciseInlineTitle {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+
+.alunoClean .studentTechniquePill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 5px 10px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, rgba(206, 172, 94, .22), rgba(206, 172, 94, .10)) !important;
+  color: #f3d88f !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: .02em !important;
+  white-space: nowrap !important;
+  box-shadow: 0 8px 20px rgba(206, 172, 94, .08) !important;
+}
+
+.alunoClean .studentTechniqueDot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #ceac5e !important;
+  box-shadow: 0 0 0 3px rgba(206, 172, 94, .14) !important;
+}
+
+.alunoClean .studentTechniqueLabel {
+  color: rgba(255, 255, 255, .66) !important;
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .08em !important;
+}
+
+.alunoClean .studentTechniquePill strong {
+  color: #ffe6a7 !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+}
+
+.alunoClean .studentTechniquePanel {
+  margin-top: 10px !important;
+  padding: 12px 14px !important;
+  border-radius: 16px !important;
+  background:
+    radial-gradient(circle at top left, rgba(206, 172, 94, .15), transparent 45%),
+    rgba(206, 172, 94, .07) !important;
+  border: 1px solid rgba(206, 172, 94, .18) !important;
+}
+
+.alunoClean .studentTechniquePanelHead {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 6px !important;
+}
+
+.alunoClean .studentTechniquePanelHead span {
+  color: rgba(255, 255, 255, .60) !important;
+  font-size: 10.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: .09em !important;
+  text-transform: uppercase !important;
+}
+
+.alunoClean .studentTechniquePanelHead strong {
+  color: #ceac5e !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+}
+
+.alunoClean .studentTechniquePanel p,
+.alunoClean .studentTechniquePanel small {
+  display: block !important;
+  margin: 0 !important;
+  color: rgba(255, 255, 255, .76) !important;
+  font-size: 12.8px !important;
+  line-height: 1.5 !important;
+}
+
+.alunoClean .studentTechniquePanel small {
+  margin-top: 4px !important;
+  opacity: .84 !important;
+}
+
+.alunoClean .studentTechniqueVideo {
+  display: inline-flex !important;
+  margin-top: 9px !important;
+  color: #f1d282 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+}
+
+.alunoClean .studentTechniqueVideo:hover {
+  text-decoration: underline !important;
+}
+
+@media (max-width: 640px) {
+  .alunoClean .studentTechniquePill {
+    width: fit-content !important;
+    padding: 5px 9px !important;
+  }
+
+  .alunoClean .studentTechniquePanel {
+    padding: 11px 12px !important;
+  }
+}
+
+/* =========================================================
+   RF ajuste solicitado: técnica simples abaixo da descrição
+   ========================================================= */
+.alunoClean .exerciseBlock .exerciseHeader {
+  align-items: flex-start !important;
+}
+
+.alunoClean .exerciseInlineTitle {
+  margin-bottom: 0 !important;
+}
+
+.alunoClean .exerciseDescription {
+  margin-top: 6px !important;
+  color: rgba(255, 255, 255, .68) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  font-weight: 500 !important;
+}
+
+.alunoClean .studentTechniqueVideoRow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  margin-top: 8px !important;
+}
+
+.alunoClean .studentTechniqueName {
+  color: #ceac5e !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+}
+
+.alunoClean .studentExerciseVideoLink {
+  display: inline-flex !important;
+  align-items: center !important;
+  color: #ceac5e !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  line-height: 1.25 !important;
+}
+
+.alunoClean .studentExerciseVideoLink:hover {
+  color: #ceac5e !important;
+  text-decoration: underline !important;
+}
+
+.alunoClean .studentTechniqueDescription {
+  margin: 6px 0 0 !important;
+  color: rgba(255, 255, 255, .68) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  font-weight: 500 !important;
+}
+
+.alunoClean .studentTechniquePill,
+.alunoClean .studentTechniquePanel,
+.alunoClean .studentTechniquePanelHead,
+.alunoClean .studentTechniqueVideo {
+  display: none !important;
+}
