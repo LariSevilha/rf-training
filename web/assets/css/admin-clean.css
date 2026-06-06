@@ -2033,3 +2033,52 @@
   border-radius: 14px;
   background: rgba(255, 255, 255, .025);
 }
+
+/* Técnica inline no treino manual — sem borda e na mesma linha do exercício */
+.exerciseInlineTitle,
+.studentWorkoutExerciseLine {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.studentWorkoutExerciseLine {
+  margin: 8px 0 !important;
+  padding: 8px 10px !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, .025) !important;
+}
+
+.techniqueInline {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: #ceac5e !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+  white-space: nowrap !important;
+}
+
+.techniqueInline::before {
+  content: "•";
+  color: rgba(206, 172, 94, .82);
+  font-weight: 900;
+}
+
+.techniqueInlineLink {
+  color: #f1d282 !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  opacity: .92 !important;
+}
+
+.techniqueInlineLink:hover {
+  text-decoration: underline !important;
+}

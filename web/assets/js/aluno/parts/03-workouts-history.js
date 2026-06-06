@@ -138,16 +138,13 @@ function buildStudentTechniqueHtml(item) {
   const technique = getTechniqueData(item);
   if (!technique?.name) return "";
 
+  const title = [technique.exerciseNote, technique.notes].filter(Boolean).join(" • ");
+
   return `
-    <div class="techniqueBox techniqueBox--highlight">
-      <div class="techniqueBoxTitle">
-        <span>Técnica</span>
-        <strong>${escapeHtml(technique.name || "")}</strong>
-      </div>
-      ${technique.exerciseNote ? `<div class="techniqueBoxNote">${escapeHtml(technique.exerciseNote)}</div>` : ""}
-      ${technique.notes ? `<small>${escapeHtml(technique.notes)}</small>` : ""}
-      ${technique.videoUrl ? `<a class="videoBtn" href="${escapeHtml(technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
-    </div>
+    <span class="techniqueInline" ${title ? `title="${escapeHtml(title)}"` : ""}>
+      ${escapeHtml(technique.name || "")}
+      ${technique.videoUrl ? `<a class="techniqueInlineLink" href="${escapeHtml(technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+    </span>
   `;
 }
 
@@ -175,9 +172,11 @@ function renderWorkouts() {
       <article class="exerciseBlock">
         <div class="exerciseHeader">
           <div>
-            <h3>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</h3>
+            <h3 class="exerciseInlineTitle">
+              <span>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</span>
+              ${buildStudentTechniqueHtml(item)}
+            </h3>
             ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
-            ${buildStudentTechniqueHtml(item)}
           </div>
 
           ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}

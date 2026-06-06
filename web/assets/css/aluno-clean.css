@@ -1564,3 +1564,44 @@ body,
   color: rgba(255, 255, 255, .82);
   margin-bottom: 6px;
 }
+
+/* Técnica inline no treino do aluno — sem caixa, sem borda e na mesma linha */
+.exerciseInlineTitle {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.techniqueInline {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: #ceac5e !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+  white-space: nowrap !important;
+}
+
+.techniqueInline::before {
+  content: "•";
+  color: rgba(206, 172, 94, .82);
+  font-weight: 900;
+}
+
+.techniqueInlineLink {
+  color: #f1d282 !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  opacity: .92 !important;
+}
+
+.techniqueInlineLink:hover {
+  text-decoration: underline !important;
+}
