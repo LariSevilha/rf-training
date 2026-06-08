@@ -43,7 +43,6 @@ function renderWorkoutTabs() {
   });
 }
 
-
 function formatDateTimeBR(value) {
   if (!value) return "—";
   const d = new Date(value);
@@ -93,7 +92,9 @@ function renderStudentHistory(records = []) {
           </div>
           <small>${groupedExercises.length} exercício(s)</small>
         </div>
+
         ${record.notes ? `<div class="studentHistoryNote">${escapeHtml(record.notes)}</div>` : ""}
+
         <div class="studentHistoryExercises">
           ${groupedExercises.map((exercise) => `
             <div class="studentHistoryExercise">
@@ -101,6 +102,7 @@ function renderStudentHistory(records = []) {
                 <strong>${escapeHtml(exercise.exerciseName || "Exercício")}</strong>
                 ${exercise.muscleGroup ? `<small>${escapeHtml(exercise.muscleGroup)}</small>` : ""}
               </div>
+
               <div class="studentHistorySets">
                 ${exercise.sets.map((log) => `
                   <div class="studentHistorySet">
@@ -118,9 +120,12 @@ function renderStudentHistory(records = []) {
   }).join("");
 }
 
-
 function getTechniqueData(item) {
-  const direct = item?.technique || item?.trainingTechnique || item?.techniqueData || null;
+  const direct =
+    item?.technique ||
+    item?.trainingTechnique ||
+    item?.techniqueData ||
+    null;
 
   const name =
     direct?.name ||
@@ -135,12 +140,16 @@ function getTechniqueData(item) {
   return {
     id: direct?.id || item?.techniqueId || item?.trainingTechniqueId || "",
     name: String(name || "").trim(),
+
     videoUrl:
       direct?.videoUrl ||
       direct?.url ||
+      direct?.video?.url ||
       item?.techniqueVideoUrl ||
       item?.trainingTechniqueVideoUrl ||
+      item?.techniqueUrl ||
       "",
+
     notes:
       direct?.notes ||
       direct?.description ||
@@ -148,6 +157,7 @@ function getTechniqueData(item) {
       item?.trainingTechniqueNotes ||
       item?.techniqueDescription ||
       "",
+
     exerciseNote:
       direct?.exerciseNote ||
       item?.techniqueNote ||
@@ -161,7 +171,7 @@ function buildStudentTechniqueHtml(item) {
   const technique = getTechniqueData(item);
   if (!technique?.name) return "";
 
-  return `<span class="studentTechniqueName">${escapeHtml(technique.name || "")}</span>`;
+  return `<span class="studentTechniqueName">${escapeHtml(technique.name)}</span>`;
 }
 
 function buildStudentTechniqueDescriptionHtml(item) {
@@ -177,11 +187,34 @@ function buildStudentTechniqueDescriptionHtml(item) {
   return `<p class="studentTechniqueDescription">${escapeHtml(note)}</p>`;
 }
 
-function buildExerciseVideoHtml(exercise) {
-  const videoUrl = String(exercise?.videoUrl || exercise?.video?.url || exercise?.video || "").trim();
+function buildTechniqueVideoHtml(item) {
+  const technique = getTechniqueData(item);
+  const videoUrl = String(technique?.videoUrl || "").trim();
+
   if (!videoUrl) return "";
 
-  return `<a class="studentExerciseVideoLink" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>`;
+  return `
+    <a class="studentExerciseVideoLink" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">
+      Ver técnica
+    </a>
+  `;
+}
+
+function buildExerciseVideoButton(exercise) {
+  const videoUrl = String(
+    exercise?.videoUrl ||
+    exercise?.video?.url ||
+    exercise?.video ||
+    ""
+  ).trim();
+
+  if (!videoUrl) return "";
+
+  return `
+    <a class="studentExerciseVideoLink" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">
+      Ver vídeo
+    </a>
+  `;
 }
 
 function renderWorkouts() {
@@ -212,16 +245,22 @@ function renderWorkouts() {
               <span>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</span>
             </h3>
 
-            ${item.notes ? `<p class="exerciseDescription">${escapeHtml(item.notes)}</p>` : ""}
+            ${item.notes ? `
+              <p class="exerciseDescription">
+                ${escapeHtml(item.notes)}
+              </p>
+            ` : ""}
 
             <div class="studentTechniqueVideoRow">
               ${buildStudentTechniqueHtml(item)}
-              ${buildExerciseVideoHtml(exercise)}
+              ${buildTechniqueVideoHtml(item)}
             </div>
 
             ${buildStudentTechniqueDescriptionHtml(item)}
+
+                        ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}
+
           </div>
-            ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}
         </div>
 
         <div class="seriesTable">
@@ -264,17 +303,15 @@ function renderWorkouts() {
   }).join("");
 
   workoutArea.innerHTML = `
-  <div class="workoutCard" data-workout-id="${escapeHtml(workout.id)}">
-    <div class="workoutHead">
-      <div>
-        <h2>${escapeHtml(workout.title || "Treino")}</h2>
-        ${workout.notes ? `<p>${escapeHtml(workout.notes)}</p>` : ""}
+    <div class="workoutCard" data-workout-id="${escapeHtml(workout.id)}">
+      <div class="workoutHead">
+        <div>
+          <h2>${escapeHtml(workout.title || "Treino")}</h2>
+          ${workout.notes ? `<p>${escapeHtml(workout.notes)}</p>` : ""}
+        </div>
       </div>
-    </div>
 
       ${exercisesHtml || `<div class="emptyState inline"><h3>Treino sem exercícios</h3><p>Entre em contato com o personal.</p></div>`}
-
-      
 
       <div class="workoutSaveFooter">
         <button class="saveWorkoutBtn" id="saveWorkoutBtn" type="button">Salvar execução</button>
@@ -285,6 +322,7 @@ function renderWorkouts() {
           <span>Histórico de evolução</span>
           <small>${historyOpen ? "Ocultar" : "Ver cargas anteriores"}</small>
         </button>
+
         <div class="studentHistoryContent" id="studentHistoryContent">
           ${historyOpen ? renderStudentHistory(workoutHistory) : ""}
         </div>
@@ -293,6 +331,7 @@ function renderWorkouts() {
   `;
 
   document.getElementById("saveWorkoutBtn")?.addEventListener("click", () => saveCurrentWorkout(workout.id));
+
   document.getElementById("studentHistoryToggle")?.addEventListener("click", async () => {
     historyOpen = !historyOpen;
     if (historyOpen && !workoutHistory.length) await syncWorkoutHistory(false);
