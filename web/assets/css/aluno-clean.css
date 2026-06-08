@@ -1772,7 +1772,7 @@ body,
 }
 
 .alunoClean .exerciseDescription {
-  margin-top: 6px !important;
+  margin: 6px 0 10px !important;
   color: rgba(255, 255, 255, .68) !important;
   font-size: 13px !important;
   line-height: 1.45 !important;
@@ -1812,7 +1812,7 @@ body,
 }
 
 .alunoClean .studentTechniqueDescription {
-  margin: 6px 0 0 !important;
+  margin: 0px 0 10px !important;
   color: rgba(255, 255, 255, .68) !important;
   font-size: 13px !important;
   line-height: 1.45 !important;

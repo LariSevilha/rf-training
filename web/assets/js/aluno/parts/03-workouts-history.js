@@ -212,7 +212,7 @@ function buildExerciseVideoButton(exercise) {
 
   return `
     <a class="studentExerciseVideoLink" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">
-      Ver exercicio
+      Ver vídeo
     </a>
   `;
 }
@@ -244,12 +244,13 @@ function renderWorkouts() {
             <h3 class="exerciseInlineTitle">
               <span>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</span>
             </h3>
-
+            
             ${item.notes ? `
               <p class="exerciseDescription">
-                ${escapeHtml(item.notes)}
+              ${escapeHtml(item.notes)}
               </p>
-            ` : ""}
+              ` : ""}
+              ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver exercício</a>` : ""}
 
             <div class="studentTechniqueVideoRow">
               ${buildStudentTechniqueHtml(item)}
@@ -258,7 +259,6 @@ function renderWorkouts() {
 
             ${buildStudentTechniqueDescriptionHtml(item)}
 
-                        ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}
 
           </div>
         </div>
