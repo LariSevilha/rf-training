@@ -212,7 +212,7 @@ function buildExerciseVideoButton(exercise) {
 
   return `
     <a class="studentExerciseVideoLink" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">
-      Ver vídeo
+      Ver exercicio
     </a>
   `;
 }
