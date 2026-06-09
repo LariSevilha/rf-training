@@ -27,7 +27,7 @@
 
 <body>
   <div class="loginWrap">
-    <div class="loginCard">
+    <form class="loginCard" id="loginForm">
 
       <div class="loginTop">
         <div class="logoBadge" aria-hidden="true">
@@ -61,11 +61,11 @@
         <span>Lembrar login?</span>
       </label>
 
-      <button class="btn btnFull" id="loginBtn" type="button">Entrar</button>
+      <button class="btn btnFull" id="loginBtn" type="submit">Entrar</button>
 
       <div class="msgBox error" id="err"></div>
       <div class="msgBox ok" id="ok"></div>
-
+    </form>
     </div>
   </div>
   <!-- Service Worker -->
