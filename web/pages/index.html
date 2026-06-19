@@ -25,9 +25,17 @@
   <link rel="apple-touch-icon" sizes="180x180" href="../img/logoapp-ios-180.png">
 </head>
 
-<body>
+<body class="loginBooting">
+  <div class="loginBootScreen" id="loginBootScreen" aria-live="polite" aria-busy="true">
+    <div class="loginBootCard">
+      <img src="../img/logoapp.png" alt="RF Fitness" draggable="false" />
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Verificando acesso…</p>
+    </div>
+  </div>
+
   <div class="loginWrap">
-    <form class="loginCard" id="loginForm">
+    <div class="loginCard">
 
       <div class="loginTop">
         <div class="logoBadge" aria-hidden="true">
@@ -61,11 +69,11 @@
         <span>Lembrar login?</span>
       </label>
 
-      <button class="btn btnFull" id="loginBtn" type="submit">Entrar</button>
+      <button class="btn btnFull" id="loginBtn" type="button">Entrar</button>
 
       <div class="msgBox error" id="err"></div>
       <div class="msgBox ok" id="ok"></div>
-    </form>
+
     </div>
   </div>
   <!-- Service Worker -->

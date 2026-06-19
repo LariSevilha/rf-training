@@ -152,4 +152,7 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
       ? ""
       : "Nenhum material disponível no momento.";
   }
+
+  document.body.classList.remove("studentBooting");
+  document.body.classList.add("studentReady");
 })();
