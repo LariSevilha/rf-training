@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const node_path_1 = __importDefault(require("node:path"));
+const node_crypto_1 = require("node:crypto");
 const fastify_1 = __importDefault(require("fastify"));
 const cors_1 = __importDefault(require("@fastify/cors"));
 const jwt_1 = __importDefault(require("@fastify/jwt"));
@@ -68,6 +69,41 @@ async function main() {
         return true;
     }
     const API_PREFIX = process.env.API_PREFIX ?? "/api"; // default /api
+    app.setErrorHandler((error, req, reply) => {
+        const status = error?.statusCode || error?.status || 500;
+        req.log.error({
+            err: error,
+            method: req.method,
+            url: req.url,
+            user: req.user?.sub || null,
+        }, "Erro tratado pela API");
+        if (error?.name === "ZodError" || error?.issues) {
+            return reply.code(400).send({
+                message: "Dados inválidos. Confira os campos enviados.",
+                issues: error.issues || [],
+            });
+        }
+        if (status === 401)
+            return reply.code(401).send({ message: "Sessão expirada. Faça login novamente." });
+        if (status === 403)
+            return reply.code(403).send({ message: error?.message || "Acesso não permitido." });
+        if (status === 404)
+            return reply.code(404).send({ message: error?.message || "Informação não encontrada." });
+        return reply.code(status >= 400 && status < 600 ? status : 500).send({
+            message: status >= 500 ? "Erro interno no servidor." : (error?.message || "Erro na solicitação."),
+        });
+    });
+    app.addHook("onResponse", async (req, reply) => {
+        if (reply.statusCode >= 400) {
+            req.log.warn({
+                method: req.method,
+                url: req.url,
+                statusCode: reply.statusCode,
+                responseTime: reply.elapsedTime,
+                user: req.user?.sub || null,
+            }, "Resposta com erro");
+        }
+    });
     // Health
     app.get(`${API_PREFIX}/health`, async () => ({ ok: true }));
     // ===== AUTH =====
@@ -586,15 +622,19 @@ async function main() {
         // Com Prisma 7 + @prisma/adapter-pg, createMany pode gerar ON CONFLICT mesmo sem skipDuplicates,
         // e isso quebra quando a constraint única antiga foi removida para permitir múltiplas execuções.
         const result = await prisma.$transaction(async (tx) => {
-            const session = await tx.studentWorkoutSession.create({
-                data: { userId: payload.sub, workoutId, weekStart, notes: body.notes || null },
-            });
+            const sessionId = (0, node_crypto_1.randomUUID)();
+            // SQL direto para evitar erro do Prisma/Postgres:
+            // "there is no unique or exclusion constraint matching the ON CONFLICT specification".
+            await tx.$executeRawUnsafe(`INSERT INTO "StudentWorkoutSession" ("id", "userId", "workoutId", "weekStart", "notes", "createdAt")
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`, sessionId, payload.sub, workoutId, weekStart, body.notes || null);
             for (const item of baseData) {
-                await tx.studentWorkoutLog.create({
-                    data: { ...item, sessionId: session.id },
-                });
+                await tx.$executeRawUnsafe(`INSERT INTO "StudentWorkoutLog"
+            ("id", "userId", "workoutId", "seriesId", "sessionId", "setIndex", "weight", "performedReps",
+             "workoutTitle", "exerciseName", "muscleGroup", "targetReps", "createdAt")
+           VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)`, (0, node_crypto_1.randomUUID)(), item.userId, item.workoutId, item.seriesId, sessionId, item.setIndex, item.weight, item.performedReps, item.workoutTitle, item.exerciseName, item.muscleGroup, item.targetReps);
             }
-            return { sessionId: session.id, saved: baseData.length };
+            return { sessionId, saved: baseData.length };
         });
         return { ok: true, ...result };
     });

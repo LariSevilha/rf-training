@@ -77,6 +77,44 @@ async function main() {
 
   const API_PREFIX = process.env.API_PREFIX ?? "/api"; // default /api
 
+  app.setErrorHandler((error: any, req: any, reply: any) => {
+    const status = error?.statusCode || error?.status || 500;
+
+    req.log.error({
+      err: error,
+      method: req.method,
+      url: req.url,
+      user: req.user?.sub || null,
+    }, "Erro tratado pela API");
+
+    if (error?.name === "ZodError" || error?.issues) {
+      return reply.code(400).send({
+        message: "Dados inválidos. Confira os campos enviados.",
+        issues: error.issues || [],
+      });
+    }
+
+    if (status === 401) return reply.code(401).send({ message: "Sessão expirada. Faça login novamente." });
+    if (status === 403) return reply.code(403).send({ message: error?.message || "Acesso não permitido." });
+    if (status === 404) return reply.code(404).send({ message: error?.message || "Informação não encontrada." });
+
+    return reply.code(status >= 400 && status < 600 ? status : 500).send({
+      message: status >= 500 ? "Erro interno no servidor." : (error?.message || "Erro na solicitação."),
+    });
+  });
+
+  app.addHook("onResponse", async (req: any, reply: any) => {
+    if (reply.statusCode >= 400) {
+      req.log.warn({
+        method: req.method,
+        url: req.url,
+        statusCode: reply.statusCode,
+        responseTime: reply.elapsedTime,
+        user: req.user?.sub || null,
+      }, "Resposta com erro");
+    }
+  });
+
   // Health
   app.get(`${API_PREFIX}/health`, async () => ({ ok: true }));
 

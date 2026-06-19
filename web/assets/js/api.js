@@ -13,7 +13,15 @@ async function readJson(res) {
   }
 
   if (!res.ok) {
-    const err = new Error(data?.message || `Erro HTTP ${res.status}`);
+    const friendly = {
+      400: "Dados inválidos. Confira as informações e tente novamente.",
+      401: "Sua sessão expirou. Faça login novamente.",
+      403: "Acesso não permitido para este usuário.",
+      404: "Informação não encontrada.",
+      500: "Erro interno no servidor. Tente novamente em alguns segundos.",
+    };
+
+    const err = new Error(data?.message || friendly[res.status] || `Erro HTTP ${res.status}`);
     err.status = res.status;
     err.payload = data;
     throw err;
@@ -23,8 +31,27 @@ async function readJson(res) {
 }
 
 async function apiFetch(path, options = {}) {
-  const res = await fetch(`${API}${path}`, options);
-  return readJson(res);
+  const controller = new AbortController();
+  const timeoutMs = Number(options.timeoutMs || 20000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(`${API}${path}`, {
+      ...options,
+      signal: options.signal || controller.signal,
+    });
+    return await readJson(res);
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Tempo de conexão esgotado. Verifique sua internet e tente novamente.");
+    }
+    if (!navigator.onLine) {
+      throw new Error("Você está offline. Conecte-se à internet e tente novamente.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function authHeaders(token, extra = {}) {
