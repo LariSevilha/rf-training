@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-06-01-aluno-modular";
+const VERSION = "rf-fitness-v2026-06-19-ios-icon-boot-fix";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -12,16 +12,18 @@ const APP_SHELL = [
 
   "/assets/css/main.css",
   "/assets/css/aluno-clean.css",
+
+  "/assets/js/api.js",
+  "/assets/js/guard.js",
+  "/assets/js/state.js",
+  "/assets/js/pdf.js",
+
   "/assets/js/aluno.js",
   "/assets/js/aluno/parts/00-service-worker-elements-state.js",
   "/assets/js/aluno/parts/01-tabs-menu-documents-overlay.js",
   "/assets/js/aluno/parts/02-install-flow.js",
   "/assets/js/aluno/parts/03-workouts-history.js",
   "/assets/js/aluno/parts/04-sync-and-init.js",
-  "/assets/js/api.js",
-  "/assets/js/guard.js",
-  "/assets/js/state.js",
-  "/assets/js/pdf.js",
 
   "/img/logoapp-192.png",
   "/img/logoapp-512.png",
@@ -35,11 +37,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(STATIC_CACHE);
-
-      await Promise.allSettled(
-        APP_SHELL.map((url) => cache.add(url))
-      );
-
+      await Promise.allSettled(APP_SHELL.map((url) => cache.add(url)));
       await self.skipWaiting();
     })()
   );
@@ -88,9 +86,7 @@ self.addEventListener("fetch", (event) => {
 
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
-  if (url.pathname.startsWith("/api")) {
-    return;
-  }
+  if (url.pathname.startsWith("/api")) return;
 
   if (
     url.hostname.includes("drive.google.com") ||
@@ -115,9 +111,7 @@ self.addEventListener("fetch", (event) => {
 
 async function networkFirst(request) {
   try {
-    const fresh = await fetch(request, {
-      cache: "no-store"
-    });
+    const fresh = await fetch(request, { cache: "no-store" });
 
     if (fresh && fresh.ok) {
       const cache = await caches.open(RUNTIME_CACHE);
