@@ -266,10 +266,6 @@ function openPdfOverlay(title, rawUrl) {
     const preview = driveToPreview(rawUrl);
     if (!preview) {
       setFrameHtml(placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível."));
-    } else if (typeof isIOSPdfUnsafe === "function" && isIOSPdfUnsafe()) {
-      // No Safari/iOS, Google Drive/PDF dentro de iframe costuma travar ao usar pinça de zoom.
-      // Por isso abrimos pelo visualizador nativo, sem resetar a página atual do PDF.
-      setFrameHtml(externalPdfHtml(title || "PDF", preview));
     } else if (pdfFrame && pdfFrame.dataset.currentSrc !== preview) {
       pdfFrame.dataset.currentSrc = preview;
       pdfFrame.src = preview;

@@ -1,13 +1,43 @@
-export function driveToPreview(url) {
+export function getDriveFileId(url) {
   if (!url) return "";
 
-  // transforma link do drive em preview
-  if (url.includes("drive.google.com")) {
-    return url.includes("/preview")
-      ? url
-      : url.replace(/\/view.*$/, "/preview");
+  try {
+    const parsed = new URL(String(url));
+
+    const byQuery = parsed.searchParams.get("id");
+    if (byQuery) return byQuery;
+
+    const match = parsed.pathname.match(/\/file\/d\/([^/]+)/);
+    if (match?.[1]) return match[1];
+
+    const foldersMatch = parsed.pathname.match(/\/folders\/([^/]+)/);
+    if (foldersMatch?.[1]) return foldersMatch[1];
+  } catch {
+    const match = String(url).match(/(?:id=|\/d\/)([a-zA-Z0-9_-]{10,})/);
+    if (match?.[1]) return match[1];
   }
-  return url;
+
+  return "";
+}
+
+export function driveToDirectPdf(url) {
+  if (!url) return "";
+
+  const raw = String(url).trim();
+
+  if (!raw.includes("drive.google.com")) return raw;
+
+  const id = getDriveFileId(raw);
+
+  // Link direto do arquivo. Não abre a tela do Google Drive.
+  // Em iPhone/iPad, isso costuma ser mais estável do que /preview dentro de iframe.
+  if (id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+
+  return raw.replace(/\/view.*$/, "").replace(/\/preview.*$/, "");
+}
+
+export function driveToPreview(url) {
+  return driveToDirectPdf(url);
 }
 
 export function placeholderHtml(title, msg) {
@@ -43,6 +73,8 @@ export function placeholderHtml(title, msg) {
     </html>
   `;
 }
+export const makePlaceholderHtml = placeholderHtml;
+
 export function isIOSPdfUnsafe() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
