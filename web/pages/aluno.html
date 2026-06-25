@@ -5,79 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>RF Fitness</title>
 
-  <link rel="manifest" href="/manifest.webmanifest">
-
-  <meta name="theme-color" content="#000000">
-  <meta name="background-color" content="#000000">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="application-name" content="RF Fitness">
-
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="RF Fitness">
-
-  <link rel="icon" type="image/png" sizes="192x192" href="/img/logoapp-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/img/logoapp-512.png">
-
-  <!-- Ícone específico do iOS: precisa ter fundo preto na própria imagem -->
-  <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png">
-
   <link rel="stylesheet" href="/assets/css/main.css" />
   <link rel="stylesheet" href="/assets/css/aluno-clean.css" />
 
-  <style>
-    body.studentBooting .topNav,
-    body.studentBooting .alunoPage,
-    body.studentBooting .pdfOverlay,
-    body.studentBooting .iosInstallMask {
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .studentBootScreen {
-      position: fixed;
-      inset: 0;
-      z-index: 99999;
-      background: #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    body:not(.studentBooting) .studentBootScreen {
-      display: none;
-    }
-
-    .studentBootCard {
-      width: min(320px, 100%);
-      text-align: center;
-      color: #fff;
-    }
-
-    .studentBootCard img {
-      width: 92px;
-      height: 92px;
-      object-fit: contain;
-      margin-bottom: 18px;
-    }
-
-    .spinner {
-      width: 34px;
-      height: 34px;
-      border: 3px solid rgba(255,255,255,.18);
-      border-top-color: #ceac5e;
-      border-radius: 999px;
-      margin: 0 auto 14px;
-      animation: rfSpin .8s linear infinite;
-    }
-
-    @keyframes rfSpin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="RF Fitness">
+  <link rel="icon" type="image/png" sizes="192x192" href="/img/logoapp-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/img/logoapp-512.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RF Fitness">
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png">
 </head>
-
 <body class="pageAluno alunoClean studentBooting">
   <div class="studentBootScreen" id="studentBootScreen" aria-live="polite" aria-busy="true">
     <div class="studentBootCard">
@@ -102,7 +43,6 @@
       <a class="topBrand" href="/pages/aluno.html" aria-label="Consultoria RF">
         <img class="topLogo" src="/img/logo-consultoria.png" alt="Consultoria RF" draggable="false">
       </a>
-
       <div class="topNavRight">
         <button class="pill installPill" id="installBtn" type="button" style="display:none;">Instalar</button>
         <button class="pill" id="logoutBtn" type="button">Sair</button>
@@ -117,7 +57,6 @@
         <h1><span id="greeting">Olá</span>, <span id="studentName">Aluno</span></h1>
         <p id="status">Carregando seus materiais…</p>
       </div>
-
       <button class="softRefresh" id="refreshStudentBtn" type="button">Atualizar</button>
     </section>
 
@@ -151,7 +90,6 @@
           <h2>Seu treino</h2>
           <p>Registre carga e repetições de cada série.</p>
         </div>
-
         <button class="softRefresh backHomeBtn" id="backHomeBtn" type="button">← Voltar ao início</button>
       </div>
 
@@ -166,8 +104,7 @@
     </section>
 
     <footer class="alunoFooter">
-      © <span id="yearNow">2026</span> Consultoria RF ·
-      <a href="./politica-privacidade.html">Política de Privacidade</a>
+      © <span id="yearNow">2026</span> Consultoria RF · <a href="./politica-privacidade.html">Política de Privacidade</a>
     </footer>
   </main>
 
@@ -176,14 +113,13 @@
       <button class="backBtn" id="pdfBack" type="button">← Voltar</button>
       <div class="pdfTitle" id="pdfTitle">PDF</div>
     </div>
-
     <div class="pdfFrameWrap">
       <iframe
         id="pdfFrame"
         title="Visualização de PDF"
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation">
-      </iframe>
-
+        loading="lazy"
+        referrerpolicy="no-referrer"
+      ></iframe>
       <div class="loadingLayer" id="loadingLayer">
         <div class="spinner"></div>
         <div class="loadingText">Carregando…</div>
@@ -195,47 +131,30 @@
   <div class="iosInstallMask" id="iosInstallModal" aria-hidden="true">
     <div class="iosInstallCard" role="dialog" aria-modal="true" aria-labelledby="iosInstallTitle">
       <button class="iosX" id="iosInstallClose" type="button" aria-label="Fechar">×</button>
-
       <div class="iosHead">
-        <div class="iosIcon" aria-hidden="true">
-          <img src="/img/logoapp.png" alt="RF" draggable="false">
-        </div>
-
-        <div>
-          <div class="iosBrand">RF FITNESS</div>
-          <div class="iosTitle" id="iosInstallTitle">Adicionar à Tela de Início</div>
-        </div>
+        <div class="iosIcon" aria-hidden="true"><img src="/img/logoapp.png" alt="RF" draggable="false"></div>
+        <div><div class="iosBrand">RF FITNESS</div><div class="iosTitle" id="iosInstallTitle">Adicionar à Tela de Início</div></div>
       </div>
-
       <div class="iosSteps">
         <div class="iosStep"><span class="n">1</span> Abra no <b>Safari</b></div>
         <div class="iosStep"><span class="n">2</span> Toque em <b>Compartilhar</b></div>
         <div class="iosStep"><span class="n">3</span> “Adicionar à Tela de Início”</div>
         <div class="iosStep"><span class="n">4</span> Toque em <b>Adicionar</b></div>
       </div>
-
-      <label class="iosDont">
-        <input type="checkbox" id="iosDontShowChk"> Não mostrar por 7 dias
-      </label>
-
-      <div class="iosActions">
-        <button class="btnGhost" id="iosLaterBtn" type="button">Agora não</button>
-        <button class="btn" id="iosOkBtn" type="button">Entendi</button>
-      </div>
+      <label class="iosDont"><input type="checkbox" id="iosDontShowChk"> Não mostrar por 7 dias</label>
+      <div class="iosActions"><button class="btnGhost" id="iosLaterBtn" type="button">Agora não</button><button class="btn" id="iosOkBtn" type="button">Entendi</button></div>
     </div>
   </div>
 
   <script>
     document.getElementById("yearNow").textContent = String(new Date().getFullYear());
-
     (function () {
       const h = new Date().getHours();
-      const t = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+      const t = (h < 12) ? "Bom dia" : (h < 18) ? "Boa tarde" : "Boa noite";
       const el = document.getElementById("greeting");
       if (el) el.textContent = t;
     })();
   </script>
-
   <script type="module" src="/assets/js/aluno.js"></script>
 </body>
 </html>

@@ -1579,3 +1579,56 @@ body,
 .pageAluno:not(.ready) #docsEmpty {
   display: none !important;
 }
+
+/* =========================================================
+   FIX FINAL — PDF iOS / Safari
+   Evita crash/reload ao usar zoom em PDF e estabiliza overlay.
+   ========================================================= */
+html.pdfLocked,
+body.pdfOpen {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+.alunoClean .pdfOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  background: #000 !important;
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: auto !important;
+  touch-action: pan-y !important;
+}
+
+.alunoClean .pdfOverlay.show {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.alunoClean .pdfFrameWrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+.alunoClean #pdfFrame {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+  background: #000 !important;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .alunoClean .pdfOverlay,
+  .alunoClean .pdfFrameWrap,
+  .alunoClean #pdfFrame {
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+  }
+}

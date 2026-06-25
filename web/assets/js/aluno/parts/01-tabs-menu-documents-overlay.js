@@ -232,19 +232,39 @@ function cardioWrittenHtml() {
   `;
 }
 
+function setFrameSrcOnce(src) {
+  if (!pdfFrame) return;
+
+  if (pdfFrame.dataset.currentSrc === src) {
+    hideLoading();
+    return;
+  }
+
+  pdfFrame.dataset.currentSrc = src;
+  pdfFrame.src = src;
+}
+
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
 
-  if (pdfFrame) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
-  }
+  const htmlSrc = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+  setFrameSrcOnce(htmlSrc);
 
   setTimeout(hideLoading, 250);
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+  document.documentElement.classList.add("pdfLocked");
+}
+
+function openPdfExternally(url) {
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+
+  if (!opened) {
+    window.location.href = url;
+  }
 }
 
 function openPdfOverlay(title, rawUrl) {
@@ -252,30 +272,35 @@ function openPdfOverlay(title, rawUrl) {
   showLoading();
 
   if (!rawUrl) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+    setFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
       placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-    );
+    ));
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+    setFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
       placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-    );
+    ));
     setTimeout(hideLoading, 250);
   } else {
     const preview = driveToPreview(rawUrl);
     if (!preview) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      setFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
         placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-      );
+      ));
       setTimeout(hideLoading, 250);
+    } else if (isIOSDevice()) {
+      hideLoading();
+      openPdfExternally(preview);
+      return;
     } else {
-      pdfFrame.src = preview;
+      setFrameSrcOnce(preview);
     }
   }
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+  document.documentElement.classList.add("pdfLocked");
 }
 
 function openContent(type) {
@@ -313,11 +338,19 @@ function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
+  document.documentElement.classList.remove("pdfLocked");
   hideLoading();
 
-  setTimeout(() => {
-    if (pdfFrame) pdfFrame.src = "about:blank";
-  }, 200);
+  // Não limpar imediatamente no iOS: isso evita recarregamentos e crashes do Safari
+  // quando o usuário alterna zoom/gestos ou volta rapidamente para o app.
+  if (!isIOSDevice()) {
+    setTimeout(() => {
+      if (pdfFrame) {
+        pdfFrame.removeAttribute("data-current-src");
+        pdfFrame.src = "about:blank";
+      }
+    }, 250);
+  }
 }
 
 pdfBack?.addEventListener("click", (ev) => {
