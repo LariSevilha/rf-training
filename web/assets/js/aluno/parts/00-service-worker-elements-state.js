@@ -38,16 +38,16 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (refreshing) return;
 
-    // Evita recarregar a área do aluno enquanto um PDF está aberto.
-    // Em iPhone/iPad isso podia derrubar o visualizador e voltar para a página inicial.
+    refreshing = true;
+
+    // Evita loop/travamento no iOS e impede que o PDF volte para a página inicial
+    // quando o Service Worker assume o controle durante a visualização.
     if (document.body.classList.contains("pdfOpen")) {
-      refreshing = true;
-      sessionStorage.setItem("rfNeedsReloadAfterPdf", "1");
+      console.log("Atualização preparada; reload adiado porque o PDF está aberto.");
       return;
     }
 
-    refreshing = true;
-    window.location.reload();
+    console.log("Service Worker atualizado; próxima navegação já usará a nova versão.");
   });
 
   navigator.serviceWorker.addEventListener("message", (event) => {
