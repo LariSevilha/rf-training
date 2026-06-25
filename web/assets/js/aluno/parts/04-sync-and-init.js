@@ -120,39 +120,45 @@ async function refreshAll() {
 refreshStudentBtn?.addEventListener("click", refreshAll);
 
 (async function init() {
-  setOfflineUI();
+  try {
+    setOfflineUI();
 
-  session = await requireAuth("student");
-  if (!session) return;
+    session = await requireAuth("student");
+    if (!session) return;
 
-  let displayName = (session?.user?.name || "").trim();
+    let displayName = (session?.user?.name || "").trim();
 
-  if (!displayName) {
-    try {
-      const me = await apiMe(session.token);
-      displayName = (me?.user?.name || "").trim();
-    } catch {}
+    if (!displayName) {
+      try {
+        const me = await apiMe(session.token);
+        displayName = (me?.user?.name || "").trim();
+      } catch {}
+    }
+
+    if (!displayName) displayName = "Aluno";
+    if (nameEl) nameEl.textContent = displayName;
+
+    setTab("documents");
+
+    await Promise.allSettled([
+      syncDocuments(),
+      syncWorkouts(false),
+      syncExtraItems(),
+    ]);
+
+    renderHomeMenu();
+
+    if (statusEl) {
+      statusEl.textContent = hasAnyMaterial()
+        ? ""
+        : "Nenhum material disponível no momento.";
+    }
+  } catch (error) {
+    console.error("Erro ao iniciar área do aluno:", error);
+    showMessage("error", "Erro ao carregar acesso", error?.message || "Atualize a página e tente novamente.");
+    if (statusEl) statusEl.textContent = "Não foi possível carregar o acesso.";
+  } finally {
+    document.body.classList.remove("studentBooting");
+    document.body.classList.add("studentReady");
   }
-
-  if (!displayName) displayName = "Aluno";
-  if (nameEl) nameEl.textContent = displayName;
-
-  setTab("documents");
-
-  await Promise.allSettled([
-    syncDocuments(),
-    syncWorkouts(false),
-    syncExtraItems(),
-  ]);
-
-  renderHomeMenu();
-
-  if (statusEl) {
-    statusEl.textContent = hasAnyMaterial()
-      ? ""
-      : "Nenhum material disponível no momento.";
-  }
-
-  document.body.classList.remove("studentBooting");
-  document.body.classList.add("studentReady");
 })();

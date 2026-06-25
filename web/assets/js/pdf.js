@@ -83,3 +83,21 @@ export function placeholderHtml(title, msg) {
 }
 
 export const makePlaceholderHtml = placeholderHtml;
+
+
+// Compatibilidade com versões anteriores do aluno.js.
+// No iPhone/Safari, o link direto do Drive pode causar erro de permissão.
+// Por isso, esta função mantém o mesmo endereço seguro usado no iframe: /preview.
+export function driveToDirectPdf(url) {
+  return driveToPreview(url);
+}
+
+export function isIOSPdfUnsafe() {
+  return false;
+}
+
+export function externalPdfHtml(title, url) {
+  const safeTitle = String(title || "PDF").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  const safeUrl = driveToPreview(url);
+  return placeholderHtml(safeTitle, safeUrl ? "Abrindo material dentro do aplicativo." : "Material não configurado.");
+}
