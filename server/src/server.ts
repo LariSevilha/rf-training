@@ -85,14 +85,6 @@ async function main() {
 
   await app.register(jwt, { secret: process.env.JWT_SECRET! });
 
-  // ✅ SERVE O WEB/ COMO SITE (PWA)
-  // Assim /manifest.webmanifest e /service-worker.js deixam de dar 404
-  app.register(fastifyStatic, {
-    root: path.join(__dirname, "../../web"),
-    prefix: "/", // serve em /
-    index: false, // não forçar index.html (você usa /pages/*)
-  });
-
   app.decorate("auth", async (req: any, reply: any) => {
     try {
       await req.jwtVerify();
@@ -1349,6 +1341,15 @@ async function main() {
     await prisma.user.delete({ where: { email } });
 
     return { ok: true };
+  });
+
+
+  // ✅ SERVE O WEB/ COMO SITE (PWA)
+  // IMPORTANTE: fica depois das rotas /api para não interceptar endpoints novos.
+  app.register(fastifyStatic, {
+    root: path.join(__dirname, "../../web"),
+    prefix: "/",
+    index: false,
   });
 
   const port = Number(process.env.PORT) || 3333;
