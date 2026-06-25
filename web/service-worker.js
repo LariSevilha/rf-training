@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-06-19-dashboard-stability";
+const VERSION = "rf-fitness-v2026-06-25-pdf-proxy-route-fix-v2";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -159,3 +159,4 @@ async function cacheFirst(request) {
     return caches.match(request);
   }
 }
+// build: pdf-proxy-route-fix-v2

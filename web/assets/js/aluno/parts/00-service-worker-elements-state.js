@@ -87,7 +87,6 @@ let session = null;
 let deferredPrompt = null;
 let installPromptSeen = false;
 let fallbackTimer = null;
-let currentPdfObjectUrl = "";
 
 let workouts = [];
 let extraItems = [];
