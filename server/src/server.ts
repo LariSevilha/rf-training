@@ -39,6 +39,41 @@ function parseDateParam(value: any) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+
+function getDriveFileId(url: string) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+
+  try {
+    const parsed = new URL(raw);
+    const byId = parsed.searchParams.get("id");
+    if (byId) return byId;
+
+    const fileMatch = parsed.pathname.match(/\/file\/d\/([^/]+)/);
+    if (fileMatch?.[1]) return fileMatch[1];
+
+    const openMatch = parsed.pathname.match(/\/open\/([^/]+)/);
+    if (openMatch?.[1]) return openMatch[1];
+  } catch {
+    const fallback = raw.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]{10,})/);
+    if (fallback?.[1]) return fallback[1];
+  }
+
+  return "";
+}
+
+function normalizePdfSource(rawUrl: string) {
+  const raw = String(rawUrl || "").trim();
+  if (!raw) return "";
+
+  const driveId = raw.includes("drive.google.com") ? getDriveFileId(raw) : "";
+  if (driveId) {
+    return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(driveId)}`;
+  }
+
+  return raw;
+}
+
 async function main() {
   const app = Fastify({ logger: true });
 
@@ -76,44 +111,6 @@ async function main() {
   }
 
   const API_PREFIX = process.env.API_PREFIX ?? "/api"; // default /api
-
-  app.setErrorHandler((error: any, req: any, reply: any) => {
-    const status = error?.statusCode || error?.status || 500;
-
-    req.log.error({
-      err: error,
-      method: req.method,
-      url: req.url,
-      user: req.user?.sub || null,
-    }, "Erro tratado pela API");
-
-    if (error?.name === "ZodError" || error?.issues) {
-      return reply.code(400).send({
-        message: "Dados inválidos. Confira os campos enviados.",
-        issues: error.issues || [],
-      });
-    }
-
-    if (status === 401) return reply.code(401).send({ message: "Sessão expirada. Faça login novamente." });
-    if (status === 403) return reply.code(403).send({ message: error?.message || "Acesso não permitido." });
-    if (status === 404) return reply.code(404).send({ message: error?.message || "Informação não encontrada." });
-
-    return reply.code(status >= 400 && status < 600 ? status : 500).send({
-      message: status >= 500 ? "Erro interno no servidor." : (error?.message || "Erro na solicitação."),
-    });
-  });
-
-  app.addHook("onResponse", async (req: any, reply: any) => {
-    if (reply.statusCode >= 400) {
-      req.log.warn({
-        method: req.method,
-        url: req.url,
-        statusCode: reply.statusCode,
-        responseTime: reply.elapsedTime,
-        user: req.user?.sub || null,
-      }, "Resposta com erro");
-    }
-  });
 
   // Health
   app.get(`${API_PREFIX}/health`, async () => ({ ok: true }));
@@ -180,6 +177,63 @@ async function main() {
     return out;
   });
 
+
+
+  // ===== PDF PROXY - ALUNO =====
+  // Evita carregar o Google Drive dentro do iframe no iPhone/Safari.
+  // O aluno continua vendo o PDF dentro do sistema, mas o arquivo é servido pelo próprio domínio.
+  app.get(`${API_PREFIX}/student/pdf-proxy`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    const payload = req.user as JwtPayload;
+
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user) return reply.code(404).send({ message: "Usuário não encontrado" });
+    if (!user.active) return reply.code(403).send({ message: "Usuário desativado" });
+
+    const rawUrl = String(req.query?.url || "").trim();
+    if (!rawUrl) return reply.code(400).send({ message: "URL do PDF não informada" });
+
+    let target = "";
+    try {
+      target = normalizePdfSource(rawUrl);
+      const parsed = new URL(target);
+      if (!["https:", "http:"].includes(parsed.protocol)) {
+        return reply.code(400).send({ message: "Link inválido" });
+      }
+    } catch {
+      return reply.code(400).send({ message: "Link inválido" });
+    }
+
+    try {
+      const response = await fetch(target, {
+        redirect: "follow",
+        headers: {
+          "User-Agent": "Mozilla/5.0 RF-Fitness-PDF-Proxy",
+          "Accept": "application/pdf,application/octet-stream,*/*"
+        }
+      });
+
+      if (!response.ok) {
+        return reply.code(response.status).send({ message: "Não foi possível abrir este PDF. Verifique se o arquivo está liberado para qualquer pessoa com o link." });
+      }
+
+      const contentType = response.headers.get("content-type") || "application/pdf";
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      if (contentType.includes("text/html")) {
+        return reply.code(403).send({ message: "O Drive não liberou o arquivo como PDF. Deixe o arquivo como ‘Qualquer pessoa com o link pode visualizar’." });
+      }
+
+      return reply
+        .header("Content-Type", contentType.includes("pdf") ? "application/pdf" : contentType)
+        .header("Content-Disposition", "inline; filename=material.pdf")
+        .header("Cache-Control", "private, max-age=0, no-store")
+        .send(buffer);
+    } catch (error) {
+      req.log.error(error);
+      return reply.code(500).send({ message: "Erro ao carregar o PDF." });
+    }
+  });
 
   // ===== ITENS EXTRAS - ALUNO =====
   app.get(`${API_PREFIX}/extra-items`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
