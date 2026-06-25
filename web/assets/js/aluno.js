@@ -8,7 +8,7 @@ import {
   apiExtraItems,
 } from "./api.js";
 import { clearSession } from "./state.js";
-import { driveToPreview, driveToDirectPdf, placeholderHtml, isIOSPdfUnsafe, externalPdfHtml } from "./pdf.js";
+import { driveToPreview, driveToDirectPdf, placeholderHtml, isIOSPdfUnsafe, externalPdfHtml, pdfProxyUrl, loadPdfAsBlobUrl } from "./pdf.js";
 
 // Arquivo principal da área do aluno.
 // As funções reais ficam separadas em web/assets/js/aluno/parts/.
@@ -26,6 +26,8 @@ Object.assign(window, {
   placeholderHtml,
   isIOSPdfUnsafe,
   externalPdfHtml,
+  pdfProxyUrl,
+  loadPdfAsBlobUrl,
 });
 
 const ALUNO_PARTS = [

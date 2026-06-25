@@ -31,16 +31,47 @@ export function driveToPreview(url) {
   if (!raw.includes("drive.google.com")) return raw;
 
   const id = getDriveFileId(raw);
-
-  // Mantém o PDF abrindo dentro do sistema em iframe.
-  // Não usamos /uc?export=download porque esse formato pode perder a permissão
-  // do Google Drive e mostrar erro de acesso para o aluno.
   if (id) return `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview`;
 
   if (raw.includes("/preview")) return raw;
   if (raw.includes("/view")) return raw.replace(/\/view(?:\?.*)?$/, "/preview");
 
   return raw;
+}
+
+export function pdfProxyUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+  return `/api/student/pdf-proxy?url=${encodeURIComponent(raw)}`;
+}
+
+export async function loadPdfAsBlobUrl(url, token) {
+  const endpoint = pdfProxyUrl(url);
+  if (!endpoint) throw new Error("Material não configurado.");
+
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let message = `Erro HTTP ${response.status}`;
+    try {
+      const data = await response.json();
+      message = data?.message || message;
+    } catch {}
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const type = blob.type || response.headers.get("content-type") || "";
+
+  if (type.includes("text/html")) {
+    throw new Error("O arquivo não veio como PDF. Verifique a permissão do Drive.");
+  }
+
+  return URL.createObjectURL(blob);
 }
 
 export function placeholderHtml(title, msg) {
@@ -65,10 +96,10 @@ export function placeholderHtml(title, msg) {
           }
           .box{
             text-align:center;
-            opacity:.9;
+            opacity:.95;
             max-width:420px;
           }
-          h1{margin:0 0 8px;font-size:22px;}
+          h1{margin:0 0 8px;font-size:22px;line-height:1.1;}
           p{margin:0;line-height:1.45;color:rgba(255,255,255,.72);}
         </style>
       </head>
@@ -84,12 +115,9 @@ export function placeholderHtml(title, msg) {
 
 export const makePlaceholderHtml = placeholderHtml;
 
-
-// Compatibilidade com versões anteriores do aluno.js.
-// No iPhone/Safari, o link direto do Drive pode causar erro de permissão.
-// Por isso, esta função mantém o mesmo endereço seguro usado no iframe: /preview.
+// Compatibilidade com versões antigas.
 export function driveToDirectPdf(url) {
-  return driveToPreview(url);
+  return pdfProxyUrl(url) || driveToPreview(url);
 }
 
 export function isIOSPdfUnsafe() {
@@ -99,5 +127,5 @@ export function isIOSPdfUnsafe() {
 export function externalPdfHtml(title, url) {
   const safeTitle = String(title || "PDF").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
   const safeUrl = driveToPreview(url);
-  return placeholderHtml(safeTitle, safeUrl ? "Abrindo material dentro do aplicativo." : "Material não configurado.");
+  return placeholderHtml(safeTitle, safeUrl ? "Carregando material dentro do aplicativo." : "Material não configurado.");
 }

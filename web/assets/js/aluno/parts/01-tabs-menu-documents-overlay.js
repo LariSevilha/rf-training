@@ -247,36 +247,65 @@ function openHtmlOverlay(title, html) {
   document.body.classList.add("pdfOpen");
 }
 
-function openPdfOverlay(title, rawUrl) {
+async function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  const setFrameHtml = (html) => {
+  const setFrameHtml = (html, delay = 250) => {
     if (pdfFrame) {
+      pdfFrame.dataset.currentSrc = "";
       pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
     }
-    setTimeout(hideLoading, 250);
+    setTimeout(hideLoading, delay);
   };
 
-  if (!rawUrl) {
-    setFrameHtml(placeholderHtml("Material não configurado", "Entre em contato com o personal."));
-  } else if (!navigator.onLine) {
-    setFrameHtml(placeholderHtml("Você está offline", "Conecte-se para abrir este material."));
-  } else {
-    const preview = driveToPreview(rawUrl);
-    if (!preview) {
-      setFrameHtml(placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível."));
-    } else if (pdfFrame && pdfFrame.dataset.currentSrc !== preview) {
-      pdfFrame.dataset.currentSrc = preview;
-      pdfFrame.src = preview;
-    } else {
-      hideLoading();
+  const releaseCurrentPdf = () => {
+    if (currentPdfObjectUrl) {
+      try { URL.revokeObjectURL(currentPdfObjectUrl); } catch {}
+      currentPdfObjectUrl = "";
     }
-  }
+  };
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+
+  if (!rawUrl) {
+    releaseCurrentPdf();
+    setFrameHtml(placeholderHtml("Material não configurado", "Entre em contato com o personal."));
+    return;
+  }
+
+  if (!navigator.onLine) {
+    releaseCurrentPdf();
+    setFrameHtml(placeholderHtml("Você está offline", "Conecte-se para abrir este material."));
+    return;
+  }
+
+  if (!session?.token) {
+    releaseCurrentPdf();
+    setFrameHtml(placeholderHtml("Acesso expirado", "Entre novamente para abrir este material."));
+    return;
+  }
+
+  setFrameHtml(placeholderHtml("Carregando PDF", "Aguarde alguns segundos…"), 12000);
+
+  try {
+    const objectUrl = await loadPdfAsBlobUrl(rawUrl, session.token);
+
+    releaseCurrentPdf();
+    currentPdfObjectUrl = objectUrl;
+
+    if (pdfFrame) {
+      pdfFrame.dataset.currentSrc = objectUrl;
+      pdfFrame.src = objectUrl;
+    }
+  } catch (error) {
+    releaseCurrentPdf();
+    setFrameHtml(placeholderHtml("Não foi possível abrir o PDF", error?.message || "Verifique o link e a permissão do arquivo."));
+  } finally {
+    setTimeout(hideLoading, 350);
+  }
 }
 
 function openContent(type) {
@@ -320,6 +349,11 @@ function closePdf() {
     if (pdfFrame) {
       pdfFrame.src = "about:blank";
       pdfFrame.dataset.currentSrc = "";
+    }
+
+    if (currentPdfObjectUrl) {
+      try { URL.revokeObjectURL(currentPdfObjectUrl); } catch {}
+      currentPdfObjectUrl = "";
     }
 
     if (sessionStorage.getItem("rfNeedsReloadAfterPdf") === "1") {

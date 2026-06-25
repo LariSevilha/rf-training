@@ -1582,11 +1582,10 @@ body,
 
 
 /* =========================================================
-   CORREÇÃO PDF iOS/ZOOM — evita recarregar o PDF no pinch zoom
+   CORREÇÃO PDF iOS/ZOOM — PDF servido pelo próprio domínio
    ========================================================= */
 .alunoClean.pdfOpen {
   overflow: hidden !important;
-  touch-action: none;
 }
 
 .alunoClean.pdfOpen .pdfOverlay {
@@ -1596,13 +1595,14 @@ body,
   height: 100dvh !important;
   max-height: 100dvh !important;
   overflow: hidden !important;
+  background: #050505 !important;
 }
 
 .alunoClean .pdfFrameWrap {
   flex: 1 1 auto !important;
   min-height: 0 !important;
   overflow: hidden !important;
-  background: #050505 !important;
+  background: #111 !important;
 }
 
 .alunoClean #pdfFrame {
@@ -1611,17 +1611,13 @@ body,
   min-height: 0 !important;
   border: 0 !important;
   display: block !important;
-  background: #050505 !important;
+  background: #111 !important;
+  touch-action: auto !important;
 }
 
 @supports (-webkit-touch-callout: none) {
   .alunoClean.pdfOpen .pdfOverlay {
     height: -webkit-fill-available !important;
     max-height: -webkit-fill-available !important;
-  }
-
-  .alunoClean.pdfOpen {
-    position: fixed !important;
-    width: 100% !important;
   }
 }
