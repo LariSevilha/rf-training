@@ -232,75 +232,55 @@ function cardioWrittenHtml() {
   `;
 }
 
-function setFrameSrcOnce(src) {
-  if (!pdfFrame) return;
-
-  if (pdfFrame.dataset.currentSrc === src) {
-    hideLoading();
-    return;
-  }
-
-  pdfFrame.dataset.currentSrc = src;
-  pdfFrame.src = src;
-}
-
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
 
-  const htmlSrc = "data:text/html;charset=utf-8," + encodeURIComponent(html);
-  setFrameSrcOnce(htmlSrc);
+  if (pdfFrame) {
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+  }
 
   setTimeout(hideLoading, 250);
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-  document.documentElement.classList.add("pdfLocked");
-}
-
-function openPdfExternally(url) {
-  const opened = window.open(url, "_blank", "noopener,noreferrer");
-
-  if (!opened) {
-    window.location.href = url;
-  }
 }
 
 function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
+  const setFrameHtml = (html) => {
+    if (pdfFrame) {
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+    }
+    setTimeout(hideLoading, 250);
+  };
+
   if (!rawUrl) {
-    setFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-    ));
-    setTimeout(hideLoading, 250);
+    setFrameHtml(placeholderHtml("Material não configurado", "Entre em contato com o personal."));
   } else if (!navigator.onLine) {
-    setFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-    ));
-    setTimeout(hideLoading, 250);
+    setFrameHtml(placeholderHtml("Você está offline", "Conecte-se para abrir este material."));
   } else {
     const preview = driveToPreview(rawUrl);
     if (!preview) {
-      setFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-      ));
-      setTimeout(hideLoading, 250);
-    } else if (isIOSDevice()) {
-      hideLoading();
-      openPdfExternally(preview);
-      return;
+      setFrameHtml(placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível."));
+    } else if (typeof isIOSPdfUnsafe === "function" && isIOSPdfUnsafe()) {
+      // No Safari/iOS, Google Drive/PDF dentro de iframe costuma travar ao usar pinça de zoom.
+      // Por isso abrimos pelo visualizador nativo, sem resetar a página atual do PDF.
+      setFrameHtml(externalPdfHtml(title || "PDF", preview));
+    } else if (pdfFrame && pdfFrame.dataset.currentSrc !== preview) {
+      pdfFrame.dataset.currentSrc = preview;
+      pdfFrame.src = preview;
     } else {
-      setFrameSrcOnce(preview);
+      hideLoading();
     }
   }
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-  document.documentElement.classList.add("pdfLocked");
 }
 
 function openContent(type) {
@@ -338,19 +318,19 @@ function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
-  document.documentElement.classList.remove("pdfLocked");
   hideLoading();
 
-  // Não limpar imediatamente no iOS: isso evita recarregamentos e crashes do Safari
-  // quando o usuário alterna zoom/gestos ou volta rapidamente para o app.
-  if (!isIOSDevice()) {
-    setTimeout(() => {
-      if (pdfFrame) {
-        pdfFrame.removeAttribute("data-current-src");
-        pdfFrame.src = "about:blank";
-      }
-    }, 250);
-  }
+  setTimeout(() => {
+    if (pdfFrame) {
+      pdfFrame.src = "about:blank";
+      pdfFrame.dataset.currentSrc = "";
+    }
+
+    if (sessionStorage.getItem("rfNeedsReloadAfterPdf") === "1") {
+      sessionStorage.removeItem("rfNeedsReloadAfterPdf");
+      window.location.reload();
+    }
+  }, 200);
 }
 
 pdfBack?.addEventListener("click", (ev) => {

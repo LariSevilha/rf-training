@@ -38,6 +38,14 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (refreshing) return;
 
+    // Evita recarregar a área do aluno enquanto um PDF está aberto.
+    // Em iPhone/iPad isso podia derrubar o visualizador e voltar para a página inicial.
+    if (document.body.classList.contains("pdfOpen")) {
+      refreshing = true;
+      sessionStorage.setItem("rfNeedsReloadAfterPdf", "1");
+      return;
+    }
+
     refreshing = true;
     window.location.reload();
   });

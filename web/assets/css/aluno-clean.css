@@ -1580,55 +1580,48 @@ body,
   display: none !important;
 }
 
+
 /* =========================================================
-   FIX FINAL — PDF iOS / Safari
-   Evita crash/reload ao usar zoom em PDF e estabiliza overlay.
+   CORREÇÃO PDF iOS/ZOOM — evita recarregar o PDF no pinch zoom
    ========================================================= */
-html.pdfLocked,
-body.pdfOpen {
+.alunoClean.pdfOpen {
   overflow: hidden !important;
-  overscroll-behavior: none !important;
+  touch-action: none;
 }
 
-.alunoClean .pdfOverlay {
+.alunoClean.pdfOpen .pdfOverlay {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 99999 !important;
-  background: #000 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
   overflow: hidden !important;
-  overscroll-behavior: contain !important;
-  -webkit-overflow-scrolling: auto !important;
-  touch-action: pan-y !important;
-}
-
-.alunoClean .pdfOverlay.show {
-  display: flex !important;
-  flex-direction: column !important;
 }
 
 .alunoClean .pdfFrameWrap {
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  width: 100% !important;
   overflow: hidden !important;
-  background: #000 !important;
-  overscroll-behavior: contain !important;
-  -webkit-overflow-scrolling: auto !important;
+  background: #050505 !important;
 }
 
 .alunoClean #pdfFrame {
-  display: block !important;
   width: 100% !important;
   height: 100% !important;
+  min-height: 0 !important;
   border: 0 !important;
-  background: #000 !important;
+  display: block !important;
+  background: #050505 !important;
 }
 
 @supports (-webkit-touch-callout: none) {
-  .alunoClean .pdfOverlay,
-  .alunoClean .pdfFrameWrap,
-  .alunoClean #pdfFrame {
-    transform: translateZ(0) !important;
-    backface-visibility: hidden !important;
+  .alunoClean.pdfOpen .pdfOverlay {
+    height: -webkit-fill-available !important;
+    max-height: -webkit-fill-available !important;
+  }
+
+  .alunoClean.pdfOpen {
+    position: fixed !important;
+    width: 100% !important;
   }
 }
