@@ -235,27 +235,14 @@ function cardioWrittenHtml() {
 function setPdfFrameHtml(html) {
   if (!pdfFrame) return;
 
-  pdfFrame.removeAttribute("sandbox");
   pdfFrame.removeAttribute("src");
   pdfFrame.srcdoc = html;
 }
 
-function setPdfFrameUrl(url, options = {}) {
+function setPdfFrameUrl(url) {
   if (!pdfFrame) return;
 
   pdfFrame.removeAttribute("srcdoc");
-
-  if (options.sandboxDrivePreview) {
-    // Permite o preview do Drive funcionar, mas não permite que ele navegue a
-    // janela principal do app quando o zoom chega no limite. Isso evita voltar
-    // para a tela inicial sem quebrar permissão do Google Drive.
-    pdfFrame.setAttribute(
-      "sandbox",
-      "allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-    );
-  } else {
-    pdfFrame.removeAttribute("sandbox");
-  }
 
   // Evita trocar para about:blank antes do PDF. Essa troca intermediária
   // fazia alguns WebViews/PWAs redesenharem a tela e perderem o estado do zoom.
@@ -266,24 +253,8 @@ function setPdfFrameUrl(url, options = {}) {
   });
 }
 
-
-// ZOOM MOBILE V5
-// A página do aluno usava maximum-scale=1/user-scalable=no. Isso impede o
-// gesto de pinça em Android/iOS: o preview do Drive só aceitava zoom por duplo
-// toque. Ao abrir PDF, liberamos escala; ao fechar, mantemos a página estável.
-const rfViewportMeta = document.querySelector('meta[name="viewport"]');
-const rfDefaultViewport = rfViewportMeta?.getAttribute("content") || "width=device-width, initial-scale=1, viewport-fit=cover";
-const rfPdfZoomViewport = "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover";
-
-function setPdfZoomViewport(enabled) {
-  if (!rfViewportMeta) return;
-  rfViewportMeta.setAttribute("content", enabled ? rfPdfZoomViewport : rfDefaultViewport);
-}
-
 function showPdfOverlay(title = "PDF") {
   if (pdfTitle) pdfTitle.textContent = title;
-
-  setPdfZoomViewport(true);
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
@@ -322,7 +293,7 @@ function openPdfOverlay(title, rawUrl) {
     return;
   }
 
-  setPdfFrameUrl(preview, { sandboxDrivePreview: isDriveUrl(preview) });
+  setPdfFrameUrl(preview);
 }
 
 function openContent(type) {
@@ -357,8 +328,6 @@ function openContent(type) {
 }
 
 function closePdf() {
-  setPdfZoomViewport(false);
-
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
@@ -366,7 +335,6 @@ function closePdf() {
 
   setTimeout(() => {
     if (pdfFrame) {
-      pdfFrame.removeAttribute("sandbox");
       pdfFrame.removeAttribute("srcdoc");
       pdfFrame.src = "about:blank";
     }

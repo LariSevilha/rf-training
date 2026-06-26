@@ -27,45 +27,27 @@ function getDriveFileId(url) {
   }
 }
 
-export function isDriveUrl(url) {
-  return /drive\.google\.com/i.test(String(url || ""));
-}
-
 export function driveToPreview(url) {
   const raw = String(url || "").trim();
   if (!raw) return "";
-
-  // Se alguém colou um link do Google Viewer antigo, retiramos a camada extra
-  // e abrimos o material original. O Google Viewer dentro de outro iframe é
-  // mais instável no mobile.
-  if (/docs\.google\.com\/gview/i.test(raw)) {
-    try {
-      const parsed = new URL(raw);
-      const originalUrl = parsed.searchParams.get("url") || "";
-      if (originalUrl) return driveToPreview(originalUrl);
-    } catch {
-      // segue para as outras regras
-    }
-  }
 
   if (raw.includes("drive.google.com")) {
     const fileId = getDriveFileId(raw);
 
     if (fileId) {
-      // V7: voltamos para /preview porque o link direto uc?export=download
-      // pode pedir permissão/baixar em vez de visualizar dentro do sistema.
-      // A proteção contra reload fica no sandbox aplicado dinamicamente no
-      // iframe, bloqueando navegação para fora do overlay.
       return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
     }
 
-    return raw;
+    return raw.includes("/preview")
+      ? raw
+      : raw.replace(/\/view.*$/i, "/preview");
   }
 
-  // PDFs diretos continuam diretos. Arquivos anexados do próprio sistema não
-  // precisam passar por Drive/Viewer.
+  // PDFs diretos dentro do iframe podem bugar o zoom em alguns WebViews/PWAs
+  // Android/iOS. Usamos o visualizador do Google como camada estável, mantendo
+  // o PDF dentro do app.
   if (/^https?:\/\//i.test(raw) && /\.pdf(\?|#|$)/i.test(raw)) {
-    return raw;
+    return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(raw)}`;
   }
 
   return raw;
