@@ -27,13 +27,17 @@ function getDriveFileId(url) {
   }
 }
 
+export function isDriveUrl(url) {
+  return /drive\.google\.com/i.test(String(url || ""));
+}
+
 export function driveToPreview(url) {
   const raw = String(url || "").trim();
   if (!raw) return "";
 
-  // Se alguém colou um link do Google Viewer antigo, retiramos a camada do
-  // Google Viewer e tentamos abrir o PDF original. Essa camada externa é a que
-  // costuma roubar o gesto de zoom no mobile e recarregar o PWA no zoom máximo.
+  // Se alguém colou um link do Google Viewer antigo, retiramos a camada extra
+  // e abrimos o material original. O Google Viewer dentro de outro iframe é
+  // mais instável no mobile.
   if (/docs\.google\.com\/gview/i.test(raw)) {
     try {
       const parsed = new URL(raw);
@@ -48,19 +52,18 @@ export function driveToPreview(url) {
     const fileId = getDriveFileId(raw);
 
     if (fileId) {
-      // IMPORTANTE: não usar /preview aqui.
-      // /preview depende do visualizador web do Drive dentro do iframe. No
-      // Android/iOS, ao chegar no limite do zoom, ele pode disparar navegação
-      // ou reload do app. O link abaixo entrega o arquivo PDF diretamente para
-      // o visualizador nativo do navegador, igual acontece com PDF anexado.
-      return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+      // V7: voltamos para /preview porque o link direto uc?export=download
+      // pode pedir permissão/baixar em vez de visualizar dentro do sistema.
+      // A proteção contra reload fica no sandbox aplicado dinamicamente no
+      // iframe, bloqueando navegação para fora do overlay.
+      return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
     }
 
     return raw;
   }
 
-  // PDFs diretos devem continuar diretos. Assim o celular usa o visualizador
-  // nativo do navegador, que segura o limite do zoom sem recarregar a página.
+  // PDFs diretos continuam diretos. Arquivos anexados do próprio sistema não
+  // precisam passar por Drive/Viewer.
   if (/^https?:\/\//i.test(raw) && /\.pdf(\?|#|$)/i.test(raw)) {
     return raw;
   }

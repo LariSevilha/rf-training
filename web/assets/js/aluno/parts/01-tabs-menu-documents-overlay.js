@@ -235,14 +235,27 @@ function cardioWrittenHtml() {
 function setPdfFrameHtml(html) {
   if (!pdfFrame) return;
 
+  pdfFrame.removeAttribute("sandbox");
   pdfFrame.removeAttribute("src");
   pdfFrame.srcdoc = html;
 }
 
-function setPdfFrameUrl(url) {
+function setPdfFrameUrl(url, options = {}) {
   if (!pdfFrame) return;
 
   pdfFrame.removeAttribute("srcdoc");
+
+  if (options.sandboxDrivePreview) {
+    // Permite o preview do Drive funcionar, mas não permite que ele navegue a
+    // janela principal do app quando o zoom chega no limite. Isso evita voltar
+    // para a tela inicial sem quebrar permissão do Google Drive.
+    pdfFrame.setAttribute(
+      "sandbox",
+      "allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+    );
+  } else {
+    pdfFrame.removeAttribute("sandbox");
+  }
 
   // Evita trocar para about:blank antes do PDF. Essa troca intermediária
   // fazia alguns WebViews/PWAs redesenharem a tela e perderem o estado do zoom.
@@ -309,7 +322,7 @@ function openPdfOverlay(title, rawUrl) {
     return;
   }
 
-  setPdfFrameUrl(preview);
+  setPdfFrameUrl(preview, { sandboxDrivePreview: isDriveUrl(preview) });
 }
 
 function openContent(type) {
@@ -353,6 +366,7 @@ function closePdf() {
 
   setTimeout(() => {
     if (pdfFrame) {
+      pdfFrame.removeAttribute("sandbox");
       pdfFrame.removeAttribute("srcdoc");
       pdfFrame.src = "about:blank";
     }
