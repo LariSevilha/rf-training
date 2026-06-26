@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-06-26-pdfjs-interno-v5";
+const VERSION = "rf-fitness-v2026-06-26-pdf-zoom-safe-v4";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -8,7 +8,6 @@ const APP_SHELL = [
 
   "/pages/index.html",
   "/pages/aluno.html",
-  "/pages/pdf-viewer.html",
   "/pages/politica-privacidade.html",
 
   "/assets/css/main.css",
@@ -95,7 +94,9 @@ self.addEventListener("fetch", (event) => {
 
   if (
     url.hostname.includes("drive.google.com") ||
-    url.hostname.includes("googleusercontent.com")
+    url.hostname.includes("docs.google.com") ||
+    url.hostname.includes("googleusercontent.com") ||
+    url.hostname.includes("gstatic.com")
   ) {
     return;
   }
