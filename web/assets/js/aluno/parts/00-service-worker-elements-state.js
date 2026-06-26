@@ -191,3 +191,28 @@ window.addEventListener("offline", () => {
 });
 
 offlineTryBtn?.addEventListener("click", setOfflineUI);
+
+
+// iPhone/Safari: quando o PDF está aberto, não deixar o gesto de pinça
+// dar zoom na página principal. O zoom do PDF agora é feito pelos botões + e −.
+document.addEventListener(
+  "gesturestart",
+  (ev) => {
+    if (document.body.classList.contains("pdfOpen")) ev.preventDefault();
+  },
+  { passive: false }
+);
+document.addEventListener(
+  "gesturechange",
+  (ev) => {
+    if (document.body.classList.contains("pdfOpen")) ev.preventDefault();
+  },
+  { passive: false }
+);
+document.addEventListener(
+  "gestureend",
+  (ev) => {
+    if (document.body.classList.contains("pdfOpen")) ev.preventDefault();
+  },
+  { passive: false }
+);

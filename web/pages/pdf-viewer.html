@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>Visualizador de PDF</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin:0; min-height:100%; background:#070707; color:#f5f5f5; font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overscroll-behavior:none; -webkit-text-size-adjust:100%; }
+    body { overflow:hidden; }
+    .viewerShell { height:100dvh; display:grid; grid-template-rows:auto 1fr; background:#070707; }
+    .viewerToolbar { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:8px; padding:8px calc(10px + env(safe-area-inset-right)) 8px calc(10px + env(safe-area-inset-left)); background:rgba(9,9,9,.96); border-bottom:1px solid rgba(255,255,255,.10); box-sizing:border-box; }
+    .viewerToolbar button { border:1px solid rgba(255,255,255,.14); background:#171717; color:#fff; min-width:38px; height:38px; border-radius:12px; font-weight:900; font-size:16px; }
+    .viewerToolbar button:active { transform:scale(.98); }
+    .viewerToolbar .pageInfo { flex:1; text-align:center; color:rgba(255,255,255,.78); font-size:13px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .viewerToolbar .zoomValue { min-width:48px; text-align:center; font-size:12px; color:#ceac5e; font-weight:900; }
+    .viewerContent { overflow:auto; -webkit-overflow-scrolling:touch; padding:14px 10px 28px; box-sizing:border-box; overscroll-behavior:contain; touch-action:pan-x pan-y; }
+    .pageCanvas { display:block; margin:0 auto 14px; max-width:100%; height:auto; background:#fff; border-radius:4px; box-shadow:0 10px 32px rgba(0,0,0,.45); }
+    .status { min-height:70vh; display:grid; place-items:center; text-align:center; padding:24px; box-sizing:border-box; color:rgba(255,255,255,.72); line-height:1.45; }
+    .status b { display:block; color:#fff; margin-bottom:6px; font-size:18px; }
+    .loader { width:34px; height:34px; border-radius:50%; border:3px solid rgba(255,255,255,.16); border-top-color:#ceac5e; animation:spin .8s linear infinite; margin:0 auto 12px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <main class="viewerShell">
+    <div class="viewerToolbar">
+      <button id="zoomOut" type="button" aria-label="Diminuir zoom">−</button>
+      <div class="zoomValue" id="zoomValue">100%</div>
+      <button id="zoomIn" type="button" aria-label="Aumentar zoom">+</button>
+      <button id="fitWidth" type="button" aria-label="Ajustar à largura">↔</button>
+      <div class="pageInfo" id="pageInfo">Carregando PDF…</div>
+    </div>
+    <section class="viewerContent" id="viewerContent">
+      <div class="status" id="status"><div><div class="loader"></div><b>Carregando PDF</b><span>Aguarde alguns segundos.</span></div></div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    (function () {
+      const content = document.getElementById('viewerContent');
+      const statusEl = document.getElementById('status');
+      const pageInfo = document.getElementById('pageInfo');
+      const zoomValue = document.getElementById('zoomValue');
+      const zoomIn = document.getElementById('zoomIn');
+      const zoomOut = document.getElementById('zoomOut');
+      const fitWidth = document.getElementById('fitWidth');
+
+      let pdfDoc = null;
+      let scale = 1;
+      let rendering = false;
+      let queued = false;
+      let fitMode = true;
+      const DPR_LIMIT = 2;
+
+      function getPayload() {
+        try { return JSON.parse(sessionStorage.getItem('rf_pdf_viewer_payload') || '{}'); }
+        catch { return {}; }
+      }
+
+      function showStatus(title, msg, loading) {
+        statusEl.style.display = 'grid';
+        statusEl.innerHTML = '<div>' + (loading ? '<div class="loader"></div>' : '') + '<b>' + title + '</b><span>' + msg + '</span></div>';
+      }
+
+      function setZoomLabel() {
+        zoomValue.textContent = Math.round(scale * 100) + '%';
+      }
+
+      function calcFitScale(firstPageViewport) {
+        const available = Math.max(280, content.clientWidth - 22);
+        return Math.min(2.2, Math.max(0.55, available / firstPageViewport.width));
+      }
+
+      async function renderAllPages() {
+        if (!pdfDoc || rendering) { queued = true; return; }
+        rendering = true;
+        queued = false;
+        setZoomLabel();
+        const oldScroll = content.scrollTop;
+        content.innerHTML = '';
+
+        const outputScale = Math.min(window.devicePixelRatio || 1, DPR_LIMIT);
+
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+          const page = await pdfDoc.getPage(pageNum);
+          const viewport = page.getViewport({ scale });
+          const canvas = document.createElement('canvas');
+          canvas.className = 'pageCanvas';
+          canvas.width = Math.floor(viewport.width * outputScale);
+          canvas.height = Math.floor(viewport.height * outputScale);
+          canvas.style.width = Math.floor(viewport.width) + 'px';
+          canvas.style.height = Math.floor(viewport.height) + 'px';
+
+          const ctx = canvas.getContext('2d', { alpha: false });
+          ctx.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+          content.appendChild(canvas);
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          pageInfo.textContent = 'Página ' + pageNum + ' de ' + pdfDoc.numPages;
+        }
+
+        if (oldScroll) content.scrollTop = oldScroll;
+        rendering = false;
+        if (queued) renderAllPages();
+      }
+
+      async function load() {
+        const payload = getPayload();
+        const rawUrl = String(payload.url || '').trim();
+        const token = localStorage.getItem('rf_token') || '';
+
+        if (!rawUrl) {
+          showStatus('PDF não informado', 'Volte e abra o material novamente.', false);
+          return;
+        }
+        if (!token) {
+          showStatus('Acesso expirado', 'Faça login novamente para abrir este PDF.', false);
+          return;
+        }
+        if (!window.pdfjsLib) {
+          showStatus('Falha ao carregar o visualizador', 'Verifique sua conexão e tente novamente.', false);
+          return;
+        }
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        try {
+          async function fetchViaProxy(path) {
+            return fetch(path + '?url=' + encodeURIComponent(rawUrl), {
+              method: 'GET',
+              headers: { Authorization: 'Bearer ' + token, Accept: 'application/pdf' },
+              cache: 'no-store',
+              credentials: 'same-origin'
+            });
+          }
+
+          let response = await fetchViaProxy('/api/pdf-proxy');
+          if (response.status === 404) {
+            response = await fetchViaProxy('/pdf-proxy');
+          }
+
+          if (!response.ok) {
+            let msg = 'Confira a permissão do arquivo ou tente reenviar o link no painel admin.';
+            try {
+              const data = await response.json();
+              if (data && data.message) msg = data.message;
+            } catch {}
+            throw new Error(msg);
+          }
+
+          const buffer = await response.arrayBuffer();
+          if (!buffer || buffer.byteLength < 10) {
+            throw new Error('O arquivo retornado está vazio. Reenvie o link no painel admin.');
+          }
+
+          pdfDoc = await pdfjsLib.getDocument({
+            data: buffer,
+            disableAutoFetch: true,
+            disableStream: true,
+            disableRange: true,
+            useWorkerFetch: false
+          }).promise;
+
+          const firstPage = await pdfDoc.getPage(1);
+          scale = calcFitScale(firstPage.getViewport({ scale: 1 }));
+          fitMode = true;
+          await renderAllPages();
+        } catch (err) {
+          console.error(err);
+          showStatus('Não foi possível abrir o PDF', err?.message || 'Confira a permissão do arquivo ou tente reenviar o link no painel admin.', false);
+          pageInfo.textContent = 'Erro ao abrir';
+        }
+      }
+
+      zoomIn.addEventListener('click', function () { fitMode = false; scale = Math.min(3, +(scale + 0.15).toFixed(2)); renderAllPages(); });
+      zoomOut.addEventListener('click', function () { fitMode = false; scale = Math.max(0.5, +(scale - 0.15).toFixed(2)); renderAllPages(); });
+      fitWidth.addEventListener('click', async function () {
+        if (!pdfDoc) return;
+        const firstPage = await pdfDoc.getPage(1);
+        scale = calcFitScale(firstPage.getViewport({ scale: 1 }));
+        fitMode = true;
+        renderAllPages();
+      });
+
+      let resizeTimer = 0;
+      window.addEventListener('resize', async function () {
+        if (!pdfDoc || !fitMode) return;
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(async function () {
+          const firstPage = await pdfDoc.getPage(1);
+          scale = calcFitScale(firstPage.getViewport({ scale: 1 }));
+          renderAllPages();
+        }, 250);
+      });
+
+      document.addEventListener('gesturestart', function (ev) { ev.preventDefault(); }, { passive: false });
+      load();
+    })();
+  </script>
+</body>
+</html>

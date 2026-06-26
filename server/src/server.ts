@@ -39,6 +39,169 @@ function parseDateParam(value: any) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+
+function extractDriveFileId(url: string) {
+  const raw = String(url || "").trim();
+  if (!raw.includes("drive.google.com")) return "";
+
+  try {
+    const parsed = new URL(raw);
+    const fromQuery = parsed.searchParams.get("id");
+    if (fromQuery) return fromQuery;
+
+    const match = parsed.pathname.match(/\/file\/d\/([^/]+)/);
+    if (match?.[1]) return match[1];
+  } catch {
+    const match = raw.match(/\/file\/d\/([^/]+)/) || raw.match(/[?&]id=([^&]+)/);
+    if (match?.[1]) return match[1];
+  }
+
+  return "";
+}
+
+function isBlockedProxyTarget(url: URL) {
+  const host = url.hostname.toLowerCase();
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host.startsWith("10.") ||
+    host.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
+  );
+}
+
+function resolvePdfProxyUrl(input: string) {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+
+  const driveId = extractDriveFileId(raw);
+  if (driveId) {
+    return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(driveId)}`;
+  }
+
+  const parsed = new URL(raw);
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("Link inválido");
+  }
+  if (isBlockedProxyTarget(parsed)) {
+    throw new Error("Destino não permitido");
+  }
+
+  return parsed.toString();
+}
+
+function looksLikePdf(buffer: Buffer) {
+  return buffer.slice(0, 5).toString("utf8") === "%PDF-";
+}
+
+function getHeader(headers: Headers, name: string) {
+  return headers.get(name) || headers.get(name.toLowerCase()) || "";
+}
+
+function absoluteUrl(baseUrl: string, maybeUrl: string) {
+  try {
+    return new URL(maybeUrl.replaceAll("&amp;", "&"), baseUrl).toString();
+  } catch {
+    return "";
+  }
+}
+
+function extractDriveConfirmUrl(html: string, baseUrl: string) {
+  const decoded = html.replaceAll("\\u003d", "=").replaceAll("\\u0026", "&");
+
+  const hrefMatches = [
+    /href="([^"]*(?:uc\?|drive\.usercontent\.google\.com\/download)[^"]*)"/i,
+    /downloadUrl"\s*:\s*"([^"]+)"/i,
+    /action="([^"]*(?:uc\?|drive\.usercontent\.google\.com\/download)[^"]*)"/i,
+  ];
+
+  for (const re of hrefMatches) {
+    const match = decoded.match(re);
+    if (match?.[1]) {
+      const url = absoluteUrl(baseUrl, match[1]);
+      if (url) return url;
+    }
+  }
+
+  const confirm = decoded.match(/[?&]confirm=([0-9A-Za-z_\-]+)/)?.[1];
+  const id = decoded.match(/[?&]id=([0-9A-Za-z_\-]+)/)?.[1];
+  if (confirm && id) {
+    return `https://drive.google.com/uc?export=download&confirm=${encodeURIComponent(confirm)}&id=${encodeURIComponent(id)}`;
+  }
+
+  return "";
+}
+
+async function fetchBuffer(url: string, cookie = "") {
+  const response = await fetch(url, {
+    redirect: "follow",
+    headers: {
+      "user-agent": "Mozilla/5.0 RF-Fitness-PDF-Viewer",
+      "accept": "application/pdf,application/octet-stream,*/*;q=0.8",
+      ...(cookie ? { cookie } : {}),
+    },
+  });
+
+  const contentType = getHeader(response.headers, "content-type");
+  const setCookie = response.headers.getSetCookie?.().join("; ") || getHeader(response.headers, "set-cookie");
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return { response, contentType, setCookie, buffer };
+}
+
+async function fetchPublicPdf(input: string) {
+  const raw = String(input || "").trim();
+  const driveId = extractDriveFileId(raw);
+
+  const urls = driveId
+    ? [
+        `https://drive.google.com/uc?export=download&id=${encodeURIComponent(driveId)}`,
+        `https://drive.usercontent.google.com/download?id=${encodeURIComponent(driveId)}&export=download&authuser=0&confirm=t`,
+        `https://docs.google.com/uc?export=download&id=${encodeURIComponent(driveId)}`,
+      ]
+    : [resolvePdfProxyUrl(raw)];
+
+  let lastStatus = 0;
+  let lastContentType = "";
+  let lastHtml = "";
+
+  for (const url of urls) {
+    const first = await fetchBuffer(url);
+    lastStatus = first.response.status;
+    lastContentType = first.contentType;
+
+    if (!first.response.ok) continue;
+    if (looksLikePdf(first.buffer) || /application\/pdf/i.test(first.contentType)) {
+      return { buffer: first.buffer, contentType: first.contentType || "application/pdf" };
+    }
+
+    const text = first.buffer.slice(0, 150000).toString("utf8");
+    if (/text\/html/i.test(first.contentType) || /<html|<!doctype/i.test(text)) {
+      lastHtml = text;
+      const confirmUrl = extractDriveConfirmUrl(text, first.response.url || url);
+      if (confirmUrl) {
+        const second = await fetchBuffer(confirmUrl, first.setCookie);
+        lastStatus = second.response.status;
+        lastContentType = second.contentType;
+        if (second.response.ok && (looksLikePdf(second.buffer) || /application\/pdf/i.test(second.contentType))) {
+          return { buffer: second.buffer, contentType: second.contentType || "application/pdf" };
+        }
+      }
+    }
+  }
+
+  if (driveId && /sign in|login|acesso negado|permission|not authorized|não autorizado/i.test(lastHtml)) {
+    throw new Error("O Google Drive não liberou o arquivo para download público. No Drive, deixe como 'Qualquer pessoa com o link: Leitor'.");
+  }
+
+  throw new Error(
+    lastStatus
+      ? `O link não retornou um PDF válido. Status ${lastStatus}${lastContentType ? ` (${lastContentType})` : ""}.`
+      : "O link não retornou um PDF válido."
+  );
+}
+
 async function main() {
   const app = Fastify({ logger: true });
 
@@ -79,6 +242,34 @@ async function main() {
 
   // Health
   app.get(`${API_PREFIX}/health`, async () => ({ ok: true }));
+
+
+  // ===== PDF INTERNO =====
+  // Evita abrir o PDF pelo visualizador nativo/Drive dentro do iframe no iPhone.
+  // Registra com /api e sem /api para funcionar em qualquer configuração do servidor/nginx.
+  async function pdfProxyHandler(req: any, reply: any) {
+    try {
+      const rawUrl = String(req.query?.url || "").trim();
+      if (!rawUrl) return reply.code(400).send({ message: "Link do PDF não informado" });
+
+      const { buffer, contentType } = await fetchPublicPdf(rawUrl);
+
+      reply
+        .header("Content-Type", /pdf/i.test(contentType) ? contentType : "application/pdf")
+        .header("Content-Length", String(buffer.length))
+        .header("Accept-Ranges", "none")
+        .header("Cache-Control", "private, no-store, max-age=0")
+        .header("X-Content-Type-Options", "nosniff");
+
+      return reply.send(buffer);
+    } catch (error: any) {
+      return reply.code(400).send({ message: error?.message || "Link inválido" });
+    }
+  }
+  app.get(`${API_PREFIX}/pdf-proxy`, { preHandler: (app as any).auth }, pdfProxyHandler);
+  if (API_PREFIX !== "") {
+    app.get(`/pdf-proxy`, { preHandler: (app as any).auth }, pdfProxyHandler);
+  }
 
   // ===== AUTH =====
   app.post(`${API_PREFIX}/auth/login`, async (req, reply) => {

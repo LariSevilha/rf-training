@@ -270,7 +270,16 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      pdfFrame.src = preview;
+      try {
+        sessionStorage.setItem(
+          "rf_pdf_viewer_payload",
+          JSON.stringify({ title: title || "PDF", url: rawUrl })
+        );
+      } catch {}
+
+      // Abre em um visualizador interno com PDF.js.
+      // Isso evita o bug do iPhone/Safari ao usar pinch zoom no PDF nativo/Google Drive.
+      pdfFrame.src = `/pages/pdf-viewer.html?t=${Date.now()}`;
     }
   }
 
