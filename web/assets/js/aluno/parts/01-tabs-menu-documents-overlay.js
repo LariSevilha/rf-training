@@ -244,7 +244,6 @@ function openHtmlOverlay(title, html) {
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
-  document.documentElement.classList.add("pdfOpen");
   document.body.classList.add("pdfOpen");
 }
 
@@ -270,22 +269,12 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      try {
-        sessionStorage.setItem(
-          "rf_pdf_viewer_payload",
-          JSON.stringify({ title: title || "PDF", url: rawUrl })
-        );
-      } catch {}
-
-      // Abre em um visualizador interno com PDF.js.
-      // Isso evita o bug do iPhone/Safari ao usar pinch zoom no PDF nativo/Google Drive.
-      pdfFrame.src = `/pages/pdf-viewer.html?t=${Date.now()}`;
+      pdfFrame.src = preview;
     }
   }
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
-  document.documentElement.classList.add("pdfOpen");
   document.body.classList.add("pdfOpen");
 }
 
@@ -323,7 +312,6 @@ function openContent(type) {
 function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
-  document.documentElement.classList.remove("pdfOpen");
   document.body.classList.remove("pdfOpen");
   hideLoading();
 

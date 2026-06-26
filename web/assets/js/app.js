@@ -80,13 +80,7 @@ function openPdfFullscreen(type) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholder);
     setTimeout(hideLoading, 350);
   } else {
-    try {
-      sessionStorage.setItem(
-        "rf_pdf_viewer_payload",
-        JSON.stringify({ title: titles[type] || "PDF", url })
-      );
-    } catch {}
-    pdfFrame.src = `/pages/pdf-viewer.html?t=${Date.now()}`;
+    pdfFrame.src = preview;
   }
 
   topbar.style.display = "none";
