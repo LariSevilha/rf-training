@@ -1579,3 +1579,58 @@ body,
 .pageAluno:not(.ready) #docsEmpty {
   display: none !important;
 }
+
+/* =========================================================
+   CORREÇÃO PDF — visualização interna estável no zoom/mobile
+   ========================================================= */
+body.pdfOpen {
+  overflow: hidden !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  overscroll-behavior: none !important;
+  touch-action: manipulation !important;
+}
+
+.alunoClean .pdfOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  background: #050505 !important;
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+}
+
+.alunoClean .pdfOverlay.show {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.alunoClean .pdfBar {
+  flex: 0 0 auto !important;
+}
+
+.alunoClean .pdfFrameWrap {
+  position: relative !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: hidden !important;
+  background: #111 !important;
+}
+
+.alunoClean #pdfFrame {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  background: #fff !important;
+  color-scheme: light !important;
+}
+
+.alunoClean .loadingLayer {
+  z-index: 5 !important;
+  pointer-events: none !important;
+}

@@ -232,50 +232,75 @@ function cardioWrittenHtml() {
   `;
 }
 
-function openHtmlOverlay(title, html) {
-  if (pdfTitle) pdfTitle.textContent = title || "Material";
-  showLoading();
+let pdfOverlayHistoryActive = false;
 
-  if (pdfFrame) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
-  }
+function setPdfFrameHtml(html) {
+  if (!pdfFrame) return;
 
-  setTimeout(hideLoading, 250);
+  pdfFrame.removeAttribute("src");
+  pdfFrame.srcdoc = html;
+}
+
+function setPdfFrameUrl(url) {
+  if (!pdfFrame) return;
+
+  pdfFrame.removeAttribute("srcdoc");
+  pdfFrame.src = "about:blank";
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (pdfOverlay?.classList.contains("show")) {
+        pdfFrame.src = url;
+      }
+    });
+  });
+}
+
+function showPdfOverlay(title = "PDF") {
+  if (pdfTitle) pdfTitle.textContent = title;
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+
+  if (!pdfOverlayHistoryActive && window.history?.pushState) {
+    window.history.pushState({ rfPdfOverlay: true }, "");
+    pdfOverlayHistoryActive = true;
+  }
+}
+
+function openHtmlOverlay(title, html) {
+  showPdfOverlay(title || "Material");
+  showLoading();
+  setPdfFrameHtml(html);
+  setTimeout(hideLoading, 250);
 }
 
 function openPdfOverlay(title, rawUrl) {
-  if (pdfTitle) pdfTitle.textContent = title || "PDF";
+  showPdfOverlay(title || "PDF");
   showLoading();
 
   if (!rawUrl) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-    );
+    setPdfFrameHtml(placeholderHtml("Material não configurado", "Entre em contato com o personal."));
     setTimeout(hideLoading, 250);
-  } else if (!navigator.onLine) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-    );
-    setTimeout(hideLoading, 250);
-  } else {
-    const preview = driveToPreview(rawUrl);
-    if (!preview) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-      );
-      setTimeout(hideLoading, 250);
-    } else {
-      pdfFrame.src = preview;
-    }
+    return;
   }
 
-  pdfOverlay?.classList.add("show");
-  pdfOverlay?.setAttribute("aria-hidden", "false");
-  document.body.classList.add("pdfOpen");
+  if (!navigator.onLine) {
+    setPdfFrameHtml(placeholderHtml("Você está offline", "Conecte-se para abrir este material."));
+    setTimeout(hideLoading, 250);
+    return;
+  }
+
+  const preview = driveToPreview(rawUrl);
+
+  if (!preview) {
+    setPdfFrameHtml(placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível."));
+    setTimeout(hideLoading, 250);
+    return;
+  }
+
+  setPdfFrameUrl(preview);
 }
 
 function openContent(type) {
@@ -309,16 +334,32 @@ function openContent(type) {
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
-function closePdf() {
+function closePdf(options = {}) {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
   hideLoading();
 
   setTimeout(() => {
-    if (pdfFrame) pdfFrame.src = "about:blank";
+    if (pdfFrame) {
+      pdfFrame.removeAttribute("srcdoc");
+      pdfFrame.src = "about:blank";
+    }
   }, 200);
+
+  if (pdfOverlayHistoryActive && !options.fromPopState && window.history?.state?.rfPdfOverlay) {
+    pdfOverlayHistoryActive = false;
+    window.history.back();
+  } else if (options.fromPopState) {
+    pdfOverlayHistoryActive = false;
+  }
 }
+
+window.addEventListener("popstate", () => {
+  if (pdfOverlay?.classList.contains("show")) {
+    closePdf({ fromPopState: true });
+  }
+});
 
 pdfBack?.addEventListener("click", (ev) => {
   ev.preventDefault();
