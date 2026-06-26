@@ -1717,3 +1717,24 @@ body.pdfOpen .pdfOverlay * {
   background: #fff !important;
   overscroll-behavior: contain !important;
 }
+
+
+/* =========================================================
+   PDF ZOOM V4 — permite aproximar com pinça no celular
+   ========================================================= */
+body.pdfOpen {
+  touch-action: auto !important;
+}
+
+.alunoClean .pdfOverlay.show {
+  touch-action: auto !important;
+}
+
+.alunoClean .pdfFrameWrap {
+  touch-action: auto !important;
+}
+
+.alunoClean #pdfFrame {
+  touch-action: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
