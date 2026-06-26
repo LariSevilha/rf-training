@@ -126,8 +126,22 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         try {
+          async function readErrorMessage(response, fallback) {
+            try {
+              const data = await response.clone().json();
+              if (data && data.message) return data.message;
+            } catch {}
+            try {
+              const text = await response.clone().text();
+              if (/route .*not found/i.test(text)) return text;
+              if (/<html|<!doctype/i.test(text)) return 'O servidor devolveu uma página HTML no lugar do PDF. Verifique o proxy/Nginx ou use a rota alternativa /pdf-proxy.';
+              if (text) return text.slice(0, 250);
+            } catch {}
+            return fallback;
+          }
+
           async function fetchViaProxy(path) {
-            return fetch(path + '?url=' + encodeURIComponent(rawUrl), {
+            return fetch(path + '?url=' + encodeURIComponent(rawUrl) + '&v=' + Date.now(), {
               method: 'GET',
               headers: { Authorization: 'Bearer ' + token, Accept: 'application/pdf' },
               cache: 'no-store',
@@ -135,27 +149,43 @@
             });
           }
 
-          let response = await fetchViaProxy('/api/pdf-proxy');
-          if (response.status === 404) {
-            response = await fetchViaProxy('/pdf-proxy');
+          async function getPdfBufferFrom(path) {
+            const response = await fetchViaProxy(path);
+            if (!response.ok) {
+              const msg = await readErrorMessage(response, 'Confira a permissão do arquivo ou tente reenviar o link no painel admin.');
+              return { ok: false, status: response.status, message: msg };
+            }
+
+            const buffer = await response.arrayBuffer();
+            if (!buffer || buffer.byteLength < 10) {
+              return { ok: false, status: response.status, message: 'O arquivo retornado está vazio. Reenvie o link no painel admin.' };
+            }
+
+            const header = new TextDecoder('latin1').decode(new Uint8Array(buffer.slice(0, 20)));
+            if (!header.includes('%PDF-')) {
+              const preview = new TextDecoder('utf-8').decode(new Uint8Array(buffer.slice(0, 250)));
+              const isHtml = /<html|<!doctype|<script|<body/i.test(preview);
+              return {
+                ok: false,
+                status: response.status,
+                message: isHtml
+                  ? 'O servidor devolveu HTML no lugar do PDF. Isso costuma acontecer quando o Nginx não está encaminhando essa rota para o backend ou quando o Drive bloqueou o download no servidor.'
+                  : 'O servidor não devolveu um PDF válido. Início recebido: ' + preview.replace(/\s+/g, ' ').slice(0, 120)
+              };
+            }
+
+            return { ok: true, buffer };
           }
 
-          if (!response.ok) {
-            let msg = 'Confira a permissão do arquivo ou tente reenviar o link no painel admin.';
-            try {
-              const data = await response.json();
-              if (data && data.message) msg = data.message;
-            } catch {}
-            throw new Error(msg);
-          }
-
-          const buffer = await response.arrayBuffer();
-          if (!buffer || buffer.byteLength < 10) {
-            throw new Error('O arquivo retornado está vazio. Reenvie o link no painel admin.');
+          let result = await getPdfBufferFrom('/api/pdf-proxy');
+          if (!result.ok) {
+            const alt = await getPdfBufferFrom('/pdf-proxy');
+            if (alt.ok) result = alt;
+            else throw new Error(alt.message || result.message || 'Não foi possível baixar o PDF pelo servidor.');
           }
 
           pdfDoc = await pdfjsLib.getDocument({
-            data: buffer,
+            data: result.buffer,
             disableAutoFetch: true,
             disableStream: true,
             disableRange: true,

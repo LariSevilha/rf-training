@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-06-25-pdf-proxy-route-fix-v2";
+const VERSION = "rf-fitness-v2026-06-26-pdfjs-interno-v5";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -8,6 +8,7 @@ const APP_SHELL = [
 
   "/pages/index.html",
   "/pages/aluno.html",
+  "/pages/pdf-viewer.html",
   "/pages/politica-privacidade.html",
 
   "/assets/css/main.css",
@@ -159,4 +160,3 @@ async function cacheFirst(request) {
     return caches.match(request);
   }
 }
-// build: pdf-proxy-route-fix-v2
