@@ -253,8 +253,24 @@ function setPdfFrameUrl(url) {
   });
 }
 
+
+// ZOOM MOBILE V5
+// A página do aluno usava maximum-scale=1/user-scalable=no. Isso impede o
+// gesto de pinça em Android/iOS: o preview do Drive só aceitava zoom por duplo
+// toque. Ao abrir PDF, liberamos escala; ao fechar, mantemos a página estável.
+const rfViewportMeta = document.querySelector('meta[name="viewport"]');
+const rfDefaultViewport = rfViewportMeta?.getAttribute("content") || "width=device-width, initial-scale=1, viewport-fit=cover";
+const rfPdfZoomViewport = "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover";
+
+function setPdfZoomViewport(enabled) {
+  if (!rfViewportMeta) return;
+  rfViewportMeta.setAttribute("content", enabled ? rfPdfZoomViewport : rfDefaultViewport);
+}
+
 function showPdfOverlay(title = "PDF") {
   if (pdfTitle) pdfTitle.textContent = title;
+
+  setPdfZoomViewport(true);
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
@@ -328,6 +344,8 @@ function openContent(type) {
 }
 
 function closePdf() {
+  setPdfZoomViewport(false);
+
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");

@@ -1738,3 +1738,23 @@ body.pdfOpen {
   touch-action: auto !important;
   -webkit-overflow-scrolling: touch !important;
 }
+
+
+/* =========================================================
+   PDF ZOOM SAFE V5 — libera pinça com dois dedos no overlay
+   ========================================================= */
+body.pdfOpen,
+.alunoClean .pdfOverlay.show,
+.alunoClean .pdfFrameWrap,
+.alunoClean #pdfFrame {
+  touch-action: pan-x pan-y pinch-zoom !important;
+}
+
+.alunoClean .pdfFrameWrap {
+  overflow: hidden !important;
+}
+
+.alunoClean #pdfFrame {
+  -webkit-user-select: auto !important;
+  user-select: auto !important;
+}
