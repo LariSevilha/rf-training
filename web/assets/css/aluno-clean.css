@@ -1758,3 +1758,24 @@ body.pdfOpen,
   -webkit-user-select: auto !important;
   user-select: auto !important;
 }
+
+
+/* =========================================================
+   PDF LINK SAFE V6 — link externo/Drive usa PDF direto
+   Mantém o overlay travado e deixa o zoom acontecer no PDF,
+   sem puxar a página do aluno por trás.
+   ========================================================= */
+body.pdfOpen {
+  overscroll-behavior-y: none !important;
+}
+
+.alunoClean .pdfOverlay.show,
+.alunoClean .pdfFrameWrap {
+  overscroll-behavior: none !important;
+  overflow: hidden !important;
+}
+
+.alunoClean #pdfFrame {
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+}
