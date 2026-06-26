@@ -1580,48 +1580,51 @@ body,
   display: none !important;
 }
 
-
 /* =========================================================
-   CORREÇÃO PDF iOS/ZOOM — evita recarregar o PDF no pinch zoom
+   CORREÇÃO PDF — visualização interna estável com zoom
    ========================================================= */
-.alunoClean.pdfOpen {
+html.pdfOpen,
+body.pdfOpen {
   overflow: hidden !important;
-  touch-action: none;
+  height: 100% !important;
+  overscroll-behavior: none !important;
 }
 
-.alunoClean.pdfOpen .pdfOverlay {
+.alunoClean .pdfOverlay {
   position: fixed !important;
   inset: 0 !important;
   width: 100vw !important;
+  height: 100vh !important;
   height: 100dvh !important;
-  max-height: 100dvh !important;
+  background: #0b0b0b !important;
   overflow: hidden !important;
+}
+
+.alunoClean .pdfOverlay.show {
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .alunoClean .pdfFrameWrap {
+  position: relative !important;
   flex: 1 1 auto !important;
   min-height: 0 !important;
+  height: auto !important;
   overflow: hidden !important;
-  background: #050505 !important;
+  background: #151515 !important;
+  contain: layout size paint !important;
 }
 
 .alunoClean #pdfFrame {
+  display: block !important;
   width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
   border: 0 !important;
-  display: block !important;
-  background: #050505 !important;
+  background: #fff !important;
 }
 
-@supports (-webkit-touch-callout: none) {
-  .alunoClean.pdfOpen .pdfOverlay {
-    height: -webkit-fill-available !important;
-    max-height: -webkit-fill-available !important;
-  }
-
-  .alunoClean.pdfOpen {
-    position: fixed !important;
-    width: 100% !important;
-  }
+.alunoClean .loadingLayer {
+  z-index: 10030 !important;
+  pointer-events: none !important;
 }

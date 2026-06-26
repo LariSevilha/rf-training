@@ -244,6 +244,7 @@ function openHtmlOverlay(title, html) {
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
+  document.documentElement.classList.add("pdfOpen");
   document.body.classList.add("pdfOpen");
 }
 
@@ -251,31 +252,31 @@ function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  const setFrameHtml = (html) => {
-    if (pdfFrame) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
-    }
-    setTimeout(hideLoading, 250);
-  };
-
   if (!rawUrl) {
-    setFrameHtml(placeholderHtml("Material não configurado", "Entre em contato com o personal."));
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+    );
+    setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    setFrameHtml(placeholderHtml("Você está offline", "Conecte-se para abrir este material."));
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+    );
+    setTimeout(hideLoading, 250);
   } else {
     const preview = driveToPreview(rawUrl);
     if (!preview) {
-      setFrameHtml(placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível."));
-    } else if (pdfFrame && pdfFrame.dataset.currentSrc !== preview) {
-      pdfFrame.dataset.currentSrc = preview;
-      pdfFrame.src = preview;
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+      );
+      setTimeout(hideLoading, 250);
     } else {
-      hideLoading();
+      pdfFrame.src = preview;
     }
   }
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
+  document.documentElement.classList.add("pdfOpen");
   document.body.classList.add("pdfOpen");
 }
 
@@ -313,19 +314,12 @@ function openContent(type) {
 function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
+  document.documentElement.classList.remove("pdfOpen");
   document.body.classList.remove("pdfOpen");
   hideLoading();
 
   setTimeout(() => {
-    if (pdfFrame) {
-      pdfFrame.src = "about:blank";
-      pdfFrame.dataset.currentSrc = "";
-    }
-
-    if (sessionStorage.getItem("rfNeedsReloadAfterPdf") === "1") {
-      sessionStorage.removeItem("rfNeedsReloadAfterPdf");
-      window.location.reload();
-    }
+    if (pdfFrame) pdfFrame.src = "about:blank";
   }, 200);
 }
 

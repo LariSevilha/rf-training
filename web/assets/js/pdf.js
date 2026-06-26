@@ -1,49 +1,63 @@
-export function getDriveFileId(url) {
-  if (!url) return "";
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-  const raw = String(url).trim();
+function extractDriveId(url) {
+  if (!url || !url.includes("drive.google.com")) return "";
 
   try {
-    const parsed = new URL(raw);
+    const parsed = new URL(url);
+    const idFromQuery = parsed.searchParams.get("id");
+    if (idFromQuery) return idFromQuery;
 
-    const byId = parsed.searchParams.get("id");
-    if (byId) return byId;
-
-    const fileMatch = parsed.pathname.match(/\/file\/d\/([^/]+)/);
-    if (fileMatch?.[1]) return fileMatch[1];
-
-    const openMatch = parsed.pathname.match(/\/open\/([^/]+)/);
-    if (openMatch?.[1]) return openMatch[1];
+    const match = parsed.pathname.match(/\/file\/d\/([^/]+)/);
+    if (match?.[1]) return match[1];
   } catch {
-    const fallback = raw.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]{10,})/);
-    if (fallback?.[1]) return fallback[1];
+    const match = String(url).match(/\/file\/d\/([^/]+)/) || String(url).match(/[?&]id=([^&]+)/);
+    if (match?.[1]) return match[1];
   }
 
   return "";
 }
 
-export function driveToPreview(url) {
+function appendPdfHash(url) {
   if (!url) return "";
+  if (!/\.pdf(\?|#|$)/i.test(url)) return url;
 
-  const raw = String(url).trim();
+  const [base, hash = ""] = url.split("#");
+  const params = new URLSearchParams(hash);
+
+  if (!params.has("toolbar")) params.set("toolbar", "1");
+  if (!params.has("navpanes")) params.set("navpanes", "0");
+  if (!params.has("scrollbar")) params.set("scrollbar", "1");
+
+  return `${base}#${params.toString().replace(/=(&|$)/g, "$1")}`;
+}
+
+export function driveToPreview(url) {
+  const raw = String(url || "").trim();
   if (!raw) return "";
 
-  if (!raw.includes("drive.google.com")) return raw;
+  if (raw.includes("drive.google.com")) {
+    const id = extractDriveId(raw);
+    if (id) return `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview?rm=minimal`;
 
-  const id = getDriveFileId(raw);
+    if (raw.includes("/preview")) return raw;
+    return raw.replace(/\/view.*$/, "/preview?rm=minimal");
+  }
 
-  // Mantém o PDF abrindo dentro do sistema em iframe.
-  // Não usamos /uc?export=download porque esse formato pode perder a permissão
-  // do Google Drive e mostrar erro de acesso para o aluno.
-  if (id) return `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview`;
-
-  if (raw.includes("/preview")) return raw;
-  if (raw.includes("/view")) return raw.replace(/\/view(?:\?.*)?$/, "/preview");
-
-  return raw;
+  return appendPdfHash(raw);
 }
 
 export function placeholderHtml(title, msg) {
+  const safeTitle = escapeHtml(title || "Material");
+  const safeMsg = escapeHtml(msg || "");
+
   return `
     <!doctype html>
     <html lang="pt-BR">
@@ -51,6 +65,7 @@ export function placeholderHtml(title, msg) {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <style>
+          html, body { height: 100%; }
           body{
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background:#111;
@@ -58,24 +73,27 @@ export function placeholderHtml(title, msg) {
             display:flex;
             align-items:center;
             justify-content:center;
-            min-height:100vh;
+            min-height:100%;
             margin:0;
             padding:24px;
             box-sizing:border-box;
           }
           .box{
+            width:min(440px, 100%);
             text-align:center;
-            opacity:.9;
-            max-width:420px;
+            background:rgba(255,255,255,.06);
+            border:1px solid rgba(255,255,255,.12);
+            border-radius:18px;
+            padding:28px 22px;
           }
           h1{margin:0 0 8px;font-size:22px;}
-          p{margin:0;line-height:1.45;color:rgba(255,255,255,.72);}
+          p{margin:0;opacity:.8;line-height:1.5;}
         </style>
       </head>
       <body>
         <div class="box">
-          <h1>${title}</h1>
-          <p>${msg}</p>
+          <h1>${safeTitle}</h1>
+          <p>${safeMsg}</p>
         </div>
       </body>
     </html>
@@ -83,21 +101,3 @@ export function placeholderHtml(title, msg) {
 }
 
 export const makePlaceholderHtml = placeholderHtml;
-
-
-// Compatibilidade com versões anteriores do aluno.js.
-// No iPhone/Safari, o link direto do Drive pode causar erro de permissão.
-// Por isso, esta função mantém o mesmo endereço seguro usado no iframe: /preview.
-export function driveToDirectPdf(url) {
-  return driveToPreview(url);
-}
-
-export function isIOSPdfUnsafe() {
-  return false;
-}
-
-export function externalPdfHtml(title, url) {
-  const safeTitle = String(title || "PDF").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-  const safeUrl = driveToPreview(url);
-  return placeholderHtml(safeTitle, safeUrl ? "Abrindo material dentro do aplicativo." : "Material não configurado.");
-}
