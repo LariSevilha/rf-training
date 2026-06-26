@@ -1667,3 +1667,53 @@ body.pdfOpen {
   overscroll-behavior: contain !important;
   touch-action: auto !important;
 }
+
+
+/* =========================================================
+   PDF ZOOM SAFE V3 — evita que o zoom do PDF controle a página
+   ========================================================= */
+html:has(body.pdfOpen),
+body.pdfOpen {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+body.pdfOpen .alunoPage,
+body.pdfOpen .topNav {
+  pointer-events: none !important;
+}
+
+body.pdfOpen .pdfOverlay,
+body.pdfOpen .pdfOverlay * {
+  pointer-events: auto !important;
+}
+
+.alunoClean .pdfOverlay.show {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+.alunoClean .pdfFrameWrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+.alunoClean #pdfFrame {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  background: #fff !important;
+  overscroll-behavior: contain !important;
+}

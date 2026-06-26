@@ -43,13 +43,11 @@ export function driveToPreview(url) {
       : raw.replace(/\/view.*$/i, "/preview");
   }
 
-  if (/\.pdf(\?|#|$)/i.test(raw)) {
-    return appendPdfFragment(raw, {
-      toolbar: "1",
-      navpanes: "0",
-      scrollbar: "1",
-      view: "FitH"
-    });
+  // PDFs diretos dentro do iframe podem bugar o zoom em alguns WebViews/PWAs
+  // Android/iOS. Usamos o visualizador do Google como camada estável, mantendo
+  // o PDF dentro do app.
+  if (/^https?:\/\//i.test(raw) && /\.pdf(\?|#|$)/i.test(raw)) {
+    return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(raw)}`;
   }
 
   return raw;
