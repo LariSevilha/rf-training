@@ -38,8 +38,16 @@ function resolvePdfProxyUrl(input) {
     if (isBlockedProxyTarget(parsed)) throw new Error("Destino não permitido");
     return parsed.toString();
 }
+function normalizePdfBuffer(buffer) {
+    const marker = buffer.indexOf(Buffer.from("%PDF-"));
+    if (marker === 0) return buffer;
+    // Alguns provedores colocam poucos bytes antes do cabeçalho do PDF.
+    // O PDF.js precisa receber o arquivo começando em %PDF-.
+    if (marker > 0 && marker < 2048) return buffer.subarray(marker);
+    return null;
+}
 function looksLikePdf(buffer) {
-    return buffer.slice(0, 5).toString("utf8") === "%PDF-";
+    return !!normalizePdfBuffer(buffer);
 }
 function getHeader(headers, name) {
     return headers.get(name) || headers.get(name.toLowerCase()) || "";
@@ -96,20 +104,23 @@ async function fetchPublicPdf(input) {
         lastStatus = first.response.status;
         lastContentType = first.contentType;
         if (!first.response.ok) continue;
-        if (looksLikePdf(first.buffer) || /application\/pdf/i.test(first.contentType)) {
-            return { buffer: first.buffer, contentType: first.contentType || "application/pdf" };
+        const firstPdf = normalizePdfBuffer(first.buffer);
+        if (firstPdf) {
+            return { buffer: firstPdf, contentType: "application/pdf" };
         }
         const text = first.buffer.slice(0, 150000).toString("utf8");
-        if (/text\/html/i.test(first.contentType) || /<html|<!doctype/i.test(text)) {
-            lastHtml = text;
+        lastHtml = text;
+        if (/text\/html/i.test(first.contentType) || /<html|<!doctype|drive-viewer|google/i.test(text)) {
             const confirmUrl = extractDriveConfirmUrl(text, first.response.url || url);
             if (confirmUrl) {
                 const second = await fetchBuffer(confirmUrl, first.setCookie);
                 lastStatus = second.response.status;
                 lastContentType = second.contentType;
-                if (second.response.ok && (looksLikePdf(second.buffer) || /application\/pdf/i.test(second.contentType))) {
-                    return { buffer: second.buffer, contentType: second.contentType || "application/pdf" };
+                const secondPdf = normalizePdfBuffer(second.buffer);
+                if (second.response.ok && secondPdf) {
+                    return { buffer: secondPdf, contentType: "application/pdf" };
                 }
+                lastHtml = second.buffer.slice(0, 150000).toString("utf8");
             }
         }
     }
