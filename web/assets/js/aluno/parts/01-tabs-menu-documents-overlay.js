@@ -253,24 +253,8 @@ function setPdfFrameUrl(url) {
   });
 }
 
-
-// ZOOM MOBILE V5
-// A página do aluno usava maximum-scale=1/user-scalable=no. Isso impede o
-// gesto de pinça em Android/iOS: o preview do Drive só aceitava zoom por duplo
-// toque. Ao abrir PDF, liberamos escala; ao fechar, mantemos a página estável.
-const rfViewportMeta = document.querySelector('meta[name="viewport"]');
-const rfDefaultViewport = rfViewportMeta?.getAttribute("content") || "width=device-width, initial-scale=1, viewport-fit=cover";
-const rfPdfZoomViewport = "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover";
-
-function setPdfZoomViewport(enabled) {
-  if (!rfViewportMeta) return;
-  rfViewportMeta.setAttribute("content", enabled ? rfPdfZoomViewport : rfDefaultViewport);
-}
-
 function showPdfOverlay(title = "PDF") {
   if (pdfTitle) pdfTitle.textContent = title;
-
-  setPdfZoomViewport(true);
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
@@ -344,8 +328,6 @@ function openContent(type) {
 }
 
 function closePdf() {
-  setPdfZoomViewport(false);
-
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
@@ -364,22 +346,20 @@ function closePdf() {
 // Em Android/iOS, gestos de zoom dentro do preview do Drive/PDF podem disparar
 // navegação do histórico da página e mandar o aluno de volta para a tela inicial.
 
-// PDF ZOOM V4
-// Não bloqueamos gesturestart/gesturechange aqui. No celular, esse bloqueio
-// impedia o gesto de pinça dentro do visualizador do PDF. A estabilidade contra
-// voltar para a tela inicial fica concentrada no CSS do overlay e no fato de o
-// PDF ser aberto dentro do iframe/preview.
-function preventDesktopPageZoomWhilePdfOpen(ev) {
+function preventPageZoomWhilePdfOpen(ev) {
   if (!document.body.classList.contains("pdfOpen")) return;
 
-  // Mantém apenas a proteção para Ctrl/Cmd + roda do mouse no desktop,
-  // sem interferir no pinch zoom do celular.
-  if (ev.ctrlKey || ev.metaKey) {
+  // Bloqueia apenas zoom/gestos da página principal. O zoom interno do preview
+  // do PDF continua acontecendo dentro do iframe.
+  if (ev.type.startsWith("gesture") || ev.ctrlKey || ev.metaKey) {
     ev.preventDefault();
   }
 }
 
-document.addEventListener("wheel", preventDesktopPageZoomWhilePdfOpen, { passive: false });
+document.addEventListener("gesturestart", preventPageZoomWhilePdfOpen, { passive: false });
+document.addEventListener("gesturechange", preventPageZoomWhilePdfOpen, { passive: false });
+document.addEventListener("gestureend", preventPageZoomWhilePdfOpen, { passive: false });
+document.addEventListener("wheel", preventPageZoomWhilePdfOpen, { passive: false });
 
 pdfBack?.addEventListener("click", (ev) => {
   ev.preventDefault();

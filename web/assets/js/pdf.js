@@ -31,38 +31,23 @@ export function driveToPreview(url) {
   const raw = String(url || "").trim();
   if (!raw) return "";
 
-  // Se alguém colou um link do Google Viewer antigo, retiramos a camada do
-  // Google Viewer e tentamos abrir o PDF original. Essa camada externa é a que
-  // costuma roubar o gesto de zoom no mobile e recarregar o PWA no zoom máximo.
-  if (/docs\.google\.com\/gview/i.test(raw)) {
-    try {
-      const parsed = new URL(raw);
-      const originalUrl = parsed.searchParams.get("url") || "";
-      if (originalUrl) return driveToPreview(originalUrl);
-    } catch {
-      // segue para as outras regras
-    }
-  }
-
   if (raw.includes("drive.google.com")) {
     const fileId = getDriveFileId(raw);
 
     if (fileId) {
-      // IMPORTANTE: não usar /preview aqui.
-      // /preview depende do visualizador web do Drive dentro do iframe. No
-      // Android/iOS, ao chegar no limite do zoom, ele pode disparar navegação
-      // ou reload do app. O link abaixo entrega o arquivo PDF diretamente para
-      // o visualizador nativo do navegador, igual acontece com PDF anexado.
-      return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+      return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
     }
 
-    return raw;
+    return raw.includes("/preview")
+      ? raw
+      : raw.replace(/\/view.*$/i, "/preview");
   }
 
-  // PDFs diretos devem continuar diretos. Assim o celular usa o visualizador
-  // nativo do navegador, que segura o limite do zoom sem recarregar a página.
+  // PDFs diretos dentro do iframe podem bugar o zoom em alguns WebViews/PWAs
+  // Android/iOS. Usamos o visualizador do Google como camada estável, mantendo
+  // o PDF dentro do app.
   if (/^https?:\/\//i.test(raw) && /\.pdf(\?|#|$)/i.test(raw)) {
-    return raw;
+    return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(raw)}`;
   }
 
   return raw;
