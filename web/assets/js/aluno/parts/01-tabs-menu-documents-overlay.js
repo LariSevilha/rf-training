@@ -232,8 +232,6 @@ function cardioWrittenHtml() {
   `;
 }
 
-let pdfOverlayHistoryActive = false;
-
 function setPdfFrameHtml(html) {
   if (!pdfFrame) return;
 
@@ -245,14 +243,13 @@ function setPdfFrameUrl(url) {
   if (!pdfFrame) return;
 
   pdfFrame.removeAttribute("srcdoc");
-  pdfFrame.src = "about:blank";
 
+  // Evita trocar para about:blank antes do PDF. Essa troca intermediária
+  // fazia alguns WebViews/PWAs redesenharem a tela e perderem o estado do zoom.
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (pdfOverlay?.classList.contains("show")) {
-        pdfFrame.src = url;
-      }
-    });
+    if (pdfOverlay?.classList.contains("show")) {
+      pdfFrame.setAttribute("src", url);
+    }
   });
 }
 
@@ -263,10 +260,6 @@ function showPdfOverlay(title = "PDF") {
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
 
-  if (!pdfOverlayHistoryActive && window.history?.pushState) {
-    window.history.pushState({ rfPdfOverlay: true }, "");
-    pdfOverlayHistoryActive = true;
-  }
 }
 
 function openHtmlOverlay(title, html) {
@@ -334,7 +327,7 @@ function openContent(type) {
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
-function closePdf(options = {}) {
+function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
@@ -347,19 +340,26 @@ function closePdf(options = {}) {
     }
   }, 200);
 
-  if (pdfOverlayHistoryActive && !options.fromPopState && window.history?.state?.rfPdfOverlay) {
-    pdfOverlayHistoryActive = false;
-    window.history.back();
-  } else if (options.fromPopState) {
-    pdfOverlayHistoryActive = false;
+}
+
+// Não usamos pushState/popstate no visualizador de PDF.
+// Em Android/iOS, gestos de zoom dentro do preview do Drive/PDF podem disparar
+// navegação do histórico da página e mandar o aluno de volta para a tela inicial.
+
+function preventPageZoomWhilePdfOpen(ev) {
+  if (!document.body.classList.contains("pdfOpen")) return;
+
+  // Bloqueia apenas zoom/gestos da página principal. O zoom interno do preview
+  // do PDF continua acontecendo dentro do iframe.
+  if (ev.type.startsWith("gesture") || ev.ctrlKey || ev.metaKey) {
+    ev.preventDefault();
   }
 }
 
-window.addEventListener("popstate", () => {
-  if (pdfOverlay?.classList.contains("show")) {
-    closePdf({ fromPopState: true });
-  }
-});
+document.addEventListener("gesturestart", preventPageZoomWhilePdfOpen, { passive: false });
+document.addEventListener("gesturechange", preventPageZoomWhilePdfOpen, { passive: false });
+document.addEventListener("gestureend", preventPageZoomWhilePdfOpen, { passive: false });
+document.addEventListener("wheel", preventPageZoomWhilePdfOpen, { passive: false });
 
 pdfBack?.addEventListener("click", (ev) => {
   ev.preventDefault();

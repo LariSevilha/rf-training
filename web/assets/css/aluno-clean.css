@@ -1634,3 +1634,36 @@ body.pdfOpen {
   z-index: 5 !important;
   pointer-events: none !important;
 }
+
+
+/* =========================================================
+   PDF MOBILE SAFE — impede zoom da página/reload do PWA
+   ========================================================= */
+html:has(body.pdfOpen),
+body.pdfOpen {
+  position: fixed !important;
+  inset: 0 !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+.alunoClean .pdfOverlay.show {
+  z-index: 99999 !important;
+  contain: layout size style !important;
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+  touch-action: none !important;
+}
+
+.alunoClean .pdfFrameWrap {
+  overscroll-behavior: none !important;
+  contain: strict !important;
+  transform: translateZ(0) !important;
+  touch-action: none !important;
+}
+
+.alunoClean #pdfFrame {
+  overscroll-behavior: contain !important;
+  touch-action: auto !important;
+}
