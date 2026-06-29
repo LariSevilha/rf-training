@@ -77,7 +77,6 @@ function openPdfFullscreen(type) {
 
   if (!preview) {
     const placeholder = makePlaceholderHtml(titles[type], "Configure o PDF com o admin ou use o painel lateral.");
-    pdfFrame.removeAttribute("srcdoc");
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholder);
     setTimeout(hideLoading, 350);
   } else {

@@ -232,68 +232,50 @@ function cardioWrittenHtml() {
   `;
 }
 
-function setPdfFrameHtml(html) {
-  if (!pdfFrame) return;
+function openHtmlOverlay(title, html) {
+  if (pdfTitle) pdfTitle.textContent = title || "Material";
+  showLoading();
 
-  pdfFrame.removeAttribute("src");
-  pdfFrame.srcdoc = html;
-}
+  if (pdfFrame) {
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+  }
 
-function setPdfFrameUrl(url) {
-  if (!pdfFrame) return;
-
-  pdfFrame.removeAttribute("srcdoc");
-
-  // Evita trocar para about:blank antes do PDF. Essa troca intermediária
-  // fazia alguns WebViews/PWAs redesenharem a tela e perderem o estado do zoom.
-  requestAnimationFrame(() => {
-    if (pdfOverlay?.classList.contains("show")) {
-      pdfFrame.setAttribute("src", url);
-    }
-  });
-}
-
-function showPdfOverlay(title = "PDF") {
-  if (pdfTitle) pdfTitle.textContent = title;
+  setTimeout(hideLoading, 250);
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-
-}
-
-function openHtmlOverlay(title, html) {
-  showPdfOverlay(title || "Material");
-  showLoading();
-  setPdfFrameHtml(html);
-  setTimeout(hideLoading, 250);
 }
 
 function openPdfOverlay(title, rawUrl) {
-  showPdfOverlay(title || "PDF");
+  if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
   if (!rawUrl) {
-    setPdfFrameHtml(placeholderHtml("Material não configurado", "Entre em contato com o personal."));
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+    );
     setTimeout(hideLoading, 250);
-    return;
+  } else if (!navigator.onLine) {
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+    );
+    setTimeout(hideLoading, 250);
+  } else {
+    const preview = driveToPreview(rawUrl);
+    if (!preview) {
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+      );
+      setTimeout(hideLoading, 250);
+    } else {
+      pdfFrame.src = preview;
+    }
   }
 
-  if (!navigator.onLine) {
-    setPdfFrameHtml(placeholderHtml("Você está offline", "Conecte-se para abrir este material."));
-    setTimeout(hideLoading, 250);
-    return;
-  }
-
-  const preview = driveToPreview(rawUrl);
-
-  if (!preview) {
-    setPdfFrameHtml(placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível."));
-    setTimeout(hideLoading, 250);
-    return;
-  }
-
-  setPdfFrameUrl(preview);
+  pdfOverlay?.classList.add("show");
+  pdfOverlay?.setAttribute("aria-hidden", "false");
+  document.body.classList.add("pdfOpen");
 }
 
 function openContent(type) {
@@ -334,32 +316,9 @@ function closePdf() {
   hideLoading();
 
   setTimeout(() => {
-    if (pdfFrame) {
-      pdfFrame.removeAttribute("srcdoc");
-      pdfFrame.src = "about:blank";
-    }
+    if (pdfFrame) pdfFrame.src = "about:blank";
   }, 200);
-
 }
-
-// Não usamos pushState/popstate no visualizador de PDF.
-// Em Android/iOS, gestos de zoom dentro do preview do Drive/PDF podem disparar
-// navegação do histórico da página e mandar o aluno de volta para a tela inicial.
-
-function preventPageZoomWhilePdfOpen(ev) {
-  if (!document.body.classList.contains("pdfOpen")) return;
-
-  // Bloqueia apenas zoom/gestos da página principal. O zoom interno do preview
-  // do PDF continua acontecendo dentro do iframe.
-  if (ev.type.startsWith("gesture") || ev.ctrlKey || ev.metaKey) {
-    ev.preventDefault();
-  }
-}
-
-document.addEventListener("gesturestart", preventPageZoomWhilePdfOpen, { passive: false });
-document.addEventListener("gesturechange", preventPageZoomWhilePdfOpen, { passive: false });
-document.addEventListener("gestureend", preventPageZoomWhilePdfOpen, { passive: false });
-document.addEventListener("wheel", preventPageZoomWhilePdfOpen, { passive: false });
 
 pdfBack?.addEventListener("click", (ev) => {
   ev.preventDefault();

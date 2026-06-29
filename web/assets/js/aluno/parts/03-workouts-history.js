@@ -118,6 +118,72 @@ function renderStudentHistory(records = []) {
   }).join("");
 }
 
+
+function getTechniqueData(item) {
+  const direct = item?.technique || item?.trainingTechnique || item?.techniqueData || null;
+
+  const name =
+    direct?.name ||
+    direct?.title ||
+    item?.techniqueName ||
+    item?.trainingTechniqueName ||
+    item?.techniqueTitle ||
+    "";
+
+  if (!String(name || "").trim()) return null;
+
+  return {
+    id: direct?.id || item?.techniqueId || item?.trainingTechniqueId || "",
+    name: String(name || "").trim(),
+    videoUrl:
+      direct?.videoUrl ||
+      direct?.url ||
+      item?.techniqueVideoUrl ||
+      item?.trainingTechniqueVideoUrl ||
+      "",
+    notes:
+      direct?.notes ||
+      direct?.description ||
+      item?.techniqueNotes ||
+      item?.trainingTechniqueNotes ||
+      item?.techniqueDescription ||
+      "",
+    exerciseNote:
+      direct?.exerciseNote ||
+      item?.techniqueNote ||
+      item?.trainingTechniqueNote ||
+      item?.techniqueObservation ||
+      "",
+  };
+}
+
+function buildStudentTechniqueHtml(item) {
+  const technique = getTechniqueData(item);
+  if (!technique?.name) return "";
+
+  return `<span class="studentTechniqueName">${escapeHtml(technique.name || "")}</span>`;
+}
+
+function buildStudentTechniqueDescriptionHtml(item) {
+  const technique = getTechniqueData(item);
+  if (!technique?.name) return "";
+
+  const exerciseNote = String(technique.exerciseNote || "").trim();
+  const catalogNote = String(technique.notes || "").trim();
+  const note = exerciseNote || catalogNote;
+
+  if (!note) return "";
+
+  return `<p class="studentTechniqueDescription">${escapeHtml(note)}</p>`;
+}
+
+function buildExerciseVideoHtml(exercise) {
+  const videoUrl = String(exercise?.videoUrl || exercise?.video?.url || exercise?.video || "").trim();
+  if (!videoUrl) return "";
+
+  return `<a class="studentExerciseVideoLink" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>`;
+}
+
 function renderWorkouts() {
   if (!workoutArea || !workoutsEmpty) return;
 
@@ -142,19 +208,19 @@ function renderWorkouts() {
       <article class="exerciseBlock">
         <div class="exerciseHeader">
           <div>
-            <h3>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</h3>
-            ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
-            ${item.technique ? `
-              <div class="techniqueBox">
-                <b>Técnica:</b> ${escapeHtml(item.technique.name || "")}
-                ${item.technique.exerciseNote ? ` · ${escapeHtml(item.technique.exerciseNote)}` : ""}
-                ${item.technique.notes ? `<br><small>${escapeHtml(item.technique.notes)}</small>` : ""}
-                ${item.technique.videoUrl ? `<br><a class="videoBtn" href="${escapeHtml(item.technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
-              </div>
-            ` : ""}
-          </div>
+            <h3 class="exerciseInlineTitle">
+              <span>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</span>
+            </h3>
 
-          ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}
+            ${item.notes ? `<p class="exerciseDescription">${escapeHtml(item.notes)}</p>` : ""}
+
+            <div class="studentTechniqueVideoRow">
+              ${buildStudentTechniqueHtml(item)}
+              ${buildExerciseVideoHtml(exercise)}
+            </div>
+
+            ${buildStudentTechniqueDescriptionHtml(item)}
+          </div>
         </div>
 
         <div class="seriesTable">
