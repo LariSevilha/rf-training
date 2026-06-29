@@ -283,23 +283,6 @@ function openHtmlOverlay(title, html) {
   armPdfOverlayHistory();
 }
 
-function isMobilePdfContext() {
-  const ua = navigator.userAgent || "";
-  const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const isStandalone = window.navigator.standalone === true || window.matchMedia?.("(display-mode: standalone)")?.matches;
-  const isSmallTouch = window.matchMedia?.("(pointer: coarse)")?.matches && window.innerWidth <= 900;
-
-  return isIOS || isStandalone || isSmallTouch;
-}
-
-function isDriveMaterial(url) {
-  return String(url || "").includes("drive.google.com");
-}
-
-function openDriveDirect(url) {
-  const preview = driveToPreview(String(url || "").trim());
-  window.location.href = preview || url;
-}
 
 function openPdfOverlay(title, rawUrl) {
   const safeUrl = String(rawUrl || "").trim();
@@ -373,13 +356,6 @@ function openContent(type) {
     return;
   }
 
-  // O treino em link do Google Drive estava passando pelo pdf-viewer.html e quebrando no iPhone
-  // ao dar zoom/puxar no limite. A dieta não passava por esse fluxo problemático.
-  // Por isso, no mobile/PWA, o treino em Drive abre direto no preview do Drive, sem página intermediária.
-  if (type === "training" && urls.training && isMobilePdfContext() && isDriveMaterial(urls.training)) {
-    openDriveDirect(urls.training);
-    return;
-  }
 
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
