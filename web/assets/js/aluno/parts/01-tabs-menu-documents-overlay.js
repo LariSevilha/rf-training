@@ -283,33 +283,26 @@ function openHtmlOverlay(title, html) {
   armPdfOverlayHistory();
 }
 
-function shouldUseExternalSafePdfPage() {
+function isMobilePdfContext() {
   const ua = navigator.userAgent || "";
   const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const isStandalone = window.navigator.standalone === true || window.matchMedia?.("(display-mode: standalone)")?.matches;
   const isSmallTouch = window.matchMedia?.("(pointer: coarse)")?.matches && window.innerWidth <= 900;
 
-  // iOS/Safari e PWA têm bug conhecido com iframe + PDF/Drive + pinch no limite do zoom.
-  // Em vez de colocar o PDF dentro do aluno.html, abrimos uma página interna leve do próprio sistema.
   return isIOS || isStandalone || isSmallTouch;
 }
 
-function openSafePdfPage(title, rawUrl) {
-  const safeUrl = String(rawUrl || "").trim();
-  const preview = driveToPreview(safeUrl);
-  const params = new URLSearchParams();
-  params.set("title", title || "PDF");
-  params.set("url", preview || safeUrl || "");
-  window.location.href = `/pages/pdf-viewer.html?${params.toString()}`;
+function isDriveMaterial(url) {
+  return String(url || "").includes("drive.google.com");
+}
+
+function openDriveDirect(url) {
+  const preview = driveToPreview(String(url || "").trim());
+  window.location.href = preview || url;
 }
 
 function openPdfOverlay(title, rawUrl) {
   const safeUrl = String(rawUrl || "").trim();
-
-  if (safeUrl && navigator.onLine && shouldUseExternalSafePdfPage()) {
-    openSafePdfPage(title || "PDF", safeUrl);
-    return;
-  }
 
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
@@ -377,6 +370,14 @@ function openContent(type) {
   if (type.startsWith("extra-")) {
     const extra = extraItems.find((item) => `extra-${item.id}` === type);
     openPdfOverlay(extra?.title || "MATERIAL EXTRA", extraUrls[type] || "");
+    return;
+  }
+
+  // O treino em link do Google Drive estava passando pelo pdf-viewer.html e quebrando no iPhone
+  // ao dar zoom/puxar no limite. A dieta não passava por esse fluxo problemático.
+  // Por isso, no mobile/PWA, o treino em Drive abre direto no preview do Drive, sem página intermediária.
+  if (type === "training" && urls.training && isMobilePdfContext() && isDriveMaterial(urls.training)) {
+    openDriveDirect(urls.training);
     return;
   }
 
