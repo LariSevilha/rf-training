@@ -283,11 +283,37 @@ function openHtmlOverlay(title, html) {
   armPdfOverlayHistory();
 }
 
+function shouldUseExternalSafePdfPage() {
+  const ua = navigator.userAgent || "";
+  const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia?.("(display-mode: standalone)")?.matches;
+  const isSmallTouch = window.matchMedia?.("(pointer: coarse)")?.matches && window.innerWidth <= 900;
+
+  // iOS/Safari e PWA têm bug conhecido com iframe + PDF/Drive + pinch no limite do zoom.
+  // Em vez de colocar o PDF dentro do aluno.html, abrimos uma página interna leve do próprio sistema.
+  return isIOS || isStandalone || isSmallTouch;
+}
+
+function openSafePdfPage(title, rawUrl) {
+  const safeUrl = String(rawUrl || "").trim();
+  const preview = driveToPreview(safeUrl);
+  const params = new URLSearchParams();
+  params.set("title", title || "PDF");
+  params.set("url", preview || safeUrl || "");
+  window.location.href = `/pages/pdf-viewer.html?${params.toString()}`;
+}
+
 function openPdfOverlay(title, rawUrl) {
+  const safeUrl = String(rawUrl || "").trim();
+
+  if (safeUrl && navigator.onLine && shouldUseExternalSafePdfPage()) {
+    openSafePdfPage(title || "PDF", safeUrl);
+    return;
+  }
+
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  const safeUrl = String(rawUrl || "").trim();
   const isDriveUrl = safeUrl.includes("drive.google.com");
 
   pdfOverlay?.classList.toggle("drivePdf", isDriveUrl);
@@ -323,6 +349,7 @@ function openPdfOverlay(title, rawUrl) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+  armPdfOverlayHistory();
 }
 
 function openContent(type) {
