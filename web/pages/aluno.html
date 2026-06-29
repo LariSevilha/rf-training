@@ -5,6 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>RF Fitness</title>
 
+  <script>
+    // Se não existe token local, não deixa a área do aluno aparecer nem por 1 segundo.
+    // Vai direto para o login. A validação real do token continua no JS/API.
+    (function () {
+      try {
+        if (!localStorage.getItem("rf_token")) {
+          window.location.replace("/pages/index.html");
+        }
+      } catch (e) {
+        window.location.replace("/pages/index.html");
+      }
+    })();
+  </script>
+  <style>
+    /* Trava visual crítica antes do CSS externo carregar.
+       Evita aparecer tela inicial/menu do aluno antes da checagem de login. */
+    body.studentBooting .alunoTop,
+    body.studentBooting .alunoPage,
+    body.studentBooting .pdfOverlay,
+    body.studentBooting .iosInstallMask {
+      display: none !important;
+    }
+    body.studentBooting .studentBootScreen {
+      display: grid !important;
+    }
+    body.studentReady .studentBootScreen {
+      display: none !important;
+    }
+  </style>
+
   <link rel="stylesheet" href="/assets/css/main.css" />
   <link rel="stylesheet" href="/assets/css/aluno-clean.css" />
 
@@ -19,7 +49,15 @@
   <meta name="apple-mobile-web-app-title" content="RF Fitness">
   <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png">
 </head>
-<body class="pageAluno alunoClean">
+<body class="pageAluno alunoClean studentBooting">
+  <div class="studentBootScreen" id="studentBootScreen" aria-live="polite" aria-busy="true">
+    <div class="studentBootCard">
+      <img src="/img/logoapp.png" alt="RF Fitness" draggable="false">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Carregando acesso…</p>
+    </div>
+  </div>
+
   <div class="offlineMask" id="offlineMask" aria-hidden="true">
     <div class="offlineCard" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
       <div class="offlineIcon" aria-hidden="true">📡</div>
@@ -66,43 +104,7 @@
         </div>
       </div>
 
-      <div class="studentGrid" id="menuGrid">
-        <button class="studentCard" data-open="training" type="button">
-          <span class="cardIcon">🏋️</span>
-          <span class="cardText"><b>Treino</b><small>Plano de treino</small></span>
-          <span class="cardArrow">›</span>
-        </button>
-
-        <button class="studentCard" data-open="diet" type="button">
-          <span class="cardIcon">🍽️</span>
-          <span class="cardText"><b>Alimentação</b><small>Plano alimentar</small></span>
-          <span class="cardArrow">›</span>
-        </button>
-
-        <button class="studentCard" data-open="supp" type="button">
-          <span class="cardIcon">💊</span>
-          <span class="cardText"><b>Suplementação</b><small>Orientações</small></span>
-          <span class="cardArrow">›</span>
-        </button>
-
-        <button class="studentCard" data-open="cardio" type="button">
-          <span class="cardIcon">🏃</span>
-          <span class="cardText"><b>Cardio</b><small>Corrida e orientações</small></span>
-          <span class="cardArrow">›</span>
-        </button>
-
-        <button class="studentCard" data-open="exams" type="button">
-          <span class="cardIcon">🧾</span>
-          <span class="cardText"><b>Exames</b><small>Arquivos e avaliações</small></span>
-          <span class="cardArrow">›</span>
-        </button>
-
-        <button class="studentCard" data-open="stretch" type="button">
-          <span class="cardIcon">🤸</span>
-          <span class="cardText"><b>Alongamento</b><small>Mobilidade e cuidados</small></span>
-          <span class="cardArrow">›</span>
-        </button>
-      </div>
+      <div class="studentGrid" id="menuGrid" aria-live="polite"></div>
 
       <div class="emptyState" id="docsEmpty" style="display:none;">
         <div class="emptyIcon">📄</div>

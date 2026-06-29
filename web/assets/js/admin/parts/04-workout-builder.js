@@ -6,8 +6,6 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
-
-
 function buildTechniqueBadgeHtml(source) {
   const name = source?.techniqueName || source?.technique?.name || "";
   const note = source?.techniqueNote || source?.technique?.exerciseNote || "";
@@ -182,13 +180,17 @@ function renderWorkoutDraft() {
       <div draggable="true" data-draft-ex-index="${idx}" style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:8px 0;cursor:grab;">
         <div style="display:flex;justify-content:space-between;gap:10px;">
           <div>
-            <div class="exerciseInlineTitle">
-              <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>
-              ${buildTechniqueBadgeHtml(ex)}
-            </div>
+            <b>
+              ☰ ${idx + 1}. ${escapeHtml(ex.name)}
+              ${ex.techniqueName ? `
+                <span class="adminTechniqueInline">
+                  • ${escapeHtml(ex.techniqueName)}
+                  ${ex.techniqueVideoUrl ? ` <a href="${escapeHtml(ex.techniqueVideoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+                </span>
+              ` : ""}
+            </b>
             <div>${escapeHtml(ex.muscleGroup || "Sem agrupamento")}${ex.videoUrl ? " · vídeo vinculado" : ""}</div>
             ${ex.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(ex.notes)}</div>` : ""}
-            <div style="margin-top:6px;">Séries: ${ex.series.map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</div>
           </div>
           <div style="display:flex;gap:8px;height:max-content;flex-wrap:wrap;justify-content:flex-end;">
             <button class="btnGhost" type="button" data-edit-draft-ex="${idx}" style="padding:8px 10px;min-width:auto;">Editar</button>
@@ -418,12 +420,24 @@ function renderWorkoutList() {
           </div>
         </div>
         <div style="margin-top:8px;">
-          ${(w.exercises || []).map((ex, exIdx) => `
-            <div class="studentWorkoutExerciseLine">
-              <span>${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</span>
-              ${buildTechniqueBadgeHtml(ex)}
+          ${(w.exercises || []).map((ex, exIdx) => {
+            const techniqueName = ex.techniqueName || ex.technique?.name || "";
+            const techniqueVideoUrl = ex.techniqueVideoUrl || ex.technique?.videoUrl || ex.technique?.video?.url || "";
+            const techniqueNote = ex.techniqueNote || ex.technique?.exerciseNote || "";
+            const techniqueNotes = ex.techniqueNotes || ex.technique?.notes || "";
+            return `
+            <div>
+              ${exIdx + 1}. ${escapeHtml(ex.name)}
+              ${techniqueName ? `
+                <span class="adminTechniqueInline">
+                  • ${escapeHtml(techniqueName)}
+                  ${techniqueVideoUrl ? ` <a href="${escapeHtml(techniqueVideoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+                </span>
+              ` : ""}
+              — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
             </div>
-          `).join("")}
+            `;
+          }).join("")}
         </div>
       </div>
     `)
