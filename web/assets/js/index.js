@@ -59,7 +59,8 @@ loginBtn?.addEventListener("click", async (e) => {
     }
 
     setToken(data.token);
- 
+
+    setMsg(ok, "Login OK. Entrando…", "ok");
     goRole(data.user.role);
   } catch (e2) {
     setMsg(err, e2.message || "Erro no login.", "error");
