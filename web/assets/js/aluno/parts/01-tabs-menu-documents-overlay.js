@@ -1,6 +1,49 @@
 // Abas, menu inicial, documentos, PDF/HTML overlay e logout
 // Dependências importadas pelo arquivo principal: ../aluno.js
 
+
+function isExternalStudentLink(url) {
+  try {
+    const parsed = new URL(String(url || ""), window.location.href);
+    return ["http:", "https:"].includes(parsed.protocol) && parsed.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function openExternalStudentLink(url) {
+  const safeUrl = String(url || "").trim();
+  if (!safeUrl) return;
+
+  const opened = window.open(safeUrl, "_blank", "noopener,noreferrer");
+
+  // Fallback para iPhone/PWA quando window.open for bloqueado.
+  if (!opened) {
+    const a = document.createElement("a");
+    a.href = safeUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+}
+
+// Mantém links externos fora da tela principal do aluno.
+// Isso evita que links de vídeo/hiperlinks substituam o app por uma tela de redirecionamento do Google/YouTube.
+document.addEventListener("click", (ev) => {
+  const link = ev.target?.closest?.("a[href]");
+  if (!link) return;
+
+  const href = link.getAttribute("href") || "";
+  if (!isExternalStudentLink(href)) return;
+
+  ev.preventDefault();
+  ev.stopPropagation();
+  ev.stopImmediatePropagation?.();
+  openExternalStudentLink(link.href || href);
+}, true);
+
 function setTab(name) {
   const target = name === "manual" ? "manual" : "documents";
 
