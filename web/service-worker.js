@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-06-26-pdf-zoom-safe-v4";
+const VERSION = "rf-fitness-v2026-06-01-aluno-modular";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -94,9 +94,7 @@ self.addEventListener("fetch", (event) => {
 
   if (
     url.hostname.includes("drive.google.com") ||
-    url.hostname.includes("docs.google.com") ||
-    url.hostname.includes("googleusercontent.com") ||
-    url.hostname.includes("gstatic.com")
+    url.hostname.includes("googleusercontent.com")
   ) {
     return;
   }
