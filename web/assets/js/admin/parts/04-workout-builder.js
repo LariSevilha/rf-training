@@ -407,7 +407,7 @@ function renderWorkoutList() {
                 <div>
                   ${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
                 </div>
-                ${techniqueName ? `<div class="adminTechniqueInline"><span>•</span> <b>${escapeHtml(techniqueName)}</b>${techniqueVideoUrl ? ` <a href="${escapeHtml(techniqueVideoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}</div>` : ""}
+                ${techniqueName ? `<div class="adminTechniqueInline"><span>•</span> <b>${escapeHtml(techniqueName)}</b>${techniqueVideoUrl ? ` <a href="${escapeHtml(techniqueVideoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}${techniqueNote ? ` · ${escapeHtml(techniqueNote)}` : ""}${techniqueNotes && techniqueNotes !== techniqueNote ? ` · ${escapeHtml(techniqueNotes)}` : ""}</div>` : ""}
               </div>
             `;
           }).join("")}

@@ -35,41 +35,6 @@ backHomeBtn?.addEventListener("click", (ev) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
-let pdfOverlayHistoryArmed = false;
-let pdfClosingFromHistory = false;
-
-function armPdfOverlayHistory() {
-  if (!pdfOverlay || pdfOverlayHistoryArmed) return;
-
-  try {
-    window.history.pushState({ rfPdfOverlay: true }, "");
-    pdfOverlayHistoryArmed = true;
-  } catch {
-    pdfOverlayHistoryArmed = false;
-  }
-}
-
-function disarmPdfOverlayHistory() {
-  if (!pdfOverlayHistoryArmed || pdfClosingFromHistory) {
-    pdfOverlayHistoryArmed = false;
-    return;
-  }
-
-  pdfOverlayHistoryArmed = false;
-
-  try {
-    window.history.back();
-  } catch {}
-}
-
-window.addEventListener("popstate", () => {
-  if (!pdfOverlay?.classList.contains("show")) return;
-
-  pdfClosingFromHistory = true;
-  closePdf({ fromHistory: true });
-  pdfClosingFromHistory = false;
-});
-
 function lockMenu() {
   document.body.classList.remove("ready");
   menuGrid?.classList.add("menuLocked");
@@ -285,15 +250,11 @@ function openHtmlOverlay(title, html) {
 
 
 function openPdfOverlay(title, rawUrl) {
+  // Mesma lógica da dieta: qualquer material por link/PDF abre no overlay interno do aluno.
   const safeUrl = String(rawUrl || "").trim();
 
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
-
-  const isDriveUrl = safeUrl.includes("drive.google.com");
-
-  pdfOverlay?.classList.toggle("drivePdf", isDriveUrl);
-  pdfOverlay?.classList.toggle("nativePdf", !!safeUrl && !isDriveUrl);
 
   if (pdfFrame) {
     pdfFrame.removeAttribute("srcdoc");
@@ -301,23 +262,30 @@ function openPdfOverlay(title, rawUrl) {
   }
 
   if (!safeUrl) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-    );
+    if (pdfFrame) {
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+      );
+    }
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-    );
+    if (pdfFrame) {
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+      );
+    }
     setTimeout(hideLoading, 250);
   } else {
     const preview = driveToPreview(safeUrl);
+
     if (!preview) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-      );
+      if (pdfFrame) {
+        pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+          placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+        );
+      }
       setTimeout(hideLoading, 250);
-    } else {
+    } else if (pdfFrame) {
       pdfFrame.src = preview;
     }
   }
@@ -325,7 +293,6 @@ function openPdfOverlay(title, rawUrl) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-  armPdfOverlayHistory();
 }
 
 function openContent(type) {
@@ -356,11 +323,11 @@ function openContent(type) {
     return;
   }
 
-
+  // Treino por link/PDF usa exatamente a mesma rota da dieta.
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
-function closePdf(options = {}) {
+function closePdf() {
   pdfOverlay?.classList.remove("show", "drivePdf", "nativePdf");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
@@ -369,12 +336,6 @@ function closePdf(options = {}) {
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";
   }, 200);
-
-  if (!options.fromHistory) {
-    disarmPdfOverlayHistory();
-  } else {
-    pdfOverlayHistoryArmed = false;
-  }
 }
 
 pdfBack?.addEventListener("click", (ev) => {

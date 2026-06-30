@@ -160,7 +160,8 @@ function renderWorkouts() {
             ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
             ${(techniqueNote || techniqueNotes) ? `
               <div class="techniqueBox">
-                ${techniqueNote ? `<b>Obs. técnica:</b> ${escapeHtml(techniqueNote)}` : ""} 
+                ${techniqueNote ? `<b>Obs. técnica:</b> ${escapeHtml(techniqueNote)}` : ""}
+                ${techniqueNotes ? `${techniqueNote ? "<br>" : ""}<small>${escapeHtml(techniqueNotes)}</small>` : ""}
               </div>
             ` : ""}
           </div>
