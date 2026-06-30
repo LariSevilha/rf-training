@@ -20,10 +20,7 @@
     const content = files
       .map((file) => `// ===== ${file} =====
 ` + readFileSync(join(partsDir, file), "utf8").trim())
-      .join("
+      .join("");
 
-");
-
-    writeFileSync(output, banner + content + "
-", "utf8");
+    writeFileSync(output, banner + content + "", "utf8");
     console.log(`Admin JS gerado com ${files.length} partes: ${output}`);
