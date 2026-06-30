@@ -48,6 +48,7 @@
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .04em;
+  
 }
 .adminTechniqueInline a {
   color: var(--rf-gold-2, #ceac5e);
