@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Visualizar PDF</title>
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%;background:#000;color:#fff;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden;overscroll-behavior:none}
+    body{position:fixed;inset:0}
+    .viewerPage{height:100dvh;width:100vw;display:flex;flex-direction:column;background:#000;overflow:hidden;overscroll-behavior:none}
+    .viewerTop{height:calc(58px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 12px 8px;display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.96);border-bottom:1px solid rgba(255,255,255,.10);flex:0 0 auto}
+    .viewerBack{appearance:none;border:1px solid rgba(255,255,255,.16);background:#151515;color:#fff;border-radius:999px;padding:10px 14px;font-weight:900;font-size:14px}
+    .viewerTitle{min-width:0;flex:1;text-align:center;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ceac5e;padding-right:62px}
+    .viewerFrameWrap{flex:1 1 auto;min-height:0;width:100%;background:#000;overflow:hidden;overscroll-behavior:none;-webkit-overflow-scrolling:auto}
+    iframe{display:block;width:100%;height:100%;border:0;background:#000;overscroll-behavior:none}
+    .empty{height:100%;display:grid;place-items:center;text-align:center;padding:24px;color:rgba(255,255,255,.78)}
+    .empty b{display:block;color:#fff;margin-bottom:8px;font-size:18px}
+  </style>
+</head>
+<body>
+  <main class="viewerPage">
+    <header class="viewerTop">
+      <button class="viewerBack" type="button" id="backBtn">Voltar</button>
+      <div class="viewerTitle" id="viewerTitle">PDF</div>
+    </header>
+    <section class="viewerFrameWrap" id="frameWrap">
+      <iframe id="viewerFrame" title="Visualização de PDF" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+    </section>
+  </main>
+
+  <script type="module">
+    import { driveToPreview, placeholderHtml } from "/assets/js/pdf.js";
+
+    const params = new URLSearchParams(location.search);
+    const title = params.get("title") || "PDF";
+    const rawUrl = params.get("url") || "";
+    const backBtn = document.getElementById("backBtn");
+    const viewerTitle = document.getElementById("viewerTitle");
+    const frame = document.getElementById("viewerFrame");
+
+    viewerTitle.textContent = title;
+
+    backBtn.addEventListener("click", () => {
+      if (history.length > 1) history.back();
+      else location.href = "/pages/aluno.html";
+    });
+
+    window.addEventListener("pageshow", () => {
+      const safeUrl = driveToPreview(rawUrl);
+      if (!safeUrl) {
+        frame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+          placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+        );
+        return;
+      }
+
+      if (!navigator.onLine) {
+        frame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+          placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+        );
+        return;
+      }
+
+      frame.src = safeUrl;
+    });
+  </script>
+</body>
+</html>

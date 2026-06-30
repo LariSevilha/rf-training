@@ -168,21 +168,7 @@ function hideLoading() {
   fallbackTimer = null;
 }
 
-pdfFrame?.addEventListener("load", () => {
-  hideLoading();
-
-  // Se um hiperlink dentro do PDF/Drive navegar o iframe para Google/YouTube,
-  // restauramos o material ao voltar para o app em vez de deixar a tela branca.
-  if (typeof isPdfOverlayOpen === "function" && typeof restorePdfFrameAfterExternalNavigation === "function") {
-    const elapsed = Date.now() - (window.activePdfFrameSetAt || 0);
-    if (isPdfOverlayOpen() && elapsed > 4000) {
-      // Aguarda um pouco para não interferir no carregamento inicial do Drive/PDF.
-      setTimeout(() => {
-        if (document.visibilityState === "visible") restorePdfFrameAfterExternalNavigation();
-      }, 900);
-    }
-  }
-});
+pdfFrame?.addEventListener("load", hideLoading);
 
 function setOfflineUI() {
   const online = navigator.onLine;

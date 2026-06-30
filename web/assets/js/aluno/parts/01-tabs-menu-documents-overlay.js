@@ -1,6 +1,49 @@
 // Abas, menu inicial, documentos, PDF/HTML overlay e logout
 // Dependências importadas pelo arquivo principal: ../aluno.js
 
+
+function isExternalStudentLink(url) {
+  try {
+    const parsed = new URL(String(url || ""), window.location.href);
+    return ["http:", "https:"].includes(parsed.protocol) && parsed.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function openExternalStudentLink(url) {
+  const safeUrl = String(url || "").trim();
+  if (!safeUrl) return;
+
+  const opened = window.open(safeUrl, "_blank", "noopener,noreferrer");
+
+  // Fallback para iPhone/PWA quando window.open for bloqueado.
+  if (!opened) {
+    const a = document.createElement("a");
+    a.href = safeUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+}
+
+// Mantém links externos fora da tela principal do aluno.
+// Isso evita que links de vídeo/hiperlinks substituam o app por uma tela de redirecionamento do Google/YouTube.
+document.addEventListener("click", (ev) => {
+  const link = ev.target?.closest?.("a[href]");
+  if (!link) return;
+
+  const href = link.getAttribute("href") || "";
+  if (!isExternalStudentLink(href)) return;
+
+  ev.preventDefault();
+  ev.stopPropagation();
+  ev.stopImmediatePropagation?.();
+  openExternalStudentLink(link.href || href);
+}, true);
+
 function setTab(name) {
   const target = name === "manual" ? "manual" : "documents";
 
@@ -232,72 +275,12 @@ function cardioWrittenHtml() {
   `;
 }
 
-
-window.activePdfFrameSrc = "";
-window.activePdfFrameTitle = "";
-window.activePdfFrameSetAt = 0;
-let activePdfRecoverTimer = null;
-
-function setPdfFrameSrc(src, title = "PDF") {
-  window.activePdfFrameSrc = String(src || "");
-  window.activePdfFrameTitle = String(title || "PDF");
-  window.activePdfFrameSetAt = Date.now();
-  if (pdfFrame) pdfFrame.src = window.activePdfFrameSrc;
-}
-
-function isPdfOverlayOpen() {
-  return !!pdfOverlay?.classList.contains("show");
-}
-
-function restorePdfFrameAfterExternalNavigation() {
-  if (!isPdfOverlayOpen() || !window.activePdfFrameSrc || !pdfFrame) return;
-
-  clearTimeout(activePdfRecoverTimer);
-  activePdfRecoverTimer = setTimeout(() => {
-    if (!isPdfOverlayOpen() || !window.activePdfFrameSrc || !pdfFrame) return;
-    showLoading();
-    pdfFrame.src = "about:blank";
-    setTimeout(() => {
-      if (!isPdfOverlayOpen() || !window.activePdfFrameSrc || !pdfFrame) return;
-      pdfFrame.src = window.activePdfFrameSrc;
-    }, 80);
-  }, 250);
-}
-
-window.addEventListener("focus", restorePdfFrameAfterExternalNavigation);
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") restorePdfFrameAfterExternalNavigation();
-});
-
-document.addEventListener("click", (ev) => {
-  const link = ev.target?.closest?.("a[href]");
-  if (!link) return;
-
-  const href = link.getAttribute("href") || "";
-  if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
-
-  let url;
-  try {
-    url = new URL(href, window.location.href);
-  } catch {
-    return;
-  }
-
-  const isExternal = url.origin !== window.location.origin;
-  if (!isExternal) return;
-
-  ev.preventDefault();
-  ev.stopPropagation();
-
-  window.open(url.href, "_blank", "noopener,noreferrer");
-});
-
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
 
   if (pdfFrame) {
-    setPdfFrameSrc("data:text/html;charset=utf-8," + encodeURIComponent(html), title || "Material");
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
   }
 
   setTimeout(hideLoading, 250);
@@ -305,31 +288,48 @@ function openHtmlOverlay(title, html) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+  armPdfOverlayHistory();
 }
 
+
 function openPdfOverlay(title, rawUrl) {
+  // Mesma lógica da dieta: qualquer material por link/PDF abre no overlay interno do aluno.
+  const safeUrl = String(rawUrl || "").trim();
+
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  if (!rawUrl) {
-    setPdfFrameSrc("data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-    ), title || "PDF");
+  if (pdfFrame) {
+    pdfFrame.removeAttribute("srcdoc");
+    pdfFrame.src = "about:blank";
+  }
+
+  if (!safeUrl) {
+    if (pdfFrame) {
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+      );
+    }
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    setPdfFrameSrc("data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-    ), title || "PDF");
+    if (pdfFrame) {
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+      );
+    }
     setTimeout(hideLoading, 250);
   } else {
-    const preview = driveToPreview(rawUrl);
+    const preview = driveToPreview(safeUrl);
+
     if (!preview) {
-      setPdfFrameSrc("data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-      ), title || "PDF");
+      if (pdfFrame) {
+        pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+          placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+        );
+      }
       setTimeout(hideLoading, 250);
-    } else {
-      setPdfFrameSrc(preview, title || "PDF");
+    } else if (pdfFrame) {
+      pdfFrame.src = preview;
     }
   }
 
@@ -366,19 +366,18 @@ function openContent(type) {
     return;
   }
 
+  // Treino por link/PDF usa exatamente a mesma rota da dieta.
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
 function closePdf() {
-  pdfOverlay?.classList.remove("show");
+  pdfOverlay?.classList.remove("show", "drivePdf", "nativePdf");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
   hideLoading();
 
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";
-    window.activePdfFrameSrc = "";
-    window.activePdfFrameTitle = "";
   }, 200);
 }
 

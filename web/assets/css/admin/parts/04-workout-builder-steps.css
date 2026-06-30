@@ -39,3 +39,20 @@
     box-shadow: 0 0 0 4px rgba(255,255,255,.035);
   }
 }
+
+/* Técnica destacada no cadastro de treino */
+.adminTechniqueInline {
+  margin-top: 6px;
+  color: var(--rf-gold-2, #ceac5e);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.adminTechniqueInline a {
+  color: var(--rf-gold-2, #ceac5e);
+  text-transform: none;
+  letter-spacing: 0;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(206,172,94,.55);
+}
