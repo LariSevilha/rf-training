@@ -65,6 +65,16 @@ function hideLoading() {
 
 pdfFrame.addEventListener("load", () => hideLoading());
 
+function setPdfFrameSrcOnce(src) {
+  const nextSrc = String(src || "");
+  if (pdfFrame.dataset.currentSrc === nextSrc && pdfFrame.src && pdfFrame.src !== "about:blank") {
+    hideLoading();
+    return;
+  }
+  pdfFrame.dataset.currentSrc = nextSrc;
+  pdfFrame.src = nextSrc;
+}
+
 // Open PDF
 function openPdfFullscreen(type) {
   const titles = { training: "TREINO", diet: "ALIMENTAÇÃO", supp: "SUPLEMENTAÇÃO" };
@@ -77,10 +87,10 @@ function openPdfFullscreen(type) {
 
   if (!preview) {
     const placeholder = makePlaceholderHtml(titles[type], "Configure o PDF com o admin ou use o painel lateral.");
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholder);
+    setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(placeholder));
     setTimeout(hideLoading, 350);
   } else {
-    pdfFrame.src = preview;
+    setPdfFrameSrcOnce(preview);
   }
 
   topbar.style.display = "none";
@@ -94,6 +104,7 @@ function closePdfFullscreen() {
   hideLoading();
   setTimeout(() => {
     topbar.style.display = "flex";
+    pdfFrame.dataset.currentSrc = "";
     pdfFrame.src = "about:blank";
   }, 220);
 }

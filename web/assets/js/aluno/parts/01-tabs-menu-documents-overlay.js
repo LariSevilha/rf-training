@@ -232,12 +232,27 @@ function cardioWrittenHtml() {
   `;
 }
 
+function setPdfFrameSrcOnce(src) {
+  if (!pdfFrame) return;
+  const nextSrc = String(src || "");
+
+  // Impede recarregar o iframe quando o navegador dispara resize/zoom
+  // e alguma rotina tenta abrir novamente o mesmo PDF.
+  if (pdfFrame.dataset.currentSrc === nextSrc && pdfFrame.src && pdfFrame.src !== "about:blank") {
+    hideLoading();
+    return;
+  }
+
+  pdfFrame.dataset.currentSrc = nextSrc;
+  pdfFrame.src = nextSrc;
+}
+
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
 
   if (pdfFrame) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
+    setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(html));
   }
 
   setTimeout(hideLoading, 250);
@@ -245,48 +260,31 @@ function openHtmlOverlay(title, html) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-  armPdfOverlayHistory();
 }
 
-
 function openPdfOverlay(title, rawUrl) {
-  // Mesma lógica da dieta: qualquer material por link/PDF abre no overlay interno do aluno.
-  const safeUrl = String(rawUrl || "").trim();
-
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  if (pdfFrame) {
-    pdfFrame.removeAttribute("srcdoc");
-    pdfFrame.src = "about:blank";
-  }
-
-  if (!safeUrl) {
-    if (pdfFrame) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-      );
-    }
+  if (!rawUrl) {
+    setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+    ));
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    if (pdfFrame) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-      );
-    }
+    setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+    ));
     setTimeout(hideLoading, 250);
   } else {
-    const preview = driveToPreview(safeUrl);
-
+    const preview = driveToPreview(rawUrl);
     if (!preview) {
-      if (pdfFrame) {
-        pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-          placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-        );
-      }
+      setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+      ));
       setTimeout(hideLoading, 250);
-    } else if (pdfFrame) {
-      pdfFrame.src = preview;
+    } else {
+      setPdfFrameSrcOnce(preview);
     }
   }
 
@@ -323,18 +321,17 @@ function openContent(type) {
     return;
   }
 
-  // Treino por link/PDF usa exatamente a mesma rota da dieta.
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
 function closePdf() {
-  pdfOverlay?.classList.remove("show", "drivePdf", "nativePdf");
+  pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
   hideLoading();
 
   setTimeout(() => {
-    if (pdfFrame) pdfFrame.src = "about:blank";
+    if (pdfFrame) { pdfFrame.dataset.currentSrc = ""; pdfFrame.src = "about:blank"; }
   }, 200);
 }
 

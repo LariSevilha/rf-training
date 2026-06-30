@@ -1,30 +1,52 @@
-export function driveToPreview(url) {
-  const raw = String(url || "").trim();
-  if (!raw) return "";
+export function getGoogleDriveFileId(url) {
+  if (!url) return "";
+
+  const raw = String(url).trim();
 
   try {
-    const parsed = new URL(raw, window.location.origin);
+    const parsed = new URL(raw);
 
-    if (parsed.hostname.includes("drive.google.com")) {
-      let fileId = "";
+    // https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+    const fileMatch = parsed.pathname.match(/\/file\/d\/([^/]+)/);
+    if (fileMatch?.[1]) return fileMatch[1];
 
-      const fileMatch = parsed.pathname.match(/\/file\/d\/([^/]+)/);
-      if (fileMatch?.[1]) fileId = fileMatch[1];
+    // https://drive.google.com/open?id=FILE_ID
+    // https://drive.google.com/uc?id=FILE_ID&export=download
+    const idParam = parsed.searchParams.get("id");
+    if (idParam) return idParam;
 
-      if (!fileId) fileId = parsed.searchParams.get("id") || "";
-
-      if (fileId) {
-        return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
-      }
-
-      if (parsed.pathname.includes("/preview")) return parsed.href;
-      return parsed.href.replace(/\/view(?:\?.*)?$/, "/preview");
-    }
-
-    return parsed.href;
+    // https://drive.google.com/drive/folders/... não é arquivo PDF
+    return "";
   } catch {
-    return raw;
+    const fileMatch = raw.match(/\/file\/d\/([^/?#]+)/);
+    if (fileMatch?.[1]) return fileMatch[1];
+
+    const idMatch = raw.match(/[?&]id=([^&#]+)/);
+    if (idMatch?.[1]) return decodeURIComponent(idMatch[1]);
   }
+
+  return "";
+}
+
+export function driveToPreview(url) {
+  if (!url) return "";
+
+  const raw = String(url).trim();
+
+  if (raw.includes("drive.google.com")) {
+    const fileId = getGoogleDriveFileId(raw);
+
+    // Usa sempre o preview oficial do arquivo. Isso evita variações como /view,
+    // open?id=, uc?id= e links com ?usp=sharing recarregando o iframe.
+    if (fileId) return `https://drive.google.com/file/d/${fileId}/preview`;
+
+    // Se já for preview, mantém.
+    if (raw.includes("/preview")) return raw;
+
+    return "";
+  }
+
+  return raw;
 }
 
 export function placeholderHtml(title, msg) {
@@ -33,7 +55,6 @@ export function placeholderHtml(title, msg) {
     <html>
       <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <style>
           body{
             font-family: system-ui;
@@ -42,14 +63,13 @@ export function placeholderHtml(title, msg) {
             display:flex;
             align-items:center;
             justify-content:center;
-            min-height:100vh;
+            height:100vh;
             margin:0;
-            padding:24px;
-            box-sizing:border-box;
           }
           .box{
             text-align:center;
             opacity:.85;
+            padding:24px;
           }
           h1{margin-bottom:8px;}
         </style>
@@ -63,3 +83,6 @@ export function placeholderHtml(title, msg) {
     </html>
   `;
 }
+
+// Compatibilidade com arquivo antigo app.js
+export const makePlaceholderHtml = placeholderHtml;

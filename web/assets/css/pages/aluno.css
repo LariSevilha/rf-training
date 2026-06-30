@@ -546,7 +546,6 @@
   }
 }
 
-
 /* Técnica inline no treino manual do aluno */
 .exerciseInlineTitle {
   display: flex;
@@ -582,3 +581,4 @@
   .techniqueInline { font-size: 10px; white-space: normal; }
   .techniqueLink { font-size: 10px; }
 }
+
