@@ -5,36 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>RF Fitness</title>
 
-  <script>
-    // Se não existe token local, não deixa a área do aluno aparecer nem por 1 segundo.
-    // Vai direto para o login. A validação real do token continua no JS/API.
-    (function () {
-      try {
-        if (!localStorage.getItem("rf_token")) {
-          window.location.replace("/pages/index.html");
-        }
-      } catch (e) {
-        window.location.replace("/pages/index.html");
-      }
-    })();
-  </script>
-  <style>
-    /* Trava visual crítica antes do CSS externo carregar.
-       Evita aparecer tela inicial/menu do aluno antes da checagem de login. */
-    body.studentBooting .alunoTop,
-    body.studentBooting .alunoPage,
-    body.studentBooting .pdfOverlay,
-    body.studentBooting .iosInstallMask {
-      display: none !important;
-    }
-    body.studentBooting .studentBootScreen {
-      display: grid !important;
-    }
-    body.studentReady .studentBootScreen {
-      display: none !important;
-    }
-  </style>
-
   <link rel="stylesheet" href="/assets/css/main.css" />
   <link rel="stylesheet" href="/assets/css/aluno-clean.css" />
 
