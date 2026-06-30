@@ -25,7 +25,18 @@
   <link rel="apple-touch-icon" sizes="180x180" href="../img/logoapp-ios-180.png">
 </head>
 
-<body class="loginBooting">
+<body>
+  <script>
+    // Sem token salvo: mostra o login imediatamente.
+    // Com token salvo: mostra a tela de verificação antes de redirecionar.
+    (function () {
+      try {
+        document.body.classList.add(localStorage.getItem("rf_token") ? "loginBooting" : "loginReady");
+      } catch (e) {
+        document.body.classList.add("loginReady");
+      }
+    })();
+  </script>
   <div class="loginBootScreen" id="loginBootScreen" aria-live="polite" aria-busy="true">
     <div class="loginBootCard">
       <img src="../img/logoapp.png" alt="RF Fitness" draggable="false" />

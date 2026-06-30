@@ -137,19 +137,30 @@ function renderWorkouts() {
   const exercisesHtml = (workout.exercises || []).map((item, exIndex) => {
     const exercise = item.exercise || {};
     const series = item.series || [];
+    const technique = item.technique || null;
+    const techniqueName = String(technique?.name || item.techniqueName || "").trim();
+    const techniqueNote = String(technique?.exerciseNote || item.techniqueNote || "").trim();
+    const techniqueNotes = String(technique?.notes || item.techniqueNotes || "").trim();
+    const techniqueVideoUrl = String(technique?.videoUrl || item.techniqueVideoUrl || "").trim();
 
     return `
       <article class="exerciseBlock">
         <div class="exerciseHeader">
           <div>
-            <h3>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</h3>
+            <h3 class="exerciseInlineTitle">
+              <span>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</span>
+              ${techniqueName ? `
+                <span class="techniqueInline">
+                  <span class="techniqueDot">•</span>
+                  <span class="techniqueName">${escapeHtml(techniqueName)}</span>
+                  ${techniqueVideoUrl ? `<a class="techniqueLink" href="${escapeHtml(techniqueVideoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+                </span>
+              ` : ""}
+            </h3>
             ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
-            ${item.technique ? `
+            ${(techniqueNote || techniqueNotes) ? `
               <div class="techniqueBox">
-                <b>Técnica:</b> ${escapeHtml(item.technique.name || "")}
-                ${item.technique.exerciseNote ? ` · ${escapeHtml(item.technique.exerciseNote)}` : ""}
-                ${item.technique.notes ? `<br><small>${escapeHtml(item.technique.notes)}</small>` : ""}
-                ${item.technique.videoUrl ? `<br><a class="videoBtn" href="${escapeHtml(item.technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+                ${techniqueNote ? `<b>Obs. técnica:</b> ${escapeHtml(techniqueNote)}` : ""} 
               </div>
             ` : ""}
           </div>

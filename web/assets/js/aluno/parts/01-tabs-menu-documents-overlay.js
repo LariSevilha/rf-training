@@ -35,6 +35,41 @@ backHomeBtn?.addEventListener("click", (ev) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
+let pdfOverlayHistoryArmed = false;
+let pdfClosingFromHistory = false;
+
+function armPdfOverlayHistory() {
+  if (!pdfOverlay || pdfOverlayHistoryArmed) return;
+
+  try {
+    window.history.pushState({ rfPdfOverlay: true }, "");
+    pdfOverlayHistoryArmed = true;
+  } catch {
+    pdfOverlayHistoryArmed = false;
+  }
+}
+
+function disarmPdfOverlayHistory() {
+  if (!pdfOverlayHistoryArmed || pdfClosingFromHistory) {
+    pdfOverlayHistoryArmed = false;
+    return;
+  }
+
+  pdfOverlayHistoryArmed = false;
+
+  try {
+    window.history.back();
+  } catch {}
+}
+
+window.addEventListener("popstate", () => {
+  if (!pdfOverlay?.classList.contains("show")) return;
+
+  pdfClosingFromHistory = true;
+  closePdf({ fromHistory: true });
+  pdfClosingFromHistory = false;
+});
+
 function lockMenu() {
   document.body.classList.remove("ready");
   menuGrid?.classList.add("menuLocked");
@@ -245,13 +280,27 @@ function openHtmlOverlay(title, html) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+  armPdfOverlayHistory();
 }
 
+
 function openPdfOverlay(title, rawUrl) {
+  const safeUrl = String(rawUrl || "").trim();
+
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  if (!rawUrl) {
+  const isDriveUrl = safeUrl.includes("drive.google.com");
+
+  pdfOverlay?.classList.toggle("drivePdf", isDriveUrl);
+  pdfOverlay?.classList.toggle("nativePdf", !!safeUrl && !isDriveUrl);
+
+  if (pdfFrame) {
+    pdfFrame.removeAttribute("srcdoc");
+    pdfFrame.src = "about:blank";
+  }
+
+  if (!safeUrl) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
       placeholderHtml("Material não configurado", "Entre em contato com o personal.")
     );
@@ -262,7 +311,7 @@ function openPdfOverlay(title, rawUrl) {
     );
     setTimeout(hideLoading, 250);
   } else {
-    const preview = driveToPreview(rawUrl);
+    const preview = driveToPreview(safeUrl);
     if (!preview) {
       pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
         placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
@@ -276,6 +325,7 @@ function openPdfOverlay(title, rawUrl) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+  armPdfOverlayHistory();
 }
 
 function openContent(type) {
@@ -306,11 +356,12 @@ function openContent(type) {
     return;
   }
 
+
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
-function closePdf() {
-  pdfOverlay?.classList.remove("show");
+function closePdf(options = {}) {
+  pdfOverlay?.classList.remove("show", "drivePdf", "nativePdf");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
   hideLoading();
@@ -318,6 +369,12 @@ function closePdf() {
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";
   }, 200);
+
+  if (!options.fromHistory) {
+    disarmPdfOverlayHistory();
+  } else {
+    pdfOverlayHistoryArmed = false;
+  }
 }
 
 pdfBack?.addEventListener("click", (ev) => {
