@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-06-01-aluno-modular";
+const VERSION = "rf-fitness-v2026-06-30-video-overlay-fix";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

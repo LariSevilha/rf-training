@@ -49,6 +49,14 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+// Corrige a "tela branca" do iOS ao voltar de um navegador externo
+// (ex.: ao fechar um link que abriu fora do app em modo standalone).
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
+
 const logoutBtn = document.getElementById("logoutBtn");
 const statusEl = document.getElementById("status");
 const nameEl = document.getElementById("studentName");

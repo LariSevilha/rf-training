@@ -1,49 +1,6 @@
 // Abas, menu inicial, documentos, PDF/HTML overlay e logout
 // Dependências importadas pelo arquivo principal: ../aluno.js
 
-
-function isExternalStudentLink(url) {
-  try {
-    const parsed = new URL(String(url || ""), window.location.href);
-    return ["http:", "https:"].includes(parsed.protocol) && parsed.origin !== window.location.origin;
-  } catch {
-    return false;
-  }
-}
-
-function openExternalStudentLink(url) {
-  const safeUrl = String(url || "").trim();
-  if (!safeUrl) return;
-
-  const opened = window.open(safeUrl, "_blank", "noopener,noreferrer");
-
-  // Fallback para iPhone/PWA quando window.open for bloqueado.
-  if (!opened) {
-    const a = document.createElement("a");
-    a.href = safeUrl;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-}
-
-// Mantém links externos fora da tela principal do aluno.
-// Isso evita que links de vídeo/hiperlinks substituam o app por uma tela de redirecionamento do Google/YouTube.
-document.addEventListener("click", (ev) => {
-  const link = ev.target?.closest?.("a[href]");
-  if (!link) return;
-
-  const href = link.getAttribute("href") || "";
-  if (!isExternalStudentLink(href)) return;
-
-  ev.preventDefault();
-  ev.stopPropagation();
-  ev.stopImmediatePropagation?.();
-  openExternalStudentLink(link.href || href);
-}, true);
-
 function setTab(name) {
   const target = name === "manual" ? "manual" : "documents";
 
@@ -288,48 +245,95 @@ function openHtmlOverlay(title, html) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-  armPdfOverlayHistory();
 }
 
-
 function openPdfOverlay(title, rawUrl) {
-  // Mesma lógica da dieta: qualquer material por link/PDF abre no overlay interno do aluno.
-  const safeUrl = String(rawUrl || "").trim();
-
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  if (pdfFrame) {
-    pdfFrame.removeAttribute("srcdoc");
-    pdfFrame.src = "about:blank";
-  }
-
-  if (!safeUrl) {
-    if (pdfFrame) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-      );
-    }
+  if (!rawUrl) {
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+    );
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    if (pdfFrame) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-      );
-    }
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+    );
     setTimeout(hideLoading, 250);
   } else {
-    const preview = driveToPreview(safeUrl);
-
+    const preview = driveToPreview(rawUrl);
     if (!preview) {
-      if (pdfFrame) {
-        pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-          placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-        );
-      }
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+      );
       setTimeout(hideLoading, 250);
-    } else if (pdfFrame) {
+    } else {
       pdfFrame.src = preview;
+    }
+  }
+
+  pdfOverlay?.classList.add("show");
+  pdfOverlay?.setAttribute("aria-hidden", "false");
+  document.body.classList.add("pdfOpen");
+}
+
+function extractYouTubeId(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.replace(/^www\./, "");
+
+    if (host === "youtu.be") {
+      return url.pathname.split("/").filter(Boolean)[0] || null;
+    }
+
+    if (host.includes("youtube.com") || host.includes("youtube-nocookie.com")) {
+      if (url.pathname === "/watch") return url.searchParams.get("v");
+
+      const parts = url.pathname.split("/").filter(Boolean);
+      const idx = parts.findIndex((p) => ["shorts", "embed", "live"].includes(p));
+      if (idx !== -1 && parts[idx + 1]) return parts[idx + 1];
+    }
+
+    // Link de redirecionamento (ex: google.com/url?...&url=https://youtube.com/...)
+    const redirected = url.searchParams.get("url") || url.searchParams.get("q");
+    if (redirected) return extractYouTubeId(redirected);
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function openVideoOverlay(title, rawUrl) {
+  if (pdfTitle) pdfTitle.textContent = title || "Vídeo";
+  showLoading();
+
+  if (!rawUrl) {
+    pdfFrame.removeAttribute("allow");
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Vídeo não configurado", "Entre em contato com o personal.")
+    );
+    setTimeout(hideLoading, 250);
+  } else if (!navigator.onLine) {
+    pdfFrame.removeAttribute("allow");
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Você está offline", "Conecte-se para assistir a este vídeo.")
+    );
+    setTimeout(hideLoading, 250);
+  } else {
+    const ytId = extractYouTubeId(rawUrl);
+
+    if (ytId) {
+      pdfFrame.setAttribute("allow", "autoplay; fullscreen; picture-in-picture; encrypted-media");
+      pdfFrame.setAttribute("allowfullscreen", "true");
+      pdfFrame.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytId)}?autoplay=1&playsinline=1&rel=0`;
+    } else {
+      // Não é um link reconhecido do YouTube: melhor abrir externamente
+      // do que tentar embutir um link arbitrário.
+      hideLoading();
+      window.open(rawUrl, "_blank", "noopener");
+      return;
     }
   }
 
@@ -366,18 +370,21 @@ function openContent(type) {
     return;
   }
 
-  // Treino por link/PDF usa exatamente a mesma rota da dieta.
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
 function closePdf() {
-  pdfOverlay?.classList.remove("show", "drivePdf", "nativePdf");
+  pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
   hideLoading();
 
   setTimeout(() => {
-    if (pdfFrame) pdfFrame.src = "about:blank";
+    if (pdfFrame) {
+      pdfFrame.src = "about:blank";
+      pdfFrame.removeAttribute("allow");
+      pdfFrame.removeAttribute("allowfullscreen");
+    }
   }, 200);
 }
 

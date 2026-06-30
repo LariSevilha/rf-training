@@ -137,36 +137,24 @@ function renderWorkouts() {
   const exercisesHtml = (workout.exercises || []).map((item, exIndex) => {
     const exercise = item.exercise || {};
     const series = item.series || [];
-    const technique = item.technique || null;
-    const techniqueName = String(technique?.name || item.techniqueName || "").trim();
-    const techniqueNote = String(technique?.exerciseNote || item.techniqueNote || "").trim();
-    const techniqueNotes = String(technique?.notes || item.techniqueNotes || "").trim();
-    const techniqueVideoUrl = String(technique?.videoUrl || item.techniqueVideoUrl || "").trim();
 
     return `
       <article class="exerciseBlock">
         <div class="exerciseHeader">
           <div>
-            <h3 class="exerciseInlineTitle">
-              <span>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</span>
-              ${techniqueName ? `
-                <span class="techniqueInline">
-                  <span class="techniqueDot">•</span>
-                  <span class="techniqueName">${escapeHtml(techniqueName)}</span>
-                  ${techniqueVideoUrl ? `<a class="techniqueLink" href="${escapeHtml(techniqueVideoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
-                </span>
-              ` : ""}
-            </h3>
+            <h3>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</h3>
             ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
-            ${(techniqueNote || techniqueNotes) ? `
+            ${item.technique ? `
               <div class="techniqueBox">
-                ${techniqueNote ? `<b>Obs. técnica:</b> ${escapeHtml(techniqueNote)}` : ""}
-                ${techniqueNotes ? `${techniqueNote ? "<br>" : ""}<small>${escapeHtml(techniqueNotes)}</small>` : ""}
+                <b>Técnica:</b> ${escapeHtml(item.technique.name || "")}
+                ${item.technique.exerciseNote ? ` · ${escapeHtml(item.technique.exerciseNote)}` : ""}
+                ${item.technique.notes ? `<br><small>${escapeHtml(item.technique.notes)}</small>` : ""}
+                ${item.technique.videoUrl ? `<br><button type="button" class="videoBtn" data-video-url="${escapeHtml(item.technique.videoUrl)}" data-video-title="Técnica: ${escapeHtml(item.technique.name || "")}">Ver técnica</button>` : ""}
               </div>
             ` : ""}
           </div>
 
-          ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}
+          ${exercise.videoUrl ? `<button type="button" class="videoBtn" data-video-url="${escapeHtml(exercise.videoUrl)}" data-video-title="${escapeHtml(exercise.name || "Vídeo")}">Ver vídeo</button>` : ""}
         </div>
 
         <div class="seriesTable">
@@ -242,6 +230,12 @@ function renderWorkouts() {
     historyOpen = !historyOpen;
     if (historyOpen && !workoutHistory.length) await syncWorkoutHistory(false);
     renderWorkouts();
+  });
+
+  workoutArea.querySelectorAll(".videoBtn[data-video-url]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openVideoOverlay(btn.dataset.videoTitle || "Vídeo", btn.dataset.videoUrl || "");
+    });
   });
 }
 
