@@ -232,27 +232,12 @@ function cardioWrittenHtml() {
   `;
 }
 
-function setPdfFrameSrcOnce(src) {
-  if (!pdfFrame) return;
-  const nextSrc = String(src || "");
-
-  // Impede recarregar o iframe quando o navegador dispara resize/zoom
-  // e alguma rotina tenta abrir novamente o mesmo PDF.
-  if (pdfFrame.dataset.currentSrc === nextSrc && pdfFrame.src && pdfFrame.src !== "about:blank") {
-    hideLoading();
-    return;
-  }
-
-  pdfFrame.dataset.currentSrc = nextSrc;
-  pdfFrame.src = nextSrc;
-}
-
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
 
   if (pdfFrame) {
-    setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(html));
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
   }
 
   setTimeout(hideLoading, 250);
@@ -267,24 +252,24 @@ function openPdfOverlay(title, rawUrl) {
   showLoading();
 
   if (!rawUrl) {
-    setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
       placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-    ));
+    );
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
       placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-    ));
+    );
     setTimeout(hideLoading, 250);
   } else {
     const preview = driveToPreview(rawUrl);
     if (!preview) {
-      setPdfFrameSrcOnce("data:text/html;charset=utf-8," + encodeURIComponent(
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
         placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-      ));
+      );
       setTimeout(hideLoading, 250);
     } else {
-      setPdfFrameSrcOnce(preview);
+      pdfFrame.src = preview;
     }
   }
 
@@ -331,7 +316,7 @@ function closePdf() {
   hideLoading();
 
   setTimeout(() => {
-    if (pdfFrame) { pdfFrame.dataset.currentSrc = ""; pdfFrame.src = "about:blank"; }
+    if (pdfFrame) pdfFrame.src = "about:blank";
   }, 200);
 }
 

@@ -166,7 +166,7 @@ function renderWorkoutDraft() {
             <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>
             <div>${escapeHtml(ex.muscleGroup || "Sem agrupamento")}${ex.videoUrl ? " · vídeo vinculado" : ""}</div>
             ${ex.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(ex.notes)}</div>` : ""}
-            ${ex.techniqueName ? `<div class="adminTechniqueInline"><span>•</span> <b>${escapeHtml(ex.techniqueName)}</b>${ex.techniqueVideoUrl ? ` <a href="${escapeHtml(ex.techniqueVideoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}${ex.techniqueNote ? ` · ${escapeHtml(ex.techniqueNote)}` : ""}</div>` : ""}
+            ${ex.techniqueName ? `<div style="margin-top:6px;"><b>Técnica:</b> ${escapeHtml(ex.techniqueName)}${ex.techniqueNote ? ` · ${escapeHtml(ex.techniqueNote)}` : ""}</div>` : ""}
             <div style="margin-top:6px;">Séries: ${ex.series.map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</div>
           </div>
           <div style="display:flex;gap:8px;height:max-content;flex-wrap:wrap;justify-content:flex-end;">
@@ -397,20 +397,11 @@ function renderWorkoutList() {
           </div>
         </div>
         <div style="margin-top:8px;">
-          ${(w.exercises || []).map((ex, exIdx) => {
-            const techniqueName = ex.techniqueName || ex.technique?.name || "";
-            const techniqueVideoUrl = ex.techniqueVideoUrl || ex.technique?.videoUrl || ex.technique?.video?.url || "";
-            const techniqueNote = ex.techniqueNote || ex.technique?.exerciseNote || "";
-            const techniqueNotes = ex.techniqueNotes || ex.technique?.notes || "";
-            return `
-              <div style="margin:6px 0;">
-                <div>
-                  ${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
-                </div>
-                ${techniqueName ? `<div class="adminTechniqueInline"><span>•</span> <b>${escapeHtml(techniqueName)}</b>${techniqueVideoUrl ? ` <a href="${escapeHtml(techniqueVideoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}${techniqueNote ? ` · ${escapeHtml(techniqueNote)}` : ""}${techniqueNotes && techniqueNotes !== techniqueNote ? ` · ${escapeHtml(techniqueNotes)}` : ""}</div>` : ""}
-              </div>
-            `;
-          }).join("")}
+          ${(w.exercises || []).map((ex, exIdx) => `
+            <div style="margin:6px 0;">
+              ${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
+            </div>
+          `).join("")}
         </div>
       </div>
     `)
