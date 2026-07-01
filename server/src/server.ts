@@ -101,15 +101,16 @@ async function main() {
       return reply.code(400).send({ message: 'Link do PDF inválido' });
     }
 
-    function driveFileId(value: string) {
-      const byPath = value.match(/drive\.google\.com\/file\/d\/([^/]+)/i)?.[1];
-      if (byPath) return byPath;
-
+    function driveInfo(value: string) {
       try {
         const parsed = new URL(value);
-        return parsed.searchParams.get('id') || '';
+        const byPath = value.match(/drive\.google\.com\/file\/d\/([^/]+)/i)?.[1] || '';
+        const id = byPath || parsed.searchParams.get('id') || '';
+        const resourcekey = parsed.searchParams.get('resourcekey') || '';
+        return { id, resourcekey };
       } catch {
-        return '';
+        const byPath = value.match(/drive\.google\.com\/file\/d\/([^/]+)/i)?.[1] || '';
+        return { id: byPath, resourcekey: '' };
       }
     }
 
@@ -118,15 +119,78 @@ async function main() {
       return head.startsWith('%PDF') || /application\/pdf/i.test(contentType || '');
     }
 
+    function htmlText(buffer: Buffer) {
+      return buffer.subarray(0, Math.min(buffer.length, 900000)).toString('utf8');
+    }
+
+    function absoluteDriveUrl(value: string) {
+      const decoded = value.replace(/&amp;/g, '&').replace(/\\u003d/g, '=').replace(/\\u0026/g, '&');
+      if (/^https?:\/\//i.test(decoded)) return decoded;
+      if (decoded.startsWith('//')) return `https:${decoded}`;
+      if (decoded.startsWith('/')) return `https://drive.google.com${decoded}`;
+      return decoded;
+    }
+
+    function extractNextDownloadUrls(html: string) {
+      const urls = new Set<string>();
+      const patterns = [
+        /href=["']([^"']*(?:uc\?export=download|drive\.usercontent\.google\.com\/download|\/download\?)[^"']*)["']/gi,
+        /action=["']([^"']*(?:uc\?export=download|drive\.usercontent\.google\.com\/download|\/download\?)[^"']*)["']/gi,
+        /"(https?:\\\/\\\/drive\.usercontent\.google\.com\\\/download[^"\\]*(?:\\.[^"\\]*)*)"/gi,
+        /"(https?:\\\/\\\/drive\.google\.com\\\/uc\?export=download[^"\\]*(?:\\.[^"\\]*)*)"/gi,
+      ];
+
+      for (const pattern of patterns) {
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(html))) {
+          const raw = match[1].replace(/\\\//g, '/');
+          urls.add(absoluteDriveUrl(raw));
+        }
+      }
+
+      const confirm = html.match(/confirm=([0-9A-Za-z_\-]+)/i)?.[1];
+      const id = html.match(/[?&]id=([0-9A-Za-z_\-]+)/i)?.[1];
+      if (confirm && id) {
+        urls.add(`https://drive.google.com/uc?export=download&confirm=${encodeURIComponent(confirm)}&id=${encodeURIComponent(id)}`);
+        urls.add(`https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&confirm=${encodeURIComponent(confirm)}`);
+      }
+
+      return Array.from(urls);
+    }
+
+    const cookieJar = new Map<string, string>();
+
+    function saveCookies(res: Response) {
+      const anyHeaders: any = res.headers as any;
+      const setCookie = typeof anyHeaders.getSetCookie === 'function'
+        ? anyHeaders.getSetCookie()
+        : String(res.headers.get('set-cookie') || '').split(/,(?=[^;]+?=)/g).filter(Boolean);
+
+      for (const cookie of setCookie) {
+        const first = String(cookie).split(';')[0];
+        const eq = first.indexOf('=');
+        if (eq > 0) cookieJar.set(first.slice(0, eq), first.slice(eq + 1));
+      }
+    }
+
+    function cookieHeader() {
+      return Array.from(cookieJar.entries()).map(([key, value]) => `${key}=${value}`).join('; ');
+    }
+
     async function fetchBuffer(downloadUrl: string) {
+      const headers: Record<string, string> = {
+        'User-Agent': 'Mozilla/5.0 RF-Fitness-PDF-Proxy',
+        'Accept': 'application/pdf,text/html;q=0.9,*/*;q=0.8',
+      };
+      const cookies = cookieHeader();
+      if (cookies) headers.Cookie = cookies;
+
       const res = await fetch(downloadUrl, {
         redirect: 'follow',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 RF-Fitness-PDF-Proxy',
-          'Accept': 'application/pdf,text/html;q=0.9,*/*;q=0.8',
-        },
+        headers,
       });
 
+      saveCookies(res);
       const arrayBuffer = await res.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       const contentType = res.headers.get('content-type') || '';
@@ -135,20 +199,27 @@ async function main() {
     }
 
     try {
-      const id = driveFileId(rawUrl);
+      const { id, resourcekey } = driveInfo(rawUrl);
+      const rk = resourcekey ? `&resourcekey=${encodeURIComponent(resourcekey)}` : '';
       const candidates = id
         ? [
-            `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`,
-            `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&confirm=t`,
+            `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}${rk}`,
+            `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download${rk}`,
+            `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview${resourcekey ? `?resourcekey=${encodeURIComponent(resourcekey)}` : ''}`,
             rawUrl,
           ]
         : [rawUrl];
 
       let lastHtml = '';
+      const queue = [...candidates];
+      const visited = new Set<string>();
 
-      for (const candidate of candidates) {
+      while (queue.length) {
+        const candidate = queue.shift()!;
+        if (visited.has(candidate)) continue;
+        visited.add(candidate);
+
         const { res, buffer, contentType } = await fetchBuffer(candidate);
-
         if (!res.ok) continue;
 
         if (isPdf(buffer, contentType)) {
@@ -160,30 +231,17 @@ async function main() {
           return reply.send(buffer);
         }
 
-        const maybeHtml = buffer.toString('utf8');
-        if (/<!doctype html|<html|download_warning|confirm=/i.test(maybeHtml)) {
-          lastHtml = maybeHtml;
-
-          const confirmMatch = maybeHtml.match(/href="([^"]*(?:uc\?export=download|drive\.usercontent\.google\.com\/download)[^"]*)"/i);
-          if (confirmMatch?.[1]) {
-            const decoded = confirmMatch[1].replace(/&amp;/g, '&');
-            const nextUrl = decoded.startsWith('http') ? decoded : `https://drive.google.com${decoded}`;
-            const next = await fetchBuffer(nextUrl);
-            if (next.res.ok && isPdf(next.buffer, next.contentType)) {
-              reply
-                .header('Content-Type', 'application/pdf')
-                .header('Cache-Control', 'private, no-store')
-                .header('X-Content-Type-Options', 'nosniff');
-
-              return reply.send(next.buffer);
-            }
+        if (/html/i.test(contentType) || /<!doctype html|<html|download_warning|confirm=/i.test(htmlText(buffer))) {
+          lastHtml = htmlText(buffer);
+          for (const nextUrl of extractNextDownloadUrls(lastHtml)) {
+            if (!visited.has(nextUrl)) queue.unshift(nextUrl);
           }
         }
       }
 
       return reply.code(415).send({
         message: lastHtml
-          ? 'O Drive retornou uma página HTML, não o PDF. Verifique se o arquivo está como Qualquer pessoa com o link pode ver.'
+          ? 'O Drive retornou uma página HTML, não o PDF. No Google Drive, mude o acesso do arquivo para Qualquer pessoa com o link pode ver. O link cadastrado pode continuar sendo o link normal do Drive.'
           : 'Não foi possível baixar o PDF informado.',
       });
     } catch (err: any) {
