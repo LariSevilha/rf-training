@@ -11,24 +11,6 @@ const err = document.getElementById("err");
 const ok = document.getElementById("ok");
 const status = document.getElementById("status");
 
-function showLoginScreen() {
-  document.body.classList.remove("loginBooting");
-  document.body.classList.add("loginReady");
-}
-
-function submitLogin() {
-  loginBtn?.click();
-}
-
-[emailEl, passEl].forEach((el) => {
-  el?.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      submitLogin();
-    }
-  });
-});
-
 function goRole(role) {
   window.location.replace(role === "admin" ? "/pages/admin.html" : "/pages/aluno.html");
 }
@@ -50,13 +32,8 @@ loginBtn?.addEventListener("click", async (e) => {
       return setMsg(err, "Usuário inativo. Entre em contato com seu personal.", "error");
     }
 
-    if (rememberEl?.checked) {
-      saveEmail(email);
-      localStorage.setItem("rf_login", JSON.stringify({ email, password }));
-    } else {
-      saveEmail("");
-      localStorage.removeItem("rf_login");
-    }
+    if (rememberEl?.checked) saveEmail(email);
+    else saveEmail("");
 
     setToken(data.token);
 
@@ -82,17 +59,12 @@ loginBtn?.addEventListener("click", async (e) => {
   if (token) {
     try {
       const me = await apiMe(token);
-      if (me.user?.active) {
-        goRole(me.user.role);
-        return;
-      }
-      clearSession();
+      if (me.user?.active) goRole(me.user.role);
+      else clearSession();
     } catch {
       clearSession();
     }
   }
-
-  showLoginScreen();
 })();
 
 const emailInput = document.getElementById("email");
@@ -121,3 +93,28 @@ togglePassBtn.addEventListener("click", () => {
     rememberChk.checked = true;
   }
 })();
+
+// ===== AO CLICAR EM LOGIN =====
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  const password = passInput.value;
+
+  if (!email || !password) {
+    showError("Preencha email e senha.");
+    return;
+  }
+
+  // 🔐 salvar ou limpar credenciais
+  if (rememberChk.checked) {
+    localStorage.setItem(
+      "rf_login",
+      JSON.stringify({ email, password })
+    );
+  } else {
+    localStorage.removeItem("rf_login");
+  }
+
+  // 👉 continua teu fluxo normal de login aqui
+}); 
+
+

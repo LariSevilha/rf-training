@@ -118,6 +118,36 @@ function renderStudentHistory(records = []) {
   }).join("");
 }
 
+
+function getTechniqueData(item) {
+  if (item?.technique) return item.technique;
+
+  const name = item?.techniqueName || "";
+  if (!name) return null;
+
+  return {
+    id: item.techniqueId || "",
+    name,
+    videoUrl: item.techniqueVideoUrl || "",
+    notes: item.techniqueNotes || "",
+    exerciseNote: item.techniqueNote || "",
+  };
+}
+
+function buildStudentTechniqueHtml(item) {
+  const technique = getTechniqueData(item);
+  if (!technique?.name) return "";
+
+  const title = [technique.exerciseNote, technique.notes].filter(Boolean).join(" • ");
+
+  return `
+    <span class="techniqueInline" ${title ? `title="${escapeHtml(title)}"` : ""}>
+      ${escapeHtml(technique.name || "")}
+      ${technique.videoUrl ? `<a class="techniqueInlineLink" href="${escapeHtml(technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+    </span>
+  `;
+}
+
 function renderWorkouts() {
   if (!workoutArea || !workoutsEmpty) return;
 
@@ -142,19 +172,14 @@ function renderWorkouts() {
       <article class="exerciseBlock">
         <div class="exerciseHeader">
           <div>
-            <h3>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</h3>
+            <h3 class="exerciseInlineTitle">
+              <span>${exIndex + 1}. ${escapeHtml(exercise.name || "Exercício")}</span>
+              ${buildStudentTechniqueHtml(item)}
+            </h3>
             ${item.notes ? `<p>${escapeHtml(item.notes)}</p>` : ""}
-            ${item.technique ? `
-              <div class="techniqueBox">
-                <b>Técnica:</b> ${escapeHtml(item.technique.name || "")}
-                ${item.technique.exerciseNote ? ` · ${escapeHtml(item.technique.exerciseNote)}` : ""}
-                ${item.technique.notes ? `<br><small>${escapeHtml(item.technique.notes)}</small>` : ""}
-                ${item.technique.videoUrl ? `<br><a class="videoBtn" href="${escapeHtml(item.technique.videoUrl)}" data-external-video="${escapeHtml(item.technique.videoUrl)}" rel="noopener noreferrer">Ver técnica</a>` : ""}
-              </div>
-            ` : ""}
           </div>
 
-          ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" data-external-video="${escapeHtml(exercise.videoUrl)}" rel="noopener noreferrer">Ver vídeo</a>` : ""}
+          ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}
         </div>
 
         <div class="seriesTable">

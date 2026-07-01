@@ -152,6 +152,4 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
       ? ""
       : "Nenhum material disponível no momento.";
   }
-
-  restoreAfterExternalReturn();
 })();
