@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-01-video-return-fix";
+const VERSION = "rf-fitness-v2026-07-01-video-modal-fix";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

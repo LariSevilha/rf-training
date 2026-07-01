@@ -105,7 +105,6 @@ saveBtn?.addEventListener("click", async () => {
     // Se o treino for manual, salva os treinos também.
     if (mode === "manual") {
       await apiAdminSaveWorkouts(token, em, studentWorkoutList);
-      clearWorkoutUnsaved();
     }
 
     toast(

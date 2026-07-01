@@ -146,10 +146,14 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
   ]);
 
   renderHomeMenu();
+  restoreStudentVideoReturnState();
 
   if (statusEl) {
     statusEl.textContent = hasAnyMaterial()
       ? ""
       : "Nenhum material disponível no momento.";
   }
+
+  document.body.classList.remove("studentBooting");
+  document.body.classList.add("studentReady");
 })();
