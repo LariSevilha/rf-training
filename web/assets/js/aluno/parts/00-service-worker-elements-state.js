@@ -407,19 +407,6 @@ function bindStudentVideoButtons(root = document) {
   });
 }
 
-window.addEventListener("message", (event) => {
-  const data = event?.data || {};
-  if (data.type !== "RF_OPEN_STUDENT_VIDEO") return;
-
-  const rawUrl = String(data.url || "").trim();
-  if (!rawUrl) return;
-
-  const videoId = getYouTubeVideoId(rawUrl);
-  if (!videoId) return;
-
-  openStudentVideo(rawUrl, data.title || "Vídeo do treino");
-});
-
 window.addEventListener("pageshow", () => {
   hideLoading?.();
   closeStudentVideoModal();
