@@ -375,6 +375,15 @@ function customPdfViewerHtml(title, rawUrl) {
       statusEl.style.display = text ? 'block' : 'none';
     }
 
+    function oldDrivePreviewUrl(url) {
+      const raw = String(url || '');
+      if (!raw) return '';
+      if (raw.includes('drive.google.com')) {
+        return raw.includes('/preview') ? raw : raw.replace(/\/view.*$/, '/preview');
+      }
+      return raw;
+    }
+
     async function renderPage(pageNumber) {
       const page = await pdfDoc.getPage(pageNumber);
       const baseViewport = page.getViewport({ scale: 1 });
@@ -460,6 +469,12 @@ function customPdfViewerHtml(title, rawUrl) {
         pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
         await renderAll();
       } catch (err) {
+        const fallback = oldDrivePreviewUrl(RAW_URL);
+        if (fallback) {
+          setStatus('Abrindo PDF no visualizador antigo…');
+          window.location.replace(fallback);
+          return;
+        }
         pagesEl.innerHTML = '<div class="err"><b>Não foi possível abrir este PDF dentro do app.</b><span>' + (err?.message || 'Tente abrir o PDF original.') + '</span></div>';
         setStatus('');
       }

@@ -23,52 +23,130 @@ function normKey(v: string) {
   return String(v || "").trim().toLowerCase();
 }
 
-function googleDriveDownloadUrl(rawUrl: string) {
+function googleDriveFileId(rawUrl: string) {
   try {
     const url = new URL(rawUrl);
-    if (!url.hostname.includes("drive.google.com")) return rawUrl;
+    if (!url.hostname.includes("drive.google.com") && !url.hostname.includes("drive.usercontent.google.com")) return "";
 
-    let id = "";
     const fileMatch = url.pathname.match(/\/file\/d\/([^/]+)/);
-    if (fileMatch?.[1]) id = fileMatch[1];
-    if (!id) id = url.searchParams.get("id") || "";
+    if (fileMatch?.[1]) return fileMatch[1];
 
-    return id ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}` : rawUrl;
+    const openId = url.searchParams.get("id") || url.searchParams.get("docid");
+    return openId || "";
   } catch {
-    return rawUrl;
+    return "";
   }
 }
 
+function googleDriveDownloadUrl(rawUrl: string) {
+  const id = googleDriveFileId(rawUrl);
+  if (!id) return rawUrl;
+
+  // Mantém o mesmo tipo de link cadastrado no admin. A conversão acontece só no servidor.
+  // Esse endpoint costuma funcionar melhor no celular/PWA do que o link /view do Drive.
+  return `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&authuser=0`;
+}
+
+function absolutizeDriveUrl(value: string) {
+  const clean = String(value || "")
+    .replace(/\\u003d/g, "=")
+    .replace(/\\u0026/g, "&")
+    .replace(/&amp;/g, "&")
+    .trim();
+
+  if (!clean) return "";
+  try {
+    return new URL(clean, "https://drive.google.com").toString();
+  } catch {
+    return "";
+  }
+}
+
+function collectSetCookie(headers: Headers) {
+  const anyHeaders: any = headers as any;
+  const values = typeof anyHeaders.getSetCookie === "function" ? anyHeaders.getSetCookie() : [];
+  if (values?.length) {
+    return values.map((c: string) => c.split(";")[0]).join("; ");
+  }
+
+  const single = headers.get("set-cookie");
+  return single ? single.split(", ").map((c) => c.split(";")[0]).join("; ") : "";
+}
+
+function extractDriveConfirmUrl(html: string, originalUrl: string) {
+  const decoded = html
+    .replace(/&amp;/g, "&")
+    .replace(/\\u003d/g, "=")
+    .replace(/\\u0026/g, "&");
+
+  const patterns = [
+    /href="([^"]*(?:uc\?export=download|drive\.usercontent\.google\.com\/download|download\?)[^"]*)"/i,
+    /action="([^"]*(?:uc\?export=download|drive\.usercontent\.google\.com\/download|download\?)[^"]*)"/i,
+    /"downloadUrl"\s*:\s*"([^"]+)"/i,
+    /window\.location\s*=\s*'([^']+)'/i,
+    /window\.location\s*=\s*"([^"]+)"/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = decoded.match(pattern);
+    const url = absolutizeDriveUrl(match?.[1] || "");
+    if (url) return url;
+  }
+
+  const id = googleDriveFileId(originalUrl);
+  const confirm = decoded.match(/confirm=([0-9A-Za-z_\-]+)/i)?.[1];
+  const uuid = decoded.match(/name="uuid"\s+value="([^"]+)"/i)?.[1] || decoded.match(/[?&]uuid=([0-9A-Za-z_\-]+)/i)?.[1];
+
+  if (id && confirm) {
+    const url = new URL("https://drive.usercontent.google.com/download");
+    url.searchParams.set("id", id);
+    url.searchParams.set("export", "download");
+    url.searchParams.set("authuser", "0");
+    url.searchParams.set("confirm", confirm);
+    if (uuid) url.searchParams.set("uuid", uuid);
+    return url.toString();
+  }
+
+  // Alguns PDFs públicos do Drive abrem direto com confirm=t.
+  if (id) {
+    const url = new URL("https://drive.usercontent.google.com/download");
+    url.searchParams.set("id", id);
+    url.searchParams.set("export", "download");
+    url.searchParams.set("authuser", "0");
+    url.searchParams.set("confirm", "t");
+    return url.toString();
+  }
+
+  return "";
+}
+
 async function fetchPdfBuffer(rawUrl: string) {
+  const headers: Record<string, string> = {
+    "user-agent": "Mozilla/5.0 RF-Training-PDF-Proxy",
+    "accept": "application/pdf,application/octet-stream,*/*",
+  };
+
   const target = googleDriveDownloadUrl(rawUrl);
-  const first = await fetch(target, {
-    redirect: "follow",
-    headers: {
-      "user-agent": "Mozilla/5.0 RF-Training-PDF-Proxy",
-      "accept": "application/pdf,application/octet-stream,*/*",
-    },
-  });
+  const first = await fetch(target, { redirect: "follow", headers });
 
   if (!first.ok) {
     throw new Error(`Falha ao baixar PDF: HTTP ${first.status}`);
   }
 
+  const cookie = collectSetCookie(first.headers);
+  if (cookie) headers.cookie = cookie;
+
   const contentType = first.headers.get("content-type") || "";
   let buffer = Buffer.from(await first.arrayBuffer());
 
-  // Alguns arquivos do Drive retornam uma página HTML de confirmação. Tenta seguir o link real de download.
-  if (contentType.includes("text/html")) {
+  // Links normais do Drive (/file/d/.../view?usp=sharing) podem retornar uma página HTML
+  // antes do PDF. Aqui o servidor segue essa etapa automaticamente, sem mudar o link cadastrado.
+  if (contentType.includes("text/html") || buffer.subarray(0, 15).toString("utf8").toLowerCase().includes("<!doctype")) {
     const html = buffer.toString("utf8");
-    const match =
-      html.match(/href="([^"]*uc\?export=download[^"]+)"/i) ||
-      html.match(/href="([^"]*download[^"]*confirm[^"]*)"/i);
+    const confirmUrl = extractDriveConfirmUrl(html, rawUrl);
 
-    if (match?.[1]) {
-      const confirmUrl = new URL(match[1].replace(/&amp;/g, "&"), "https://drive.google.com").toString();
-      const second = await fetch(confirmUrl, {
-        redirect: "follow",
-        headers: { "user-agent": "Mozilla/5.0 RF-Training-PDF-Proxy" },
-      });
+    if (confirmUrl) {
+      const second = await fetch(confirmUrl, { redirect: "follow", headers });
       if (!second.ok) throw new Error(`Falha ao confirmar download: HTTP ${second.status}`);
       buffer = Buffer.from(await second.arrayBuffer());
     }
@@ -76,7 +154,7 @@ async function fetchPdfBuffer(rawUrl: string) {
 
   const header = buffer.subarray(0, 5).toString("utf8");
   if (header !== "%PDF-") {
-    throw new Error("O link não retornou um PDF direto. No Drive, deixe o arquivo como 'Qualquer pessoa com o link pode ver'.");
+    throw new Error("Não consegui ler o PDF internamente. O app vai abrir no visualizador antigo do Drive.");
   }
 
   return buffer;
