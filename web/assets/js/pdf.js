@@ -1,13 +1,18 @@
 export function driveToPreview(url) {
-  if (!url) return "";
+  const raw = String(url || "").trim();
+  if (!raw) return "";
 
-  // transforma link do drive em preview
-  if (url.includes("drive.google.com")) {
-    return url.includes("/preview")
-      ? url
-      : url.replace(/\/view.*$/, "/preview");
+  // Mantém o mesmo tipo de link cadastrado pelo admin, mas exibe no modo preview.
+  // Ex.: https://drive.google.com/file/d/ID/view?usp=sharing -> /preview
+  // Esse modo é o mais estável para zoom no iOS/PWA e é usado para treino e dieta.
+  if (/drive\.google\.com/i.test(raw)) {
+    if (/\/preview(?:\?|$)/i.test(raw)) return raw;
+    if (/\/file\/d\/[^/]+\/view/i.test(raw)) {
+      return raw.replace(/\/view(?:\?.*)?$/i, "/preview");
+    }
   }
-  return url;
+
+  return raw;
 }
 
 export function placeholderHtml(title, msg) {

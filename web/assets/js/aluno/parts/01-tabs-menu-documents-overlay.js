@@ -251,6 +251,15 @@ function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
+  // IMPORTANTE — iOS/PWA:
+  // treino, dieta e demais PDFs usam o mesmo visualizador estável.
+  // Não renderizamos o PDF por PDF.js/proxy aqui, porque no iOS o pinch zoom
+  // dentro desse renderizador pode recriar a tela e voltar para o início.
+  // Assim o PDF do treino fica com o mesmo comportamento do PDF da dieta.
+  if (pdfFrame) {
+    pdfFrame.src = "about:blank";
+  }
+
   if (!rawUrl) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
       placeholderHtml("Material não configurado", "Entre em contato com o personal.")
@@ -269,7 +278,10 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      pdfFrame.src = preview;
+      // Pequeno atraso evita que o iOS reaproveite estado antigo do iframe ao trocar de PDF.
+      requestAnimationFrame(() => {
+        if (pdfFrame) pdfFrame.src = preview;
+      });
     }
   }
 
