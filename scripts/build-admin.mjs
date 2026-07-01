@@ -1,26 +1,14 @@
-    import { readFileSync, writeFileSync, readdirSync } from "node:fs";
-    import { join } from "node:path";
-    import { fileURLToPath } from "node:url";
-    import { dirname, resolve } from "node:path";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const root = resolve(__dirname, "..");
-    const partsDir = join(root, "web/assets/js/admin/parts");
-    const output = join(root, "web/assets/js/admin.js");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const root = resolve(__dirname, "..");
+const output = join(root, "web/assets/js/admin.js");
 
-    const files = readdirSync(partsDir)
-      .filter((file) => file.endsWith(".js"))
-      .sort((a, b) => a.localeCompare(b));
+const content = 'import { requireAuth } from "./guard.js";\nimport {\n  apiAdminListUsers,\n  apiAdminCreateUser,\n  apiAdminUpdateProfile,\n  apiAdminGetDocs,\n  apiAdminSetActive,\n  apiAdminSaveDocs,\n  apiAdminResetPassword,\n  apiAdminDeleteUser,\n  apiAdminWorkoutRecords,\n  apiAdminGetWorkouts,\n  apiAdminSaveWorkouts,\n  apiAdminListExercises,\n  apiAdminCreateExercise,\n  apiAdminUpdateExercise,\n  apiAdminDeleteExercise,\n  apiAdminListMuscleGroups,\n  apiAdminCreateMuscleGroup,\n  apiAdminUpdateMuscleGroup,\n  apiAdminDeleteMuscleGroup,\n  apiAdminListVideos,\n  apiAdminCreateVideo,\n  apiAdminUpdateVideo,\n  apiAdminDeleteVideo,\n  apiAdminListTechniques,\n  apiAdminCreateTechnique,\n  apiAdminUpdateTechnique,\n  apiAdminDeleteTechnique,\n  apiAdminGetExtraItems,\n  apiAdminSaveExtraItems,\n  apiMe,\n  apiUpdateMe,\n  apiUpdateMyPassword,\n} from "./api.js";\nimport { clearSession } from "./state.js";\nimport { toast, openModal } from "./ui.js";\nimport {\n  buildDashboardPrintHTML,\n  monthKey,\n  monthLabel,\n  pct,\n  pickDate,\n  monthsBetween,\n} from "./helpers/report.js";\n\n// Arquivo principal do Admin.\n// Ele expõe as dependências no window e carrega as partes em ordem.\nObject.assign(window, {\n  requireAuth,\n  apiAdminListUsers,\n  apiAdminCreateUser,\n  apiAdminUpdateProfile,\n  apiAdminGetDocs,\n  apiAdminSetActive,\n  apiAdminSaveDocs,\n  apiAdminResetPassword,\n  apiAdminDeleteUser,\n  apiAdminWorkoutRecords,\n  apiAdminGetWorkouts,\n  apiAdminSaveWorkouts,\n  apiAdminListExercises,\n  apiAdminCreateExercise,\n  apiAdminUpdateExercise,\n  apiAdminDeleteExercise,\n  apiAdminListMuscleGroups,\n  apiAdminCreateMuscleGroup,\n  apiAdminUpdateMuscleGroup,\n  apiAdminDeleteMuscleGroup,\n  apiAdminListVideos,\n  apiAdminCreateVideo,\n  apiAdminUpdateVideo,\n  apiAdminDeleteVideo,\n  apiAdminListTechniques,\n  apiAdminCreateTechnique,\n  apiAdminUpdateTechnique,\n  apiAdminDeleteTechnique,\n  apiAdminGetExtraItems,\n  apiAdminSaveExtraItems,\n  apiMe,\n  apiUpdateMe,\n  apiUpdateMyPassword,\n  clearSession,\n  toast,\n  openModal,\n  buildDashboardPrintHTML,\n  monthKey,\n  monthLabel,\n  pct,\n  pickDate,\n  monthsBetween,\n});\n\nconst ADMIN_PARTS = [\n  "00-bootstrap-elements-state.js",\n  "01-admin-core-students.js",\n  "02-dashboard-profile.js",\n  "03-admin-events-documents.js",\n  "04-workout-builder.js",\n  "05-catalogs-muscles-videos-exercises.js",\n  "06-student-records.js",\n  "07-techniques.js",\n  "08-extra-items.js",\n  "09-navigation-search-init.js",\n];\n\nfunction loadClassicScript(src) {\n  return new Promise((resolve, reject) => {\n    const script = document.createElement("script");\n    script.src = src;\n    script.defer = false;\n    script.async = false;\n    script.onload = resolve;\n    script.onerror = () => reject(new Error(`Falha ao carregar ${src}`));\n    document.head.appendChild(script);\n  });\n}\n\ntry {\n  for (const file of ADMIN_PARTS) {\n    await loadClassicScript(`../assets/js/admin/parts/${file}`);\n  }\n} catch (error) {\n  console.error(error);\n  if (typeof toast === "function") {\n    toast(error.message || "Erro ao carregar o painel administrativo.", "err");\n  }\n}\n';
 
-    const banner = `// AUTO-GERADO por scripts/build-admin.mjs
-// Edite os arquivos em web/assets/js/admin/parts/ e rode: npm run build:admin
-
-`;
-    const content = files
-      .map((file) => `// ===== ${file} =====
-` + readFileSync(join(partsDir, file), "utf8").trim())
-      .join("");
-
-    writeFileSync(output, banner + content + "", "utf8");
-    console.log(`Admin JS gerado com ${files.length} partes: ${output}`);
+writeFileSync(output, content, "utf8");
+console.log(`Admin JS principal gerado: ${output}`);
