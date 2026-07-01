@@ -23,6 +23,52 @@ function normKey(v: string) {
   return String(v || "").trim().toLowerCase();
 }
 
+function googleDriveDownloadUrl(rawUrl: string) {
+  try {
+    const url = new URL(rawUrl);
+    if (!url.hostname.includes("drive.google.com")) return rawUrl;
+
+    let id = "";
+    const fileMatch = url.pathname.match(/\/file\/d\/([^/]+)/);
+    if (fileMatch?.[1]) id = fileMatch[1];
+    if (!id) id = url.searchParams.get("id") || "";
+
+    return id ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}` : rawUrl;
+  } catch {
+    return rawUrl;
+  }
+}
+
+async function fetchPdfBuffer(rawUrl: string) {
+  const target = googleDriveDownloadUrl(rawUrl);
+  const first = await fetch(target, {
+    redirect: "follow",
+    headers: {
+      "user-agent": "Mozilla/5.0 RF-Training-PDF-Proxy",
+      "accept": "application/pdf,application/octet-stream,*/*",
+    },
+  });
+
+  const contentType = first.headers.get("content-type") || "";
+  let buffer = Buffer.from(await first.arrayBuffer());
+
+  // Alguns arquivos do Drive retornam uma página HTML de confirmação. Tenta seguir o link real de download.
+  if (contentType.includes("text/html")) {
+    const html = buffer.toString("utf8");
+    const match = html.match(/href="([^"]*uc\?export=download[^"]+)"/i);
+    if (match?.[1]) {
+      const confirmUrl = new URL(match[1].replace(/&amp;/g, "&"), "https://drive.google.com").toString();
+      const second = await fetch(confirmUrl, {
+        redirect: "follow",
+        headers: { "user-agent": "Mozilla/5.0 RF-Training-PDF-Proxy" },
+      });
+      buffer = Buffer.from(await second.arrayBuffer());
+    }
+  }
+
+  return buffer;
+}
+
 function startOfWeek(date = new Date()) {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   const day = d.getUTCDay();
@@ -142,6 +188,43 @@ async function main() {
     return out;
   });
 
+
+
+  app.get(`${API_PREFIX}/pdf-proxy`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    const payload = req.user as JwtPayload;
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user) return reply.code(404).send({ message: "Usuário não encontrado" });
+    if (!user.active) return reply.code(403).send({ message: "Usuário desativado" });
+
+    const rawUrl = String(req.query?.url || "").trim();
+    if (!rawUrl) return reply.code(400).send({ message: "URL do PDF não informada" });
+
+    let parsed: URL;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      return reply.code(400).send({ message: "URL do PDF inválida" });
+    }
+
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return reply.code(400).send({ message: "URL do PDF inválida" });
+    }
+
+    try {
+      const buffer = await fetchPdfBuffer(rawUrl);
+      if (!buffer.length) return reply.code(502).send({ message: "PDF vazio ou indisponível" });
+
+      reply
+        .header("Content-Type", "application/pdf")
+        .header("Content-Disposition", "inline; filename=material.pdf")
+        .header("Cache-Control", "private, max-age=300");
+
+      return reply.send(buffer);
+    } catch (e: any) {
+      req.log.error(e);
+      return reply.code(502).send({ message: "Não foi possível carregar o PDF" });
+    }
+  });
 
   // ===== ITENS EXTRAS - ALUNO =====
   app.get(`${API_PREFIX}/extra-items`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
