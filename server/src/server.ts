@@ -80,6 +80,118 @@ async function main() {
   // Health
   app.get(`${API_PREFIX}/health`, async () => ({ ok: true }));
 
+  // ===== PDF PROXY =====
+  // Permite que o app leia PDFs cadastrados como link normal do Drive
+  // e renderize o arquivo dentro do próprio app no iOS/Android, sem abrir o Drive.
+  app.get(`${API_PREFIX}/pdf-proxy`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    const rawUrl = String(req.query?.url || '').trim();
+
+    if (!rawUrl) {
+      return reply.code(400).send({ message: 'URL do PDF não informada' });
+    }
+
+    let url: URL;
+    try {
+      url = new URL(rawUrl);
+    } catch {
+      return reply.code(400).send({ message: 'Link do PDF inválido' });
+    }
+
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return reply.code(400).send({ message: 'Link do PDF inválido' });
+    }
+
+    function driveFileId(value: string) {
+      const byPath = value.match(/drive\.google\.com\/file\/d\/([^/]+)/i)?.[1];
+      if (byPath) return byPath;
+
+      try {
+        const parsed = new URL(value);
+        return parsed.searchParams.get('id') || '';
+      } catch {
+        return '';
+      }
+    }
+
+    function isPdf(buffer: Buffer, contentType: string) {
+      const head = buffer.subarray(0, 8).toString('utf8');
+      return head.startsWith('%PDF') || /application\/pdf/i.test(contentType || '');
+    }
+
+    async function fetchBuffer(downloadUrl: string) {
+      const res = await fetch(downloadUrl, {
+        redirect: 'follow',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 RF-Fitness-PDF-Proxy',
+          'Accept': 'application/pdf,text/html;q=0.9,*/*;q=0.8',
+        },
+      });
+
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const contentType = res.headers.get('content-type') || '';
+
+      return { res, buffer, contentType };
+    }
+
+    try {
+      const id = driveFileId(rawUrl);
+      const candidates = id
+        ? [
+            `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`,
+            `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&confirm=t`,
+            rawUrl,
+          ]
+        : [rawUrl];
+
+      let lastHtml = '';
+
+      for (const candidate of candidates) {
+        const { res, buffer, contentType } = await fetchBuffer(candidate);
+
+        if (!res.ok) continue;
+
+        if (isPdf(buffer, contentType)) {
+          reply
+            .header('Content-Type', 'application/pdf')
+            .header('Cache-Control', 'private, no-store')
+            .header('X-Content-Type-Options', 'nosniff');
+
+          return reply.send(buffer);
+        }
+
+        const maybeHtml = buffer.toString('utf8');
+        if (/<!doctype html|<html|download_warning|confirm=/i.test(maybeHtml)) {
+          lastHtml = maybeHtml;
+
+          const confirmMatch = maybeHtml.match(/href="([^"]*(?:uc\?export=download|drive\.usercontent\.google\.com\/download)[^"]*)"/i);
+          if (confirmMatch?.[1]) {
+            const decoded = confirmMatch[1].replace(/&amp;/g, '&');
+            const nextUrl = decoded.startsWith('http') ? decoded : `https://drive.google.com${decoded}`;
+            const next = await fetchBuffer(nextUrl);
+            if (next.res.ok && isPdf(next.buffer, next.contentType)) {
+              reply
+                .header('Content-Type', 'application/pdf')
+                .header('Cache-Control', 'private, no-store')
+                .header('X-Content-Type-Options', 'nosniff');
+
+              return reply.send(next.buffer);
+            }
+          }
+        }
+      }
+
+      return reply.code(415).send({
+        message: lastHtml
+          ? 'O Drive retornou uma página HTML, não o PDF. Verifique se o arquivo está como Qualquer pessoa com o link pode ver.'
+          : 'Não foi possível baixar o PDF informado.',
+      });
+    } catch (err: any) {
+      req.log.error(err);
+      return reply.code(500).send({ message: 'Erro ao carregar PDF' });
+    }
+  });
+
   // ===== AUTH =====
   app.post(`${API_PREFIX}/auth/login`, async (req, reply) => {
     const schema = z.object({
