@@ -242,6 +242,7 @@ function openHtmlOverlay(title, html) {
 
   setTimeout(hideLoading, 250);
 
+  setPdfViewportLock(true);
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
@@ -254,6 +255,39 @@ let pdfNativeScale = 1;
 let pdfNativeRenderTicket = 0;
 let pdfNativeObjectUrl = "";
 let pdfNativePinch = null;
+
+// Limites de zoom do leitor interno. No iOS/PWA, zoom muito alto pode
+// fazer o WebView tentar ampliar a página inteira e recarregar o PDF.
+const PDF_NATIVE_MIN_ZOOM = 0.85;
+const PDF_NATIVE_MAX_ZOOM = 1.55;
+const PDF_NATIVE_ZOOM_STEP = 0.15;
+let previousViewportContent = null;
+
+function clampPdfZoom(value) {
+  return Math.max(PDF_NATIVE_MIN_ZOOM, Math.min(PDF_NATIVE_MAX_ZOOM, Number(value || 1)));
+}
+
+function setPdfViewportLock(enabled) {
+  let viewport = document.querySelector('meta[name="viewport"]');
+  if (!viewport) {
+    viewport = document.createElement("meta");
+    viewport.setAttribute("name", "viewport");
+    document.head.appendChild(viewport);
+  }
+
+  if (enabled) {
+    if (previousViewportContent === null) {
+      previousViewportContent = viewport.getAttribute("content") || "width=device-width, initial-scale=1";
+    }
+    viewport.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover");
+    return;
+  }
+
+  if (previousViewportContent !== null) {
+    viewport.setAttribute("content", previousViewportContent);
+    previousViewportContent = null;
+  }
+}
 
 function setPdfNativeMode(enabled) {
   if (pdfFrame) {
@@ -373,6 +407,7 @@ async function openPdfNative(title, rawUrl) {
   pdfNativeScale = 1;
   updatePdfZoomLabel();
 
+  setPdfViewportLock(true);
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
@@ -432,13 +467,9 @@ async function openPdfNative(title, rawUrl) {
 }
 
 function openPdfOverlay(title, rawUrl) {
-  // iOS: usa leitor interno em canvas, dentro do app, sem iframe do Drive.
-  // Isso evita o reload ao dar zoom/pinch dentro do PDF.
-  if (isIOSDevice()) {
-    openPdfNative(title, rawUrl);
-    return;
-  }
-
+  // Modo simples e estável: mostra o PDF dentro do app usando o preview do Drive.
+  // Não usa /api/pdf-proxy e não tenta baixar o PDF. Assim o PDF aparece do mesmo jeito
+  // que aparecia antes, desde que o link abra normalmente no Drive.
   clearPdfNativeViewer();
   setPdfNativeMode(false);
 
@@ -446,25 +477,32 @@ function openPdfOverlay(title, rawUrl) {
   showLoading();
 
   if (pdfFrame) {
+    pdfFrame.hidden = false;
     pdfFrame.src = "about:blank";
   }
 
   if (!rawUrl) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-    );
+    if (pdfFrame) {
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+      );
+    }
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-    );
+    if (pdfFrame) {
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+      );
+    }
     setTimeout(hideLoading, 250);
   } else {
     const preview = driveToPreview(rawUrl);
     if (!preview) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-      );
+      if (pdfFrame) {
+        pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+          placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+        );
+      }
       setTimeout(hideLoading, 250);
     } else {
       requestAnimationFrame(() => {
@@ -473,6 +511,9 @@ function openPdfOverlay(title, rawUrl) {
     }
   }
 
+  // Evita que o iOS amplie/recarregue a página principal enquanto o PDF está aberto.
+  // O PDF continua dentro do app, no iframe de preview.
+  setPdfViewportLock(true);
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
@@ -480,7 +521,7 @@ function openPdfOverlay(title, rawUrl) {
 
 function changePdfNativeZoom(delta) {
   if (!pdfNativeDoc) return;
-  const next = Math.max(0.7, Math.min(3, Number((pdfNativeScale + delta).toFixed(2))));
+  const next = clampPdfZoom(Number((pdfNativeScale + delta).toFixed(2)));
   if (next === pdfNativeScale) return;
   pdfNativeScale = next;
   showLoading();
@@ -490,13 +531,13 @@ function changePdfNativeZoom(delta) {
 pdfZoomIn?.addEventListener("click", (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
-  changePdfNativeZoom(0.2);
+  changePdfNativeZoom(PDF_NATIVE_ZOOM_STEP);
 });
 
 pdfZoomOut?.addEventListener("click", (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
-  changePdfNativeZoom(-0.2);
+  changePdfNativeZoom(-PDF_NATIVE_ZOOM_STEP);
 });
 
 function pdfTouchDistance(touches) {
@@ -521,7 +562,7 @@ pdfNativeScroller?.addEventListener("touchmove", (ev) => {
   ev.preventDefault();
 
   const ratio = pdfTouchDistance(ev.touches) / Math.max(1, pdfNativePinch.distance);
-  const visualScale = Math.max(0.7, Math.min(3, pdfNativePinch.scale * ratio));
+  const visualScale = clampPdfZoom(pdfNativePinch.scale * ratio);
 
   if (pdfNativePages) {
     pdfNativePages.style.transform = `scale(${visualScale / pdfNativePinch.scale})`;
@@ -533,7 +574,7 @@ pdfNativeScroller?.addEventListener("touchend", (ev) => {
 
   const lastScale = pdfNativePages?.style.transform?.match(/scale\(([^)]+)\)/)?.[1];
   const multiplier = Number(lastScale || 1);
-  pdfNativeScale = Math.max(0.7, Math.min(3, Number((pdfNativePinch.scale * multiplier).toFixed(2))));
+  pdfNativeScale = clampPdfZoom(Number((pdfNativePinch.scale * multiplier).toFixed(2)));
   pdfNativePinch = null;
 
   if (pdfNativePages) {
@@ -582,6 +623,7 @@ function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
+  setPdfViewportLock(false);
   hideLoading();
 
   setTimeout(() => {
@@ -594,6 +636,15 @@ pdfBack?.addEventListener("click", (ev) => {
   ev.stopPropagation();
   closePdf();
 });
+
+// Evita que uma pinça fora da área renderizada do PDF vire zoom da página
+// inteira no iOS, o que era o gatilho do recarregamento.
+pdfOverlay?.addEventListener("touchmove", (ev) => {
+  if (!document.body.classList.contains("pdfOpen")) return;
+  if (ev.touches && ev.touches.length > 1) {
+    ev.preventDefault();
+  }
+}, { passive: false });
 
 logoutBtn?.addEventListener("click", () => {
   clearSession();

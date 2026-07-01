@@ -1789,7 +1789,7 @@ body.pdfOpen {
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  touch-action: pan-x pan-y;
+  touch-action: pan-y;
   padding: 10px 0 22px;
 }
 
@@ -1840,4 +1840,15 @@ body.pdfOpen {
 .alunoClean .pdfNativeError small {
   margin-top: 10px;
   opacity: .7;
+}
+
+/* Trava o zoom da página enquanto o PDF está aberto. O zoom permitido fica
+   somente nos botões +/− e na pinça controlada do leitor interno. */
+body.pdfOpen,
+body.pdfOpen .pdfOverlay {
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+body.pdfOpen .pdfNativeScroller {
+  touch-action: pan-y;
 }
