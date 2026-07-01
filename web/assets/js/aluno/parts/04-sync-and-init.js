@@ -125,17 +125,6 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
   session = await requireAuth("student");
   if (!session) return;
 
-  // Garante que nenhum card antigo/cacheado apareça antes dos dados reais do aluno logado.
-  if (menuGrid) menuGrid.innerHTML = "";
-  if (docsEmpty) docsEmpty.style.display = "none";
-  workouts = [];
-  extraItems = [];
-  urls.training = "";
-  urls.diet = "";
-  urls.supp = "";
-  urls.exams = "";
-  urls.stretch = "";
-
   let displayName = (session?.user?.name || "").trim();
 
   if (!displayName) {
@@ -164,6 +153,5 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
       : "Nenhum material disponível no momento.";
   }
 
-  document.body.classList.remove("studentBooting");
-  document.body.classList.add("studentReady");
+  restoreAfterExternalReturn();
 })();

@@ -546,39 +546,3 @@
   }
 }
 
-
-/* Técnica inline no treino manual do aluno */
-.exerciseInlineTitle {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.techniqueInline {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--rf-gold-2, #ceac5e);
-  font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  white-space: nowrap;
-}
-.techniqueName, .techniqueDot { color: var(--rf-gold-2, #ceac5e); }
-.techniqueLink {
-  color: var(--rf-gold-2, #ceac5e);
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: none;
-  letter-spacing: 0;
-  text-decoration: none;
-  border-bottom: 1px solid rgba(206,172,94,.55);
-}
-.techniqueLink:hover { border-bottom-color: var(--rf-gold-2, #ceac5e); }
-
-@media (max-width: 560px) {
-  .exerciseInlineTitle { gap: 4px; }
-  .techniqueInline { font-size: 10px; white-space: normal; }
-  .techniqueLink { font-size: 10px; }
-}

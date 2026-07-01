@@ -149,12 +149,12 @@ function renderWorkouts() {
                 <b>Técnica:</b> ${escapeHtml(item.technique.name || "")}
                 ${item.technique.exerciseNote ? ` · ${escapeHtml(item.technique.exerciseNote)}` : ""}
                 ${item.technique.notes ? `<br><small>${escapeHtml(item.technique.notes)}</small>` : ""}
-                ${item.technique.videoUrl ? `<br><button type="button" class="videoBtn" data-video-url="${escapeHtml(item.technique.videoUrl)}" data-video-title="Técnica: ${escapeHtml(item.technique.name || "")}">Ver técnica</button>` : ""}
+                ${item.technique.videoUrl ? `<br><a class="videoBtn" href="${escapeHtml(item.technique.videoUrl)}" data-external-video="${escapeHtml(item.technique.videoUrl)}" rel="noopener noreferrer">Ver técnica</a>` : ""}
               </div>
             ` : ""}
           </div>
 
-          ${exercise.videoUrl ? `<button type="button" class="videoBtn" data-video-url="${escapeHtml(exercise.videoUrl)}" data-video-title="${escapeHtml(exercise.name || "Vídeo")}">Ver vídeo</button>` : ""}
+          ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" data-external-video="${escapeHtml(exercise.videoUrl)}" rel="noopener noreferrer">Ver vídeo</a>` : ""}
         </div>
 
         <div class="seriesTable">
@@ -230,12 +230,6 @@ function renderWorkouts() {
     historyOpen = !historyOpen;
     if (historyOpen && !workoutHistory.length) await syncWorkoutHistory(false);
     renderWorkouts();
-  });
-
-  workoutArea.querySelectorAll(".videoBtn[data-video-url]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      openVideoOverlay(btn.dataset.videoTitle || "Vídeo", btn.dataset.videoUrl || "");
-    });
   });
 }
 

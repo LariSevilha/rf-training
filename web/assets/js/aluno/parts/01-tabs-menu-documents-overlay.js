@@ -278,70 +278,6 @@ function openPdfOverlay(title, rawUrl) {
   document.body.classList.add("pdfOpen");
 }
 
-function extractYouTubeId(rawUrl) {
-  try {
-    const url = new URL(rawUrl);
-    const host = url.hostname.replace(/^www\./, "");
-
-    if (host === "youtu.be") {
-      return url.pathname.split("/").filter(Boolean)[0] || null;
-    }
-
-    if (host.includes("youtube.com") || host.includes("youtube-nocookie.com")) {
-      if (url.pathname === "/watch") return url.searchParams.get("v");
-
-      const parts = url.pathname.split("/").filter(Boolean);
-      const idx = parts.findIndex((p) => ["shorts", "embed", "live"].includes(p));
-      if (idx !== -1 && parts[idx + 1]) return parts[idx + 1];
-    }
-
-    // Link de redirecionamento (ex: google.com/url?...&url=https://youtube.com/...)
-    const redirected = url.searchParams.get("url") || url.searchParams.get("q");
-    if (redirected) return extractYouTubeId(redirected);
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function openVideoOverlay(title, rawUrl) {
-  if (pdfTitle) pdfTitle.textContent = title || "Vídeo";
-  showLoading();
-
-  if (!rawUrl) {
-    pdfFrame.removeAttribute("allow");
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Vídeo não configurado", "Entre em contato com o personal.")
-    );
-    setTimeout(hideLoading, 250);
-  } else if (!navigator.onLine) {
-    pdfFrame.removeAttribute("allow");
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Você está offline", "Conecte-se para assistir a este vídeo.")
-    );
-    setTimeout(hideLoading, 250);
-  } else {
-    const ytId = extractYouTubeId(rawUrl);
-
-    if (ytId) {
-      pdfFrame.setAttribute("allow", "autoplay; fullscreen; picture-in-picture; encrypted-media");
-      pdfFrame.setAttribute("allowfullscreen", "true");
-      pdfFrame.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytId)}?autoplay=1&playsinline=1&rel=0`;
-    } else {
-      // Não é um link reconhecido do YouTube: melhor abrir externamente
-      // do que tentar embutir um link arbitrário.
-      hideLoading();
-      window.open(rawUrl, "_blank", "noopener");
-      return;
-    }
-  }
-
-  pdfOverlay?.classList.add("show");
-  pdfOverlay?.setAttribute("aria-hidden", "false");
-  document.body.classList.add("pdfOpen");
-}
-
 function openContent(type) {
   if (type === "training" && workouts.length > 0) {
     activeWorkoutIndex = 0;
@@ -380,11 +316,7 @@ function closePdf() {
   hideLoading();
 
   setTimeout(() => {
-    if (pdfFrame) {
-      pdfFrame.src = "about:blank";
-      pdfFrame.removeAttribute("allow");
-      pdfFrame.removeAttribute("allowfullscreen");
-    }
+    if (pdfFrame) pdfFrame.src = "about:blank";
   }, 200);
 }
 

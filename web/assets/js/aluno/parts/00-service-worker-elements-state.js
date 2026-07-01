@@ -36,10 +36,12 @@ if ("serviceWorker" in navigator) {
   });
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
+    // Não force recarregamento automático aqui.
+    // Em PWA/mobile, especialmente ao voltar do YouTube ou de outro app externo,
+    // esse reload pode deixar a área do aluno em tela branca. A nova versão do
+    // service worker passa a valer naturalmente no próximo carregamento completo.
     if (refreshing) return;
-
     refreshing = true;
-    window.location.reload();
   });
 
   navigator.serviceWorker.addEventListener("message", (event) => {
@@ -48,14 +50,6 @@ if ("serviceWorker" in navigator) {
     }
   });
 }
-
-// Corrige a "tela branca" do iOS ao voltar de um navegador externo
-// (ex.: ao fechar um link que abriu fora do app em modo standalone).
-window.addEventListener("pageshow", (event) => {
-  if (event.persisted) {
-    window.location.reload();
-  }
-});
 
 const logoutBtn = document.getElementById("logoutBtn");
 const statusEl = document.getElementById("status");
@@ -163,6 +157,118 @@ function hideInstallButton() {
 function showAndroidManualInstall() {
   alert("Para instalar no Android:\n\n1) Abra este site no Chrome\n2) Toque no menu ⋮\n3) Toque em ‘Instalar app’ ou ‘Adicionar à tela inicial’.");
 }
+
+
+function isExternalHttpUrl(rawUrl) {
+  try {
+    const url = new URL(String(rawUrl || "").trim(), window.location.href);
+    return ["http:", "https:"].includes(url.protocol) && url.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+function isYouTubeUrl(rawUrl) {
+  try {
+    const host = new URL(String(rawUrl || "").trim(), window.location.href).hostname.replace(/^www\./, "");
+    return host === "youtube.com" || host.endsWith(".youtube.com") || host === "youtu.be";
+  } catch {
+    return false;
+  }
+}
+
+function saveStudentReturnState(extra = {}) {
+  try {
+    sessionStorage.setItem("rfStudentReturnState", JSON.stringify({
+      tab: document.body.classList.contains("studentManualMode") ? "manual" : "documents",
+      activeWorkoutIndex: Number(activeWorkoutIndex || 0),
+      scrollY: window.scrollY || 0,
+      savedAt: Date.now(),
+      ...extra,
+    }));
+  } catch {}
+}
+
+function getStudentReturnState() {
+  try {
+    const raw = sessionStorage.getItem("rfStudentReturnState");
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    if (!state?.savedAt || Date.now() - Number(state.savedAt) > 1000 * 60 * 60 * 6) {
+      sessionStorage.removeItem("rfStudentReturnState");
+      return null;
+    }
+    return state;
+  } catch {
+    return null;
+  }
+}
+
+function openExternalVideo(rawUrl) {
+  const url = String(rawUrl || "").trim();
+  if (!url) return;
+
+  saveStudentReturnState({ lastExternalVideoUrl: url });
+  hideLoading();
+
+  // Em app instalado/mobile, abrir na mesma navegação evita a aba/webview vazia
+  // que pode aparecer ao retornar de links externos do YouTube.
+  if (isStandaloneMode() || isIOSDevice() || isAndroidDevice() || isYouTubeUrl(url)) {
+    window.location.assign(url);
+    return;
+  }
+
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  if (!opened) window.location.assign(url);
+}
+
+function restoreAfterExternalReturn() {
+  hideLoading();
+  document.body.classList.remove("studentBooting");
+  document.body.classList.add("studentReady");
+
+  const state = getStudentReturnState();
+  if (!state) return;
+
+  if (
+    state.tab === "manual" &&
+    Array.isArray(workouts) &&
+    workouts.length &&
+    typeof setTab === "function" &&
+    typeof renderWorkouts === "function"
+  ) {
+    activeWorkoutIndex = Math.min(Math.max(Number(state.activeWorkoutIndex || 0), 0), workouts.length - 1);
+    setTab("manual");
+    renderWorkouts();
+  }
+
+  window.setTimeout(() => {
+    const y = Number(state.scrollY || 0);
+    if (Number.isFinite(y) && y > 0) window.scrollTo({ top: y, behavior: "instant" });
+  }, 80);
+}
+
+document.addEventListener("click", (event) => {
+  const link = event.target?.closest?.("a[data-external-video]");
+  if (!link) return;
+
+  const href = link.getAttribute("href") || link.dataset.externalVideo || "";
+  if (!isExternalHttpUrl(href)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  openExternalVideo(href);
+});
+
+window.addEventListener("pagehide", () => saveStudentReturnState());
+window.addEventListener("pageshow", () => {
+  // Quando o navegador restaura a PWA do cache após sair do YouTube, garante
+  // que loaders ou overlays não fiquem presos sobre a tela.
+  restoreAfterExternalReturn();
+});
+window.addEventListener("focus", () => {
+  if (getStudentReturnState()?.tab === "manual") restoreAfterExternalReturn();
+});
 
 function showLoading() {
   loadingLayer?.classList.add("show");
