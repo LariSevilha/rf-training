@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-01-pdf-youtube-modal";
+const VERSION = "rf-fitness-v2026-07-01-pdf-youtube-modal-blob-fix";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

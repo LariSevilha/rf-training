@@ -88,7 +88,7 @@ function hasAnyMaterial() {
     urls.stretch ||
     hasWrittenCardio() ||
     workouts.length ||
-    extraItems.length
+    extraItems.length,
   );
 }
 
@@ -126,7 +126,7 @@ function renderHomeMenu() {
     cards.push({
       key: "training",
       icon: "🏋️",
-      title: "Treino"
+      title: "Treino",
     });
   }
 
@@ -134,7 +134,7 @@ function renderHomeMenu() {
     cards.push({
       key: "diet",
       icon: "🍽️",
-      title: "Alimentação"
+      title: "Alimentação",
     });
   }
 
@@ -142,7 +142,7 @@ function renderHomeMenu() {
     cards.push({
       key: "supp",
       icon: "💊",
-      title: "Suplementação"
+      title: "Suplementação",
     });
   }
 
@@ -150,7 +150,7 @@ function renderHomeMenu() {
     cards.push({
       key: "cardio",
       icon: "🏃",
-      title: "Cardio"
+      title: "Cardio",
     });
   }
 
@@ -158,7 +158,7 @@ function renderHomeMenu() {
     cards.push({
       key: "exams",
       icon: "🧾",
-      title: "Exames"
+      title: "Exames",
     });
   }
 
@@ -166,12 +166,14 @@ function renderHomeMenu() {
     cards.push({
       key: "stretch",
       icon: "🤸",
-      title: "Alongamento"
+      title: "Alongamento",
     });
   }
 
   extraItems
-    .filter((item) => item && item.active !== false && String(item.url || "").trim())
+    .filter(
+      (item) => item && item.active !== false && String(item.url || "").trim(),
+    )
     .forEach((item) => {
       const key = `extra-${item.id}`;
       extraUrls[key] = String(item.url || "").trim();
@@ -179,7 +181,7 @@ function renderHomeMenu() {
       cards.push({
         key,
         icon: "📎",
-        title: item.title || "Arquivo"
+        title: item.title || "Arquivo",
       });
     });
 
@@ -232,13 +234,28 @@ function cardioWrittenHtml() {
   `;
 }
 
+let activeOverlayBlobUrl = "";
+
+function setPdfFrameHtml(html) {
+  if (!pdfFrame) return;
+
+  if (activeOverlayBlobUrl) {
+    try {
+      URL.revokeObjectURL(activeOverlayBlobUrl);
+    } catch {}
+    activeOverlayBlobUrl = "";
+  }
+
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  activeOverlayBlobUrl = URL.createObjectURL(blob);
+  pdfFrame.src = activeOverlayBlobUrl;
+}
+
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
 
-  if (pdfFrame) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
-  }
+  setPdfFrameHtml(html);
 
   setTimeout(hideLoading, 250);
 
@@ -247,9 +264,10 @@ function openHtmlOverlay(title, html) {
   document.body.classList.add("pdfOpen");
 }
 
-
 function apiBaseUrl() {
-  return location.hostname === "localhost" ? "http://localhost:3333/api" : `${location.origin}/api`;
+  return location.hostname === "localhost"
+    ? "http://localhost:3333/api"
+    : `${location.origin}/api`;
 }
 
 function getSessionToken() {
@@ -263,8 +281,14 @@ function buildPdfProxyUrl(rawUrl) {
 }
 
 function isProbablyPdfUrl(rawUrl) {
-  const url = String(rawUrl || "").trim().toLowerCase();
-  return url.includes(".pdf") || url.includes("drive.google.com") || url.includes("application/pdf");
+  const url = String(rawUrl || "")
+    .trim()
+    .toLowerCase();
+  return (
+    url.includes(".pdf") ||
+    url.includes("drive.google.com") ||
+    url.includes("application/pdf")
+  );
 }
 
 function customPdfViewerHtml(title, rawUrl) {
@@ -423,8 +447,16 @@ function customPdfViewerHtml(title, rawUrl) {
         if (!window.pdfjsLib) throw new Error('Não foi possível carregar o leitor de PDF.');
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const res = await fetch(PDF_URL, { headers: TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {} });
-        if (!res.ok) throw new Error('PDF indisponível ou sem permissão.');
+        if (!res.ok) {
+          let msg = 'PDF indisponível ou sem permissão.';
+          try {
+            const data = await res.json();
+            if (data?.message) msg = data.message;
+          } catch {}
+          throw new Error(msg);
+        }
         const bytes = await res.arrayBuffer();
+        if (!bytes || bytes.byteLength < 10) throw new Error('PDF vazio ou indisponível.');
         pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
         await renderAll();
       } catch (err) {
@@ -447,24 +479,33 @@ function openPdfOverlay(title, rawUrl) {
   showLoading();
 
   if (!rawUrl) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+    setPdfFrameHtml(
+      placeholderHtml(
+        "Material não configurado",
+        "Entre em contato com o personal.",
+      ),
     );
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+    setPdfFrameHtml(
+      placeholderHtml(
+        "Você está offline",
+        "Conecte-se para abrir este material.",
+      ),
     );
     setTimeout(hideLoading, 250);
   } else {
     const preview = driveToPreview(rawUrl);
     if (!preview) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+      setPdfFrameHtml(
+        placeholderHtml(
+          "Link inválido",
+          "Envie um link do Drive/PDF compatível.",
+        ),
       );
       setTimeout(hideLoading, 250);
     } else if (isProbablyPdfUrl(rawUrl)) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(customPdfViewerHtml(title || "PDF", rawUrl));
+      setPdfFrameHtml(customPdfViewerHtml(title || "PDF", rawUrl));
     } else {
       pdfFrame.src = preview;
     }
@@ -514,6 +555,12 @@ function closePdf() {
 
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";
+    if (activeOverlayBlobUrl) {
+      try {
+        URL.revokeObjectURL(activeOverlayBlobUrl);
+      } catch {}
+      activeOverlayBlobUrl = "";
+    }
   }, 200);
 }
 
