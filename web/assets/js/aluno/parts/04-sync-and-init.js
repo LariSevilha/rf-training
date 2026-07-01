@@ -146,7 +146,6 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
   ]);
 
   renderHomeMenu();
-  restoreStudentVideoReturnState();
 
   if (statusEl) {
     statusEl.textContent = hasAnyMaterial()

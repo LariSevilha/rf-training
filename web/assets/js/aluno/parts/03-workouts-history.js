@@ -149,12 +149,12 @@ function renderWorkouts() {
                 <b>Técnica:</b> ${escapeHtml(item.technique.name || "")}
                 ${item.technique.exerciseNote ? ` · ${escapeHtml(item.technique.exerciseNote)}` : ""}
                 ${item.technique.notes ? `<br><small>${escapeHtml(item.technique.notes)}</small>` : ""}
-                ${item.technique.videoUrl ? `<br>${studentVideoButton(item.technique.videoUrl, "Ver técnica")}` : ""}
+                ${item.technique.videoUrl ? `<br><a class="videoBtn" href="${escapeHtml(item.technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
               </div>
             ` : ""}
           </div>
 
-          ${exercise.videoUrl ? studentVideoButton(exercise.videoUrl, "Ver vídeo") : ""}
+          ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}
         </div>
 
         <div class="seriesTable">
@@ -224,8 +224,6 @@ function renderWorkouts() {
       </section>
     </div>
   `;
-
-  bindStudentVideoButtons(workoutArea);
 
   document.getElementById("saveWorkoutBtn")?.addEventListener("click", () => saveCurrentWorkout(workout.id));
   document.getElementById("studentHistoryToggle")?.addEventListener("click", async () => {
