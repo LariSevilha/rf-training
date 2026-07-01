@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-01-ios-pdf-zoom-stable";
+const VERSION = "rf-fitness-v2026-07-01-ios-pdf-zoom-no-auto-reload";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

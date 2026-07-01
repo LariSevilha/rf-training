@@ -38,8 +38,11 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (refreshing) return;
 
+    // iOS/PWA: não recarregar automaticamente quando o service worker troca.
+    // Em tela de PDF, principalmente ao dar zoom, esse reload fazia o app voltar
+    // para a tela inicial. A atualização passa a valer na próxima abertura normal.
     refreshing = true;
-    window.location.reload();
+    console.log("Service worker atualizado; atualização aplicada na próxima abertura do app.");
   });
 
   navigator.serviceWorker.addEventListener("message", (event) => {
