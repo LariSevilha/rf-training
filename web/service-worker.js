@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-01-pdf-links-modal-v3";
+const VERSION = "rf-fitness-v2026-07-01-video-modal-fix";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -8,7 +8,6 @@ const APP_SHELL = [
 
   "/pages/index.html",
   "/pages/aluno.html",
-  "/pages/pdf-viewer.html",
   "/pages/politica-privacidade.html",
 
   "/assets/css/main.css",
