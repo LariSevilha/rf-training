@@ -50,13 +50,6 @@ function updateWorkoutExerciseButtonState() {
     : "Adicionar exercício ao treino";
 }
 
-function updateWorkoutMainButtonState() {
-  if (!workoutAddBtn) return;
-  workoutAddBtn.textContent = editingWorkoutIndex !== null
-    ? "Atualizar treino na lista"
-    : "Adicionar treino à lista";
-}
-
 function updateSeriesButtonState() {
   if (!seriesAddBtn) return;
   seriesAddBtn.textContent = editingSeriesIndex !== null ? "Atualizar série" : "Adicionar série";
@@ -136,7 +129,6 @@ function resetExerciseDraft() {
 }
 
 function resetWorkoutDraft() {
-  editingWorkoutIndex = null;
   editingDraftExerciseIndex = null;
   editingSeriesIndex = null;
   workoutDraftExercises = [];
@@ -156,11 +148,9 @@ function resetWorkoutDraft() {
   renderWorkoutDraft();
   updateSeriesButtonState();
   updateWorkoutExerciseButtonState();
-  updateWorkoutMainButtonState();
 }
 
 function renderWorkoutDraft() {
-  updateWorkoutMainButtonState();
   if (!workoutDraftBox) return;
 
   if (!workoutDraftExercises.length) {
@@ -173,10 +163,10 @@ function renderWorkoutDraft() {
       <div draggable="true" data-draft-ex-index="${idx}" style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:8px 0;cursor:grab;">
         <div style="display:flex;justify-content:space-between;gap:10px;">
           <div>
-            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}${ex.techniqueName ? ` <span style="color:#ceac5e;font-weight:800;text-transform:uppercase;font-size:12px;letter-spacing:.03em;white-space:nowrap;">• ${escapeHtml(ex.techniqueName)}</span>` : ""}</b>
+            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>
             <div>${escapeHtml(ex.muscleGroup || "Sem agrupamento")}${ex.videoUrl ? " · vídeo vinculado" : ""}</div>
             ${ex.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(ex.notes)}</div>` : ""}
-            ${ex.techniqueNote ? `<div style="margin-top:6px;color:#ceac5e;font-weight:650;">Obs. técnica: ${escapeHtml(ex.techniqueNote)}</div>` : ""}
+            ${ex.techniqueName ? `<div style="margin-top:6px;"><b>Técnica:</b> ${escapeHtml(ex.techniqueName)}${ex.techniqueNote ? ` · ${escapeHtml(ex.techniqueNote)}` : ""}</div>` : ""}
             <div style="margin-top:6px;">Séries: ${ex.series.map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</div>
           </div>
           <div style="display:flex;gap:8px;height:max-content;flex-wrap:wrap;justify-content:flex-end;">
@@ -382,7 +372,6 @@ function cloneWorkoutForDuplicate(workout = {}, index = 0) {
 }
 
 function renderWorkoutList() {
-  updateWorkoutMainButtonState();
   if (!workoutListBox) return;
 
   updateWorkoutOrdersFromList();
@@ -394,12 +383,11 @@ function renderWorkoutList() {
 
   workoutListBox.innerHTML = studentWorkoutList
     .map((w, idx) => `
-      <div draggable="true" data-workout-index="${idx}" style="border:1px solid ${editingWorkoutIndex === idx ? 'rgba(206,172,94,.85)' : 'rgba(255,255,255,.10)'};border-radius:16px;padding:12px;margin:10px 0;cursor:grab;background:${editingWorkoutIndex === idx ? 'rgba(206,172,94,.08)' : 'rgba(255,255,255,.025)'};">
+      <div draggable="true" data-workout-index="${idx}" style="border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:12px;margin:10px 0;cursor:grab;background:rgba(255,255,255,.025);">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
           <div>
             <b>☰ ${idx + 1}. ${escapeHtml(w.title || `Treino ${idx + 1}`)}</b>
             <div>${w.active === false ? "Inativo" : "Ativo"} · ${w.exercises?.length || 0} exercício(s)</div>
-            ${editingWorkoutIndex === idx ? `<div style="margin-top:6px;color:#ceac5e;font-weight:700;">Editando agora</div>` : ""}
             ${w.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(w.notes)}</div>` : ""}
           </div>
           <div style="display:flex;gap:8px;height:max-content;">
@@ -411,7 +399,7 @@ function renderWorkoutList() {
         <div style="margin-top:8px;">
           ${(w.exercises || []).map((ex, exIdx) => `
             <div style="margin:6px 0;">
-              ${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}${ex.techniqueName ? ` <span style="color:#ceac5e;font-weight:800;text-transform:uppercase;font-size:12px;letter-spacing:.03em;white-space:nowrap;">• ${escapeHtml(ex.techniqueName)}</span>` : ""}
+              ${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
             </div>
           `).join("")}
         </div>
@@ -451,15 +439,6 @@ function renderWorkoutList() {
 
       const [moved] = studentWorkoutList.splice(draggedIndex, 1);
       studentWorkoutList.splice(targetIndex, 0, moved);
-      if (editingWorkoutIndex !== null) {
-        if (editingWorkoutIndex === draggedIndex) {
-          editingWorkoutIndex = targetIndex;
-        } else if (draggedIndex < editingWorkoutIndex && targetIndex >= editingWorkoutIndex) {
-          editingWorkoutIndex -= 1;
-        } else if (draggedIndex > editingWorkoutIndex && targetIndex <= editingWorkoutIndex) {
-          editingWorkoutIndex += 1;
-        }
-      }
       updateWorkoutOrdersFromList();
       setWorkoutUnsaved();
       renderWorkoutList();
@@ -471,12 +450,6 @@ function renderWorkoutList() {
     btn.addEventListener("click", () => {
       const idx = Number(btn.dataset.removeWorkout);
       studentWorkoutList.splice(idx, 1);
-      if (editingWorkoutIndex === idx) {
-        resetWorkoutDraft();
-      } else if (editingWorkoutIndex !== null && editingWorkoutIndex > idx) {
-        editingWorkoutIndex -= 1;
-        updateWorkoutMainButtonState();
-      }
       updateWorkoutOrdersFromList();
       setWorkoutUnsaved();
       renderWorkoutList();
@@ -506,20 +479,23 @@ function renderWorkoutList() {
 
       if (workoutTitle) workoutTitle.value = w.title || "";
       if (workoutNotes) workoutNotes.value = w.notes || "";
-      if (workoutOrder) workoutOrder.value = String(w.order ?? idx);
       if (workoutActive) workoutActive.checked = w.active !== false;
 
-      editingWorkoutIndex = idx;
       editingDraftExerciseIndex = null;
       updateWorkoutExerciseButtonState();
-      updateWorkoutMainButtonState();
       refreshExercises().catch(() => {});
       refreshTechniques().catch(() => {});
       workoutDraftExercises = Array.isArray(w.exercises) ? JSON.parse(JSON.stringify(w.exercises)) : [];
+      studentWorkoutList.splice(idx, 1);
+      updateWorkoutOrdersFromList();
+      // Precisa ser definido DEPOIS de updateWorkoutOrdersFromList(), pois essa função
+      // sobrescreve workoutOrder.value com o tamanho da lista restante. Se definido antes,
+      // o treino editado perdia sua posição original e era sempre jogado para o final da lista.
+      if (workoutOrder) workoutOrder.value = String(w.order ?? idx);
       setWorkoutUnsaved();
       renderWorkoutDraft();
       renderWorkoutList();
-      toast("info", "Treino carregado para edição", "Ajuste e clique em Atualizar treino na lista. O treino não será removido enquanto você edita.");
+      toast("info", "Treino carregado para edição", "Ajuste e adicione novamente à lista do aluno.");
     });
   });
 }
@@ -635,7 +611,7 @@ workoutAddBtn?.addEventListener("click", () => {
   if (!title) return toast("error", "Atenção", "Informe o nome do treino.");
   if (!workoutDraftExercises.length) return toast("error", "Atenção", "Adicione pelo menos um exercício ao treino.");
 
-  const payloadWorkout = {
+  studentWorkoutList.push({
     title,
     notes: (workoutNotes?.value || "").trim(),
     active: workoutActive ? !!workoutActive.checked : true,
@@ -645,18 +621,11 @@ workoutAddBtn?.addEventListener("click", () => {
       order: Number(ex.order ?? i),
       series: (ex.series || []).map((s, si) => ({ ...s, order: Number(s.order ?? si) })),
     })),
-  };
-
-  const wasEditing = editingWorkoutIndex !== null && studentWorkoutList[editingWorkoutIndex];
-  if (wasEditing) {
-    studentWorkoutList[editingWorkoutIndex] = payloadWorkout;
-  } else {
-    studentWorkoutList.push(payloadWorkout);
-  }
+  });
 
   studentWorkoutList.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
   setWorkoutUnsaved();
   renderWorkoutList();
   resetWorkoutDraft();
-  toast("ok", wasEditing ? "Treino atualizado" : "Treino adicionado", "Não esqueça de clicar em Salvar treinos manuais.");
+  toast("ok", "Treino adicionado", "Não esqueça de clicar em Salvar treinos manuais.");
 });
