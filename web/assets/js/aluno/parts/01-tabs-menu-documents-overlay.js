@@ -233,140 +233,12 @@ function cardioWrittenHtml() {
 }
 
 
-function createInteractivePdfHtml(title, rawUrl) {
-  const safeTitle = escapeHtml(title || "PDF");
-  const safeUrl = escapeHtml(rawUrl || "");
-  const proxyPath = `/api/pdf-proxy?url=${encodeURIComponent(rawUrl || "")}`;
-  const authToken = session?.token || localStorage.getItem("rf_token") || "";
-
-  return `
-    <!doctype html>
-    <html lang="pt-BR">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/web/pdf_viewer.min.css">
-        <style>
-          *{box-sizing:border-box} body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif} 
-          .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#111;border-bottom:1px solid rgba(206,172,94,.25)}
-          .top b{font-size:12px;color:#ceac5e;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-          .top button,.fallbackBtn{border:0;border-radius:999px;background:#ceac5e;color:#111;font-weight:900;padding:9px 12px;cursor:pointer}
-          .hint{font-size:12px;color:#d8d8d8;opacity:.78;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.08)}
-          #viewer{width:100%;max-width:980px;margin:0 auto;padding:12px 8px 40px}
-          .page{position:relative;margin:0 auto 14px;background:#fff;box-shadow:0 14px 40px rgba(0,0,0,.45);overflow:hidden}
-          .page canvas{display:block;width:100%;height:auto}
-          .annotationLayer{position:absolute;inset:0;pointer-events:none}
-          .annotationLayer section,.annotationLayer a{pointer-events:auto}
-          .annotationLayer a{outline:2px solid rgba(206,172,94,.30);border-radius:3px}
-          .status{min-height:70vh;display:flex;align-items:center;justify-content:center;padding:26px;text-align:center;color:#ddd}
-          .statusBox{max-width:440px;background:#141414;border:1px solid rgba(206,172,94,.22);border-radius:20px;padding:22px;box-shadow:0 16px 50px rgba(0,0,0,.35)}
-          .statusBox h2{margin:0 0 10px;font-size:18px;color:#ceac5e}.statusBox p{margin:0 0 14px;line-height:1.45;color:#ddd}
-        </style>
-      </head>
-      <body>
-        <div class="top"><b>${safeTitle}</b><button id="zoomBtn" type="button">Ajustar zoom</button></div>
-        <div class="hint">Links do YouTube dentro do PDF abrem em modal, sem sair do aplicativo.</div>
-        <div id="viewer"><div class="status"><div class="statusBox"><h2>Carregando PDF…</h2><p>Aguarde enquanto preparamos o leitor interativo.</p></div></div></div>
-        <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"><\/script>
-        <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/web/pdf_viewer.min.js"><\/script>
-        <script>
-          const RAW_URL = ${JSON.stringify(rawUrl || "")};
-          const PROXY_PATH = ${JSON.stringify(proxyPath)};
-          const AUTH_TOKEN = ${JSON.stringify(authToken)};
-          const viewer = document.getElementById("viewer");
-          let fitWidth = true;
-
-          function parentVideo(url){
-            try { parent.postMessage({ type:"RF_OPEN_STUDENT_VIDEO", url, title:"Vídeo do PDF" }, "*"); } catch {}
-          }
-          function normalizeUrl(url){
-            let value = String(url || "").trim().replace(/&amp;/g, "&");
-            if (!/^https?:\/\//i.test(value)) value = "https://" + value;
-            try {
-              const parsed = new URL(value);
-              const host = parsed.hostname.toLowerCase();
-              if (host.includes("google.") && parsed.pathname.startsWith("/url")) {
-                const redirected = parsed.searchParams.get("q") || parsed.searchParams.get("url");
-                if (redirected) return normalizeUrl(decodeURIComponent(redirected));
-              }
-              return parsed.toString();
-            } catch { return value; }
-          }
-          function isYouTube(url){
-            try {
-              const parsed = new URL(normalizeUrl(url));
-              const host = parsed.hostname.toLowerCase();
-              return host === "youtu.be" || host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com");
-            } catch { return false; }
-          }
-          function showFallback(message){
-            viewer.innerHTML = '<div class="status"><div class="statusBox"><h2>Leitor interativo indisponível</h2><p>'+ message +'</p><button class="fallbackBtn" id="fallbackBtn" type="button">Abrir visualização padrão</button></div></div>';
-            document.getElementById("fallbackBtn")?.addEventListener("click", () => {
-              parent.postMessage({ type:"RF_PDF_FALLBACK", url: RAW_URL }, "*");
-            });
-          }
-          async function loadPdf(){
-            if (!window.pdfjsLib) return showFallback("Não foi possível carregar o leitor de PDF. Verifique a conexão e tente novamente.");
-            pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
-            const token = AUTH_TOKEN || "";
-            const res = await fetch(PROXY_PATH, { headers: token ? { Authorization: "Bearer " + token } : {} });
-            if (!res.ok) throw new Error("Falha ao carregar PDF: " + res.status);
-            const data = await res.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data }).promise;
-            viewer.innerHTML = "";
-            for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-              const page = await pdf.getPage(pageNumber);
-              const baseViewport = page.getViewport({ scale: 1 });
-              const maxWidth = Math.min(window.innerWidth - 16, 980);
-              const scale = fitWidth ? Math.max(0.65, maxWidth / baseViewport.width) : 1.25;
-              const viewport = page.getViewport({ scale });
-              const pageBox = document.createElement("div");
-              pageBox.className = "page";
-              pageBox.style.width = viewport.width + "px";
-              pageBox.style.height = viewport.height + "px";
-              const canvas = document.createElement("canvas");
-              const ctx = canvas.getContext("2d");
-              canvas.width = Math.floor(viewport.width * devicePixelRatio);
-              canvas.height = Math.floor(viewport.height * devicePixelRatio);
-              canvas.style.width = viewport.width + "px";
-              canvas.style.height = viewport.height + "px";
-              ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-              pageBox.appendChild(canvas);
-              const annotationLayer = document.createElement("div");
-              annotationLayer.className = "annotationLayer";
-              pageBox.appendChild(annotationLayer);
-              viewer.appendChild(pageBox);
-              await page.render({ canvasContext: ctx, viewport }).promise;
-              const annotations = await page.getAnnotations({ intent: "display" });
-              if (pdfjsLib.AnnotationLayer && annotations.length) {
-                pdfjsLib.AnnotationLayer.render({
-                  viewport: viewport.clone({ dontFlip: true }),
-                  div: annotationLayer,
-                  annotations,
-                  page,
-                  renderForms: false,
-                  linkService: { addLinkAttributes: (link, url) => { link.href = url; link.target = "_blank"; link.rel = "noopener noreferrer"; } },
-                  downloadManager: null,
-                });
-              }
-              annotationLayer.querySelectorAll("a[href]").forEach((a) => {
-                a.addEventListener("click", (ev) => {
-                  const href = a.getAttribute("href") || "";
-                  if (isYouTube(href)) {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    parentVideo(href);
-                  }
-                }, true);
-              });
-            }
-          }
-          document.getElementById("zoomBtn")?.addEventListener("click", () => { fitWidth = !fitWidth; loadPdf().catch(() => showFallback("Não foi possível reajustar o PDF.")); });
-          loadPdf().catch((err) => showFallback("Não foi possível ler este PDF de forma interativa. A visualização padrão continua disponível, mas links internos podem depender do leitor do navegador."));
-        <\/script>
-      </body>
-    </html>
-  `;
+function createInteractivePdfUrl(title, rawUrl) {
+  const params = new URLSearchParams();
+  params.set("url", rawUrl || "");
+  params.set("title", title || "PDF");
+  params.set("v", "2026-07-01-pdf-viewer-page");
+  return `/pages/pdf-viewer.html?${params.toString()}`;
 }
 
 function openHtmlOverlay(title, html) {
@@ -406,10 +278,9 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        createInteractivePdfHtml(title || "PDF", rawUrl)
-      );
-      setTimeout(hideLoading, 650);
+      pdfFrame.srcdoc = "";
+      pdfFrame.src = createInteractivePdfUrl(title || "PDF", rawUrl);
+      setTimeout(hideLoading, 900);
     }
   }
 
