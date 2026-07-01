@@ -1579,3 +1579,99 @@ body,
 .pageAluno:not(.ready) #docsEmpty {
   display: none !important;
 }
+
+
+/* Modal de vídeo do treino dentro do app */
+.studentVideoModal {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, .82);
+  backdrop-filter: blur(12px);
+}
+
+.studentVideoModal.show {
+  display: flex;
+}
+
+.studentVideoCard {
+  width: min(980px, 100%);
+  background: #0f0f0f;
+  border: 1px solid rgba(206, 172, 94, .32);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .65);
+}
+
+.studentVideoBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, rgba(206, 172, 94, .16), rgba(255, 255, 255, .025));
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.studentVideoTitle {
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+
+.studentVideoClose {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.studentVideoFrameWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.studentVideoFrameWrap iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+body.videoOpen {
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .studentVideoModal {
+    align-items: flex-start;
+    padding: max(14px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom));
+  }
+
+  .studentVideoCard {
+    margin-top: 56px;
+    border-radius: 18px;
+  }
+
+  .studentVideoBar {
+    padding: 10px 12px;
+  }
+
+  .studentVideoClose {
+    width: 38px;
+    height: 38px;
+    font-size: 24px;
+  }
+}

@@ -191,3 +191,136 @@ window.addEventListener("offline", () => {
 });
 
 offlineTryBtn?.addEventListener("click", setOfflineUI);
+
+// Modal de vídeo do treino manual: mantém YouTube dentro do próprio app.
+let studentVideoModal = null;
+let studentVideoFrame = null;
+let studentVideoTitle = null;
+
+function isYoutubeUrl(url) {
+  try {
+    const u = new URL(String(url || ""), window.location.href);
+    const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+    return host === "youtube.com" || host === "m.youtube.com" || host === "youtu.be" || host === "youtube-nocookie.com";
+  } catch {
+    return /youtu\.be|youtube\.com/i.test(String(url || ""));
+  }
+}
+
+function parseYoutubeStartSeconds(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d+$/.test(raw)) return raw;
+
+  const match = raw.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
+  if (!match || !match[0]) return "";
+
+  const h = Number(match[1] || 0);
+  const m = Number(match[2] || 0);
+  const sec = Number(match[3] || 0);
+  const total = (h * 3600) + (m * 60) + sec;
+  return total ? String(total) : "";
+}
+
+function youtubeEmbedUrl(url) {
+  try {
+    const u = new URL(String(url || ""), window.location.href);
+    const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+    let id = "";
+
+    if (host === "youtu.be") {
+      id = u.pathname.split("/").filter(Boolean)[0] || "";
+    } else if (u.pathname.startsWith("/embed/")) {
+      id = u.pathname.split("/").filter(Boolean)[1] || "";
+    } else if (u.pathname.startsWith("/shorts/")) {
+      id = u.pathname.split("/").filter(Boolean)[1] || "";
+    } else {
+      id = u.searchParams.get("v") || "";
+    }
+
+    id = String(id || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40);
+    if (!id) return "";
+
+    const embed = new URL(`https://www.youtube.com/embed/${id}`);
+    embed.searchParams.set("rel", "0");
+    embed.searchParams.set("modestbranding", "1");
+    embed.searchParams.set("playsinline", "1");
+
+    const start = parseYoutubeStartSeconds(u.searchParams.get("start") || u.searchParams.get("t"));
+    if (start) embed.searchParams.set("start", start);
+
+    return embed.toString();
+  } catch {
+    return "";
+  }
+}
+
+function ensureStudentVideoModal() {
+  if (studentVideoModal) return;
+
+  studentVideoModal = document.createElement("div");
+  studentVideoModal.className = "studentVideoModal";
+  studentVideoModal.setAttribute("aria-hidden", "true");
+  studentVideoModal.innerHTML = `
+    <div class="studentVideoCard" role="dialog" aria-modal="true" aria-label="Vídeo do treino">
+      <div class="studentVideoBar">
+        <div class="studentVideoTitle" id="studentVideoTitle">Vídeo</div>
+        <button class="studentVideoClose" type="button" aria-label="Fechar vídeo">×</button>
+      </div>
+      <div class="studentVideoFrameWrap">
+        <iframe id="studentVideoFrame" title="Vídeo do treino" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(studentVideoModal);
+  studentVideoFrame = studentVideoModal.querySelector("#studentVideoFrame");
+  studentVideoTitle = studentVideoModal.querySelector("#studentVideoTitle");
+
+  studentVideoModal.querySelector(".studentVideoClose")?.addEventListener("click", closeStudentVideoModal);
+  studentVideoModal.addEventListener("click", (ev) => {
+    if (ev.target === studentVideoModal) closeStudentVideoModal();
+  });
+}
+
+function openStudentVideoModal(url, title = "Vídeo") {
+  const embed = youtubeEmbedUrl(url);
+  if (!embed) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  ensureStudentVideoModal();
+  if (studentVideoTitle) studentVideoTitle.textContent = title || "Vídeo";
+  if (studentVideoFrame) studentVideoFrame.src = embed;
+  studentVideoModal.classList.add("show");
+  studentVideoModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("videoOpen");
+}
+
+function closeStudentVideoModal() {
+  if (!studentVideoModal) return;
+  studentVideoModal.classList.remove("show");
+  studentVideoModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("videoOpen");
+  if (studentVideoFrame) studentVideoFrame.src = "about:blank";
+}
+
+window.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && studentVideoModal?.classList.contains("show")) {
+    closeStudentVideoModal();
+  }
+});
+
+document.addEventListener("click", (ev) => {
+  const link = ev.target?.closest?.("a.videoBtn, a[data-video-modal]");
+  if (!link) return;
+
+  const url = link.getAttribute("href") || link.dataset.videoModal || "";
+  if (!isYoutubeUrl(url)) return;
+
+  ev.preventDefault();
+  ev.stopPropagation();
+  openStudentVideoModal(url, (link.textContent || "Vídeo do treino").trim());
+});
+
