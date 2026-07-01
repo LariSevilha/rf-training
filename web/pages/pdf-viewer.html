@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+    <title>PDF</title>
+    <style>
+      *{box-sizing:border-box}
+      body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+      #viewer{width:100%;max-width:980px;margin:0 auto;padding:10px 6px 40px}
+      .page{position:relative;margin:0 auto 14px;background:#fff;box-shadow:0 14px 40px rgba(0,0,0,.45);overflow:hidden;border-radius:4px}
+      .page canvas{display:block;width:100%;height:auto}
+      .linkLayer{position:absolute;inset:0;z-index:5}
+      .pdfLink{position:absolute;display:block;border:0;background:rgba(206,172,94,.10);outline:1px solid rgba(206,172,94,.22);border-radius:3px;cursor:pointer;padding:0;margin:0}
+      .status{min-height:70vh;display:flex;align-items:center;justify-content:center;padding:26px;text-align:center;color:#ddd}
+      .statusBox{max-width:440px;background:#141414;border:1px solid rgba(206,172,94,.22);border-radius:20px;padding:22px;box-shadow:0 16px 50px rgba(0,0,0,.35)}
+      .statusBox h2{margin:0 0 10px;font-size:18px;color:#ceac5e}.statusBox p{margin:0 0 14px;line-height:1.45;color:#ddd}
+      .fallbackBtn{border:0;border-radius:999px;background:#ceac5e;color:#111;font-weight:900;padding:10px 14px;cursor:pointer}
+    </style>
+  </head>
+  <body>
+    <div id="viewer"><div class="status"><div class="statusBox"><h2>Carregando PDF…</h2><p>Aguarde alguns segundos.</p></div></div></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const RAW_URL = params.get("url") || "";
+      const TITLE = params.get("title") || "PDF";
+      const viewer = document.getElementById("viewer");
+      document.title = TITLE;
+
+      function getAuthToken(){
+        try { return localStorage.getItem("rf_token") || ""; } catch { return ""; }
+      }
+
+      function normalizeUrl(url){
+        let value = String(url || "").trim().replace(/&amp;/g, "&");
+        if (!value) return "";
+        if (!/^https?:\/\//i.test(value)) value = "https://" + value;
+        try {
+          const parsed = new URL(value);
+          const host = parsed.hostname.toLowerCase();
+          if (host.includes("google.") && parsed.pathname.startsWith("/url")) {
+            const redirected = parsed.searchParams.get("q") || parsed.searchParams.get("url");
+            if (redirected) return normalizeUrl(decodeURIComponent(redirected));
+          }
+          return parsed.toString();
+        } catch { return value; }
+      }
+
+      function isYouTube(url){
+        try {
+          const parsed = new URL(normalizeUrl(url));
+          const host = parsed.hostname.toLowerCase();
+          return host === "youtu.be" || host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com");
+        } catch { return false; }
+      }
+
+      function openVideoInParent(url){
+        try {
+          window.parent.postMessage({ type:"RF_OPEN_STUDENT_VIDEO", url, title:"Vídeo do PDF" }, "*");
+        } catch {}
+      }
+
+      function showFallback(message){
+        viewer.innerHTML = '<div class="status"><div class="statusBox"><h2>Não foi possível carregar o leitor interativo</h2><p>' +
+          String(message || "O PDF pode ser aberto na visualização padrão, mas os links internos podem sair do aplicativo.") +
+          '</p><button class="fallbackBtn" id="fallbackBtn" type="button">Abrir PDF padrão</button></div></div>';
+        document.getElementById("fallbackBtn")?.addEventListener("click", () => {
+          try { window.parent.postMessage({ type:"RF_PDF_FALLBACK", url: RAW_URL }, "*"); } catch {}
+        });
+      }
+
+      function fetchWithTimeout(url, options = {}, timeoutMs = 25000){
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+      }
+
+      function rectToCss(rect, viewport){
+        const converted = viewport.convertToViewportRectangle(rect);
+        const x1 = Math.min(converted[0], converted[2]);
+        const y1 = Math.min(converted[1], converted[3]);
+        const x2 = Math.max(converted[0], converted[2]);
+        const y2 = Math.max(converted[1], converted[3]);
+        return { left: x1, top: y1, width: Math.max(8, x2 - x1), height: Math.max(8, y2 - y1) };
+      }
+
+      async function renderPdf(){
+        if (!RAW_URL) return showFallback("Nenhum link de PDF foi cadastrado.");
+        if (!window.pdfjsLib) return showFallback("O leitor PDF não carregou. Verifique a conexão e tente novamente.");
+
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+        } catch {}
+
+        const token = getAuthToken();
+        const proxyPath = `/api/pdf-proxy?url=${encodeURIComponent(RAW_URL)}`;
+        const res = await fetchWithTimeout(proxyPath, { headers: token ? { Authorization: "Bearer " + token } : {} }, 25000);
+        if (!res.ok) throw new Error("Falha ao buscar PDF: " + res.status);
+
+        const data = await res.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data, disableFontFace: true, useWorkerFetch: false, isEvalSupported: false });
+        const pdf = await loadingTask.promise;
+        viewer.innerHTML = "";
+
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+          const page = await pdf.getPage(pageNumber);
+          const baseViewport = page.getViewport({ scale: 1 });
+          const maxWidth = Math.min(window.innerWidth - 12, 980);
+          const scale = Math.max(0.55, maxWidth / baseViewport.width);
+          const viewport = page.getViewport({ scale });
+
+          const pageBox = document.createElement("div");
+          pageBox.className = "page";
+          pageBox.style.width = viewport.width + "px";
+          pageBox.style.height = viewport.height + "px";
+
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d", { alpha: false });
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = Math.floor(viewport.width * dpr);
+          canvas.height = Math.floor(viewport.height * dpr);
+          canvas.style.width = viewport.width + "px";
+          canvas.style.height = viewport.height + "px";
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          pageBox.appendChild(canvas);
+
+          const linkLayer = document.createElement("div");
+          linkLayer.className = "linkLayer";
+          pageBox.appendChild(linkLayer);
+          viewer.appendChild(pageBox);
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          const annotations = await page.getAnnotations({ intent: "display" });
+          annotations
+            .filter((annotation) => annotation && annotation.subtype === "Link" && annotation.url && annotation.rect)
+            .forEach((annotation) => {
+              const href = normalizeUrl(annotation.url);
+              const css = rectToCss(annotation.rect, viewport);
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "pdfLink";
+              btn.setAttribute("aria-label", isYouTube(href) ? "Abrir vídeo" : "Abrir link");
+              btn.style.left = css.left + "px";
+              btn.style.top = css.top + "px";
+              btn.style.width = css.width + "px";
+              btn.style.height = css.height + "px";
+              btn.addEventListener("click", (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                if (isYouTube(href)) {
+                  openVideoInParent(href);
+                } else {
+                  window.open(href, "_blank", "noopener,noreferrer");
+                }
+              });
+              linkLayer.appendChild(btn);
+            });
+        }
+      }
+
+      setTimeout(() => {
+        if (viewer.textContent.includes("Carregando PDF")) {
+          showFallback("O carregamento demorou mais que o esperado.");
+        }
+      }, 30000);
+
+      renderPdf().catch((error) => {
+        console.error(error);
+        showFallback("O leitor interativo não conseguiu abrir este PDF.");
+      });
+    </script>
+  </body>
+</html>

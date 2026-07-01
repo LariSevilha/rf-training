@@ -407,6 +407,29 @@ function bindStudentVideoButtons(root = document) {
   });
 }
 
+
+function getStudentTokenForPdf() {
+  return session?.token || localStorage.getItem("rf_token") || "";
+}
+
+window.openStudentVideo = openStudentVideo;
+window.normalizeStudentVideoUrl = normalizeStudentVideoUrl;
+window.getStudentTokenForPdf = getStudentTokenForPdf;
+
+window.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (!data || typeof data !== "object") return;
+
+  if (data.type === "RF_OPEN_STUDENT_VIDEO" && data.url) {
+    openStudentVideo(data.url, data.title || "Vídeo do PDF");
+  }
+
+  if (data.type === "RF_PDF_FALLBACK" && data.url && pdfFrame) {
+    pdfFrame.srcdoc = "";
+    pdfFrame.src = driveToPreview(data.url);
+  }
+});
+
 window.addEventListener("pageshow", () => {
   hideLoading?.();
   closeStudentVideoModal();
