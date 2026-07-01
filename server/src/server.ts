@@ -49,21 +49,34 @@ async function fetchPdfBuffer(rawUrl: string) {
     },
   });
 
+  if (!first.ok) {
+    throw new Error(`Falha ao baixar PDF: HTTP ${first.status}`);
+  }
+
   const contentType = first.headers.get("content-type") || "";
   let buffer = Buffer.from(await first.arrayBuffer());
 
   // Alguns arquivos do Drive retornam uma página HTML de confirmação. Tenta seguir o link real de download.
   if (contentType.includes("text/html")) {
     const html = buffer.toString("utf8");
-    const match = html.match(/href="([^"]*uc\?export=download[^"]+)"/i);
+    const match =
+      html.match(/href="([^"]*uc\?export=download[^"]+)"/i) ||
+      html.match(/href="([^"]*download[^"]*confirm[^"]*)"/i);
+
     if (match?.[1]) {
       const confirmUrl = new URL(match[1].replace(/&amp;/g, "&"), "https://drive.google.com").toString();
       const second = await fetch(confirmUrl, {
         redirect: "follow",
         headers: { "user-agent": "Mozilla/5.0 RF-Training-PDF-Proxy" },
       });
+      if (!second.ok) throw new Error(`Falha ao confirmar download: HTTP ${second.status}`);
       buffer = Buffer.from(await second.arrayBuffer());
     }
+  }
+
+  const header = buffer.subarray(0, 5).toString("utf8");
+  if (header !== "%PDF-") {
+    throw new Error("O link não retornou um PDF direto. No Drive, deixe o arquivo como 'Qualquer pessoa com o link pode ver'.");
   }
 
   return buffer;
@@ -222,7 +235,7 @@ async function main() {
       return reply.send(buffer);
     } catch (e: any) {
       req.log.error(e);
-      return reply.code(502).send({ message: "Não foi possível carregar o PDF" });
+      return reply.code(502).send({ message: e?.message || "Não foi possível carregar o PDF" });
     }
   });
 
