@@ -232,15 +232,6 @@ function cardioWrittenHtml() {
   `;
 }
 
-
-function createInteractivePdfUrl(title, rawUrl) {
-  const params = new URLSearchParams();
-  params.set("url", rawUrl || "");
-  params.set("title", title || "PDF");
-  params.set("v", "2026-07-01-pdf-viewer-page");
-  return `/pages/pdf-viewer.html?${params.toString()}`;
-}
-
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
@@ -278,9 +269,7 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      pdfFrame.srcdoc = "";
-      pdfFrame.src = createInteractivePdfUrl(title || "PDF", rawUrl);
-      setTimeout(hideLoading, 900);
+      pdfFrame.src = preview;
     }
   }
 
