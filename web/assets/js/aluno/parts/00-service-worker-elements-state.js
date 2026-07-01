@@ -264,8 +264,8 @@ function ensureStudentVideoModal() {
   studentVideoModal.innerHTML = `
     <div class="studentVideoCard" role="dialog" aria-modal="true" aria-label="Vídeo do treino">
       <div class="studentVideoBar">
-        <div class="studentVideoTitle" id="studentVideoTitle">Vídeo</div>
-        <button class="studentVideoClose" type="button" aria-label="Fechar vídeo">×</button>
+        <div class="studentVideoTitle" id="studentVideoTitle">VER VÍDEO</div>
+        <button class="studentVideoClose" type="button" aria-label="Fechar vídeo">Fechar</button>
       </div>
       <div class="studentVideoFrameWrap">
         <iframe id="studentVideoFrame" title="Vídeo do treino" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
@@ -291,7 +291,7 @@ function openStudentVideoModal(url, title = "Vídeo") {
   }
 
   ensureStudentVideoModal();
-  if (studentVideoTitle) studentVideoTitle.textContent = title || "Vídeo";
+  if (studentVideoTitle) studentVideoTitle.textContent = /técnica/i.test(String(title || "")) ? "VER TÉCNICA" : "VER VÍDEO";
   if (studentVideoFrame) studentVideoFrame.src = embed;
   studentVideoModal.classList.add("show");
   studentVideoModal.setAttribute("aria-hidden", "false");
