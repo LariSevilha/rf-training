@@ -278,7 +278,17 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      // Pequeno atraso evita que o iOS reaproveite estado antigo do iframe ao trocar de PDF.
+      // iOS/PWA não lida bem com pinch zoom em PDF dentro de iframe/Drive viewer.
+      // Para treino, dieta e demais PDFs, no iPhone/iPad abrimos o PDF como página principal.
+      // Isso mantém o zoom nativo estável e evita recarregar/voltar para a tela inicial.
+      if (isIOSDevice()) {
+        hideLoading();
+        if (pdfFrame) pdfFrame.src = "about:blank";
+        window.location.assign(preview);
+        return;
+      }
+
+      // Android/desktop continuam no overlay interno.
       requestAnimationFrame(() => {
         if (pdfFrame) pdfFrame.src = preview;
       });
