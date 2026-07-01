@@ -1734,3 +1734,110 @@ body.pdfOpen {
     height: auto !important;
   }
 }
+
+/* =========================================================
+   PDF INTERNO NO APP — iOS com zoom estável
+   ========================================================= */
+.alunoClean .pdfNativeViewer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #111;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.alunoClean .pdfNativeViewer[hidden] {
+  display: none !important;
+}
+
+.alunoClean .pdfNativeToolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(0,0,0,.88);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.alunoClean .pdfNativeToolbar button {
+  width: 42px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(206,172,94,.7);
+  background: rgba(206,172,94,.12);
+  color: #ceac5e;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.alunoClean #pdfZoomLabel {
+  min-width: 54px;
+  text-align: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.alunoClean .pdfNativeScroller {
+  flex: 1 1 auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  padding: 10px 0 22px;
+}
+
+.alunoClean .pdfNativePages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform-origin: 50% 0;
+}
+
+.alunoClean .pdfNativePage {
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  border-radius: 4px;
+  overflow: hidden;
+  max-width: none;
+}
+
+.alunoClean .pdfNativePage canvas {
+  display: block;
+  max-width: none;
+}
+
+.alunoClean .pdfNativeError {
+  margin: 24px 16px;
+  border: 1px solid rgba(206,172,94,.35);
+  border-radius: 18px;
+  background: rgba(255,255,255,.06);
+  padding: 18px;
+  color: #f5f5f5;
+  text-align: center;
+}
+
+.alunoClean .pdfNativeError h3 {
+  margin: 0 0 10px;
+  color: #ceac5e;
+}
+
+.alunoClean .pdfNativeError p,
+.alunoClean .pdfNativeError small {
+  display: block;
+  margin: 0;
+  opacity: .88;
+  line-height: 1.45;
+}
+
+.alunoClean .pdfNativeError small {
+  margin-top: 10px;
+  opacity: .7;
+}

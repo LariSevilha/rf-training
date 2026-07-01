@@ -64,6 +64,12 @@ const pdfOverlay = document.getElementById("pdfOverlay");
 const pdfFrame = document.getElementById("pdfFrame");
 const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
+const pdfNativeViewer = document.getElementById("pdfNativeViewer");
+const pdfNativeScroller = document.getElementById("pdfNativeScroller");
+const pdfNativePages = document.getElementById("pdfNativePages");
+const pdfZoomIn = document.getElementById("pdfZoomIn");
+const pdfZoomOut = document.getElementById("pdfZoomOut");
+const pdfZoomLabel = document.getElementById("pdfZoomLabel");
 const loadingLayer = document.getElementById("loadingLayer");
 
 const offlineMask = document.getElementById("offlineMask");

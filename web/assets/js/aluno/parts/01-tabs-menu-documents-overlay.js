@@ -247,15 +247,204 @@ function openHtmlOverlay(title, html) {
   document.body.classList.add("pdfOpen");
 }
 
+
+let pdfJsLoaderPromise = null;
+let pdfNativeDoc = null;
+let pdfNativeScale = 1;
+let pdfNativeRenderTicket = 0;
+let pdfNativeObjectUrl = "";
+let pdfNativePinch = null;
+
+function setPdfNativeMode(enabled) {
+  if (pdfFrame) {
+    pdfFrame.hidden = !!enabled;
+    if (enabled) pdfFrame.src = "about:blank";
+  }
+
+  if (pdfNativeViewer) {
+    pdfNativeViewer.hidden = !enabled;
+  }
+}
+
+function clearPdfNativeViewer() {
+  pdfNativeRenderTicket++;
+  pdfNativeDoc = null;
+  pdfNativePinch = null;
+
+  if (pdfNativePages) {
+    pdfNativePages.innerHTML = "";
+    pdfNativePages.style.transform = "";
+    pdfNativePages.style.transformOrigin = "";
+  }
+
+  if (pdfNativeObjectUrl) {
+    URL.revokeObjectURL(pdfNativeObjectUrl);
+    pdfNativeObjectUrl = "";
+  }
+}
+
+function updatePdfZoomLabel() {
+  if (pdfZoomLabel) pdfZoomLabel.textContent = `${Math.round(pdfNativeScale * 100)}%`;
+}
+
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+
+  if (!pdfJsLoaderPromise) {
+    pdfJsLoaderPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      script.async = true;
+      script.onload = () => {
+        if (!window.pdfjsLib) {
+          reject(new Error("PDF.js não carregou."));
+          return;
+        }
+
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        resolve(window.pdfjsLib);
+      };
+      script.onerror = () => reject(new Error("Falha ao carregar o leitor interno do PDF."));
+      document.head.appendChild(script);
+    });
+  }
+
+  return pdfJsLoaderPromise;
+}
+
+async function renderPdfNative() {
+  if (!pdfNativeDoc || !pdfNativePages) return;
+
+  const ticket = ++pdfNativeRenderTicket;
+  const currentScrollTop = pdfNativeScroller?.scrollTop || 0;
+  const currentHeight = Math.max(1, pdfNativeScroller?.scrollHeight || 1);
+  const scrollRatio = currentScrollTop / currentHeight;
+
+  pdfNativePages.innerHTML = "";
+  pdfNativePages.style.transform = "";
+  pdfNativePages.style.transformOrigin = "";
+  updatePdfZoomLabel();
+
+  const containerWidth = Math.max(320, (pdfNativeScroller?.clientWidth || window.innerWidth) - 22);
+
+  for (let pageNumber = 1; pageNumber <= pdfNativeDoc.numPages; pageNumber += 1) {
+    if (ticket !== pdfNativeRenderTicket) return;
+
+    const page = await pdfNativeDoc.getPage(pageNumber);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const fitScale = containerWidth / baseViewport.width;
+    const viewport = page.getViewport({ scale: fitScale * pdfNativeScale });
+
+    const pageWrap = document.createElement("div");
+    pageWrap.className = "pdfNativePage";
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = Math.floor(viewport.width * ratio);
+    canvas.height = Math.floor(viewport.height * ratio);
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+    pageWrap.appendChild(canvas);
+    pdfNativePages.appendChild(pageWrap);
+
+    await page.render({
+      canvasContext: ctx,
+      viewport,
+      transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : null,
+    }).promise;
+  }
+
+  if (pdfNativeScroller && scrollRatio > 0) {
+    requestAnimationFrame(() => {
+      pdfNativeScroller.scrollTop = pdfNativeScroller.scrollHeight * scrollRatio;
+    });
+  }
+}
+
+async function openPdfNative(title, rawUrl) {
+  if (pdfTitle) pdfTitle.textContent = title || "PDF";
+
+  clearPdfNativeViewer();
+  setPdfNativeMode(true);
+  pdfNativeScale = 1;
+  updatePdfZoomLabel();
+
+  pdfOverlay?.classList.add("show");
+  pdfOverlay?.setAttribute("aria-hidden", "false");
+  document.body.classList.add("pdfOpen");
+  showLoading();
+
+  if (!rawUrl) {
+    if (pdfNativePages) pdfNativePages.innerHTML = placeholderHtml("Material não configurado", "Entre em contato com o personal.");
+    hideLoading();
+    return;
+  }
+
+  if (!navigator.onLine) {
+    if (pdfNativePages) pdfNativePages.innerHTML = placeholderHtml("Você está offline", "Conecte-se para abrir este material.");
+    hideLoading();
+    return;
+  }
+
+  try {
+    const token = session?.token || localStorage.getItem("rf_token") || "";
+    const res = await fetch(`/api/pdf-proxy?url=${encodeURIComponent(rawUrl)}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      let msg = `Erro HTTP ${res.status}`;
+      try {
+        const data = await res.json();
+        msg = data?.message || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+
+    const blob = await res.blob();
+    if (!/pdf/i.test(blob.type || "application/pdf")) {
+      throw new Error("O arquivo recebido não parece ser um PDF.");
+    }
+
+    const pdfjsLib = await loadPdfJs();
+    const data = await blob.arrayBuffer();
+    pdfNativeDoc = await pdfjsLib.getDocument({ data }).promise;
+    await renderPdfNative();
+    hideLoading();
+  } catch (error) {
+    console.error(error);
+    if (pdfNativePages) {
+      pdfNativePages.innerHTML = `
+        <div class="pdfNativeError">
+          <h3>Não foi possível abrir o PDF dentro do app</h3>
+          <p>${escapeHtml(error?.message || "Verifique o link do PDF e tente novamente.")}</p>
+          <small>O link pode continuar sendo o link normal do Drive. O arquivo precisa permitir visualização por link para o app conseguir ler o PDF.</small>
+        </div>
+      `;
+    }
+    hideLoading();
+  }
+}
+
 function openPdfOverlay(title, rawUrl) {
+  // iOS: usa leitor interno em canvas, dentro do app, sem iframe do Drive.
+  // Isso evita o reload ao dar zoom/pinch dentro do PDF.
+  if (isIOSDevice()) {
+    openPdfNative(title, rawUrl);
+    return;
+  }
+
+  clearPdfNativeViewer();
+  setPdfNativeMode(false);
+
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  // IMPORTANTE — iOS/PWA:
-  // treino, dieta e demais PDFs usam o mesmo visualizador estável.
-  // Não renderizamos o PDF por PDF.js/proxy aqui, porque no iOS o pinch zoom
-  // dentro desse renderizador pode recriar a tela e voltar para o início.
-  // Assim o PDF do treino fica com o mesmo comportamento do PDF da dieta.
   if (pdfFrame) {
     pdfFrame.src = "about:blank";
   }
@@ -278,17 +467,6 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      // iOS/PWA não lida bem com pinch zoom em PDF dentro de iframe/Drive viewer.
-      // Para treino, dieta e demais PDFs, no iPhone/iPad abrimos o PDF como página principal.
-      // Isso mantém o zoom nativo estável e evita recarregar/voltar para a tela inicial.
-      if (isIOSDevice()) {
-        hideLoading();
-        if (pdfFrame) pdfFrame.src = "about:blank";
-        window.location.assign(preview);
-        return;
-      }
-
-      // Android/desktop continuam no overlay interno.
       requestAnimationFrame(() => {
         if (pdfFrame) pdfFrame.src = preview;
       });
@@ -299,6 +477,73 @@ function openPdfOverlay(title, rawUrl) {
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
 }
+
+function changePdfNativeZoom(delta) {
+  if (!pdfNativeDoc) return;
+  const next = Math.max(0.7, Math.min(3, Number((pdfNativeScale + delta).toFixed(2))));
+  if (next === pdfNativeScale) return;
+  pdfNativeScale = next;
+  showLoading();
+  renderPdfNative().finally(() => hideLoading());
+}
+
+pdfZoomIn?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  changePdfNativeZoom(0.2);
+});
+
+pdfZoomOut?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  changePdfNativeZoom(-0.2);
+});
+
+function pdfTouchDistance(touches) {
+  const a = touches[0];
+  const b = touches[1];
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
+pdfNativeScroller?.addEventListener("touchstart", (ev) => {
+  if (ev.touches.length !== 2 || !pdfNativeDoc) return;
+  pdfNativePinch = {
+    distance: pdfTouchDistance(ev.touches),
+    scale: pdfNativeScale,
+  };
+  if (pdfNativePages) {
+    pdfNativePages.style.transformOrigin = "50% 0";
+  }
+}, { passive: false });
+
+pdfNativeScroller?.addEventListener("touchmove", (ev) => {
+  if (!pdfNativePinch || ev.touches.length !== 2 || !pdfNativeDoc) return;
+  ev.preventDefault();
+
+  const ratio = pdfTouchDistance(ev.touches) / Math.max(1, pdfNativePinch.distance);
+  const visualScale = Math.max(0.7, Math.min(3, pdfNativePinch.scale * ratio));
+
+  if (pdfNativePages) {
+    pdfNativePages.style.transform = `scale(${visualScale / pdfNativePinch.scale})`;
+  }
+}, { passive: false });
+
+pdfNativeScroller?.addEventListener("touchend", (ev) => {
+  if (!pdfNativePinch || !pdfNativeDoc) return;
+
+  const lastScale = pdfNativePages?.style.transform?.match(/scale\(([^)]+)\)/)?.[1];
+  const multiplier = Number(lastScale || 1);
+  pdfNativeScale = Math.max(0.7, Math.min(3, Number((pdfNativePinch.scale * multiplier).toFixed(2))));
+  pdfNativePinch = null;
+
+  if (pdfNativePages) {
+    pdfNativePages.style.transform = "";
+    pdfNativePages.style.transformOrigin = "";
+  }
+
+  showLoading();
+  renderPdfNative().finally(() => hideLoading());
+}, { passive: false });
 
 function openContent(type) {
   if (type === "training" && workouts.length > 0) {
@@ -332,6 +577,8 @@ function openContent(type) {
 }
 
 function closePdf() {
+  clearPdfNativeViewer();
+  setPdfNativeMode(false);
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
