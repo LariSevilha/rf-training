@@ -401,54 +401,6 @@ function loadPdfJs() {
   return pdfJsLoaderPromise;
 }
 
-
-async function renderPdfNativeLinks(page, viewport, pageWrap) {
-  if (!page || !viewport || !pageWrap) return;
-
-  let annotations = [];
-  try {
-    annotations = await page.getAnnotations({ intent: "display" });
-  } catch (error) {
-    console.warn("Não foi possível ler os links do PDF", error);
-    return;
-  }
-
-  for (const annotation of annotations || []) {
-    const href = annotation?.url || annotation?.unsafeUrl || "";
-    if (!href || !annotation?.rect) continue;
-
-    const rect = viewport.convertToViewportRectangle(annotation.rect);
-    const left = Math.min(rect[0], rect[2]);
-    const top = Math.min(rect[1], rect[3]);
-    const width = Math.abs(rect[0] - rect[2]);
-    const height = Math.abs(rect[1] - rect[3]);
-
-    if (width < 3 || height < 3) continue;
-
-    const link = document.createElement("a");
-    link.className = "pdfNativeLinkArea";
-    link.href = href;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.setAttribute("aria-label", isYoutubeUrl(href) ? "Abrir vídeo" : "Abrir link");
-    link.style.left = `${left}px`;
-    link.style.top = `${top}px`;
-    link.style.width = `${width}px`;
-    link.style.height = `${height}px`;
-
-    link.addEventListener("click", (ev) => {
-      const url = link.getAttribute("href") || "";
-      if (!isYoutubeUrl(url)) return;
-
-      ev.preventDefault();
-      ev.stopPropagation();
-      openStudentVideoModal(url, "Vídeo do PDF");
-    });
-
-    pageWrap.appendChild(link);
-  }
-}
-
 async function renderPdfNative() {
   if (!pdfNativeDoc || !pdfNativePages) return;
 
@@ -492,8 +444,6 @@ async function renderPdfNative() {
       viewport,
       transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : null,
     }).promise;
-
-    await renderPdfNativeLinks(page, viewport, pageWrap);
   }
 
   if (pdfNativeScroller && scrollRatio > 0) {
@@ -556,12 +506,24 @@ async function openPdfNative(title, rawUrl) {
     await renderPdfNative();
     hideLoading();
   } catch (error) {
-    console.warn("Leitor interno do PDF falhou; usando preview do Drive.", error);
-    openPdfFramePreview(title, rawUrl);
+    console.error(error);
+    if (pdfNativePages) {
+      pdfNativePages.innerHTML = `
+        <div class="pdfNativeError">
+          <h3>Não foi possível abrir o PDF dentro do app</h3>
+          <p>${escapeHtml(error?.message || "Verifique o link do PDF e tente novamente.")}</p>
+          <small>O link pode continuar sendo o link normal do Drive. O arquivo precisa permitir visualização por link para o app conseguir ler o PDF.</small>
+        </div>
+      `;
+    }
+    hideLoading();
   }
 }
 
-function openPdfFramePreview(title, rawUrl) {
+function openPdfOverlay(title, rawUrl) {
+  // Modo simples e estável: mostra o PDF dentro do app usando o preview do Drive.
+  // Não usa /api/pdf-proxy e não tenta baixar o PDF. Assim o PDF aparece do mesmo jeito
+  // que aparecia antes, desde que o link abra normalmente no Drive.
   clearPdfNativeViewer();
   setPdfNativeMode(false);
 
@@ -612,14 +574,6 @@ function openPdfFramePreview(title, rawUrl) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-}
-
-
-function openPdfOverlay(title, rawUrl) {
-  // Para vídeos clicados dentro do PDF abrirem em modal, o app precisa renderizar
-  // o PDF internamente e ler as anotações/links. Se o Drive não permitir leitura
-  // direta, mantemos o fallback antigo para o PDF aparecer dentro do app.
-  openPdfNative(title, rawUrl);
 }
 
 function changePdfNativeZoom(delta) {
