@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-02-pdf-links-unblocked";
+const VERSION = "rf-fitness-v2026-06-19-ios-pdf-fix";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -40,7 +40,6 @@ self.addEventListener("install", (event) => {
         APP_SHELL.map((url) => cache.add(url))
       );
 
-      await self.skipWaiting();
     })()
   );
 });
@@ -55,8 +54,6 @@ self.addEventListener("activate", (event) => {
           .filter((key) => ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
           .map((key) => caches.delete(key))
       );
-
-      await self.clients.claim();
 
       const clients = await self.clients.matchAll({
         type: "window",

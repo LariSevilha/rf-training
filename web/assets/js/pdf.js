@@ -1,13 +1,35 @@
-export function driveToPreview(url) {
-  if (!url) return "";
+export function cleanLinkUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
 
-  // Transforma link do Drive em preview
-  if (url.includes("drive.google.com")) {
-    return url.includes("/preview")
-      ? url
-      : url.replace(/\/view.*$/, "/preview");
+  try {
+    const parsed = new URL(raw);
+    const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+
+    // Links copiados do Google costumam vir como google.com/url?q=URL_REAL.
+    // No iOS isso cria a tela branca/intermediária de redirecionamento ao voltar do YouTube.
+    if (host === "google.com" && parsed.pathname === "/url") {
+      const real = parsed.searchParams.get("q") || parsed.searchParams.get("url");
+      if (real) return cleanLinkUrl(real);
+    }
+
+    return parsed.href;
+  } catch {
+    return raw;
   }
-  return url;
+}
+
+export function driveToPreview(url) {
+  const cleanUrl = cleanLinkUrl(url);
+  if (!cleanUrl) return "";
+
+  // transforma link do drive em preview
+  if (cleanUrl.includes("drive.google.com")) {
+    return cleanUrl.includes("/preview")
+      ? cleanUrl
+      : cleanUrl.replace(/\/view.*$/, "/preview");
+  }
+  return cleanUrl;
 }
 
 export function placeholderHtml(title, msg) {
@@ -42,42 +64,4 @@ export function placeholderHtml(title, msg) {
       </body>
     </html>
   `;
-}
-
-// ====================== FUNÇÃO MELHORADA PARA ABRIR PDF ======================
-export function openPdf(url, title = "PDF") {
-  const pdfFrame = document.getElementById('pdfFrame');
-  const pdfOverlay = document.getElementById('pdfOverlay');
-  const pdfTitle = document.getElementById('pdfTitle');
-  const loadingLayer = document.getElementById('loadingLayer');
-
-  if (!pdfFrame || !pdfOverlay) return;
-
-  pdfTitle.textContent = title || "PDF";
-
-  const previewUrl = driveToPreview(url);
-
-  // Abre o PDF
-  pdfFrame.src = previewUrl;
-  pdfOverlay.classList.add('active'); // ou remova o aria-hidden
-  pdfOverlay.setAttribute('aria-hidden', 'false');
-
-  // Limpa loading quando carregar
-  pdfFrame.onload = () => {
-    if (loadingLayer) loadingLayer.style.display = 'none';
-  };
-
-  console.log("📄 PDF aberto:", previewUrl);
-}
-
-// Função para fechar o PDF
-export function closePdf() {
-  const pdfOverlay = document.getElementById('pdfOverlay');
-  const pdfFrame = document.getElementById('pdfFrame');
-  
-  if (pdfFrame) pdfFrame.src = "about:blank";
-  if (pdfOverlay) {
-    pdfOverlay.setAttribute('aria-hidden', 'true');
-    pdfOverlay.classList.remove('active');
-  }
 }

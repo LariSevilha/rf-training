@@ -149,12 +149,12 @@ function renderWorkouts() {
                 <b>Técnica:</b> ${escapeHtml(item.technique.name || "")}
                 ${item.technique.exerciseNote ? ` · ${escapeHtml(item.technique.exerciseNote)}` : ""}
                 ${item.technique.notes ? `<br><small>${escapeHtml(item.technique.notes)}</small>` : ""}
-                ${item.technique.videoUrl ? `<br><a class="videoBtn" href="${escapeHtml(item.technique.videoUrl)}" target="_blank" rel="noopener">Ver técnica</a>` : ""}
+                ${item.technique.videoUrl ? `<br><a class="videoBtn" href="${escapeHtml(window.cleanLinkUrl ? window.cleanLinkUrl(item.technique.videoUrl) : item.technique.videoUrl)}" target="_blank" rel="noopener noreferrer">Ver técnica</a>` : ""}
               </div>
             ` : ""}
           </div>
 
-          ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(exercise.videoUrl)}" target="_blank" rel="noopener">Ver vídeo</a>` : ""}
+          ${exercise.videoUrl ? `<a class="videoBtn" href="${escapeHtml(window.cleanLinkUrl ? window.cleanLinkUrl(exercise.videoUrl) : exercise.videoUrl)}" target="_blank" rel="noopener noreferrer">Ver vídeo</a>` : ""}
         </div>
 
         <div class="seriesTable">
@@ -298,3 +298,13 @@ async function saveCurrentWorkout(workoutId) {
     }
   }
 }
+
+workoutArea?.addEventListener("click", (event) => {
+  const link = event.target.closest?.("a.videoBtn");
+  if (!link) return;
+
+  const cleanUrl = window.cleanLinkUrl ? window.cleanLinkUrl(link.getAttribute("href") || "") : (link.getAttribute("href") || "");
+  if (!cleanUrl) return;
+
+  link.href = cleanUrl;
+});

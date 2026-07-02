@@ -232,6 +232,27 @@ function cardioWrittenHtml() {
   `;
 }
 
+let pdfPageScrollY = 0;
+
+function lockPageForPdf() {
+  pdfPageScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${pdfPageScrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+}
+
+function unlockPageForPdf() {
+  const top = Math.abs(parseInt(document.body.style.top || "0", 10)) || pdfPageScrollY || 0;
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  window.scrollTo(0, top);
+}
+
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
@@ -245,6 +266,7 @@ function openHtmlOverlay(title, html) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+  lockPageForPdf();
 }
 
 function openPdfOverlay(title, rawUrl) {
@@ -269,13 +291,14 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      pdfFrame.src = preview + "#toolbar=1&navpanes=0&scrollbar=1";
+      pdfFrame.src = preview;
     }
   }
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+  lockPageForPdf();
 }
 
 function openContent(type) {
@@ -313,6 +336,7 @@ function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
+  unlockPageForPdf();
   hideLoading();
 
   setTimeout(() => {

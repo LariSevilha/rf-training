@@ -2,33 +2,12 @@
 // Dependências importadas pelo arquivo principal: ../aluno.js
 
 if ("serviceWorker" in navigator) {
-  let refreshing = false;
-
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("/service-worker.js", {
+      // Registra o service worker sem forçar update/reload durante o uso.
+      // No iOS, recarregar enquanto um PDF/iframe está aberto pode derrubar o aluno para a tela inicial.
+      await navigator.serviceWorker.register("/service-worker.js", {
         updateViaCache: "none"
-      });
-
-      await reg.update();
-
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: "SKIP_WAITING" });
-      }
-
-      reg.addEventListener("updatefound", () => {
-        const newWorker = reg.installing;
-
-        if (!newWorker) return;
-
-        newWorker.addEventListener("statechange", () => {
-          if (
-            newWorker.state === "installed" &&
-            navigator.serviceWorker.controller
-          ) {
-            newWorker.postMessage({ type: "SKIP_WAITING" });
-          }
-        });
       });
     } catch (e) {
       console.warn("SW register falhou:", e);
@@ -36,10 +15,7 @@ if ("serviceWorker" in navigator) {
   });
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-
-    refreshing = true;
-    window.location.reload();
+    console.log("Service worker atualizado; a nova versão será usada no próximo carregamento.");
   });
 
   navigator.serviceWorker.addEventListener("message", (event) => {
