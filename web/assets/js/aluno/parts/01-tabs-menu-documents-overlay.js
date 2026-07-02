@@ -255,6 +255,60 @@ let pdfNativeScale = 1;
 let pdfNativeRenderTicket = 0;
 let pdfNativeObjectUrl = "";
 let pdfNativePinch = null;
+let pdfFrameLastSrc = "";
+let pdfFrameReloadTimer = null;
+let pdfFrameLastBlurAt = 0;
+
+function isPdfFrameModeOpen() {
+  return document.body.classList.contains("pdfOpen") &&
+    pdfFrame &&
+    !pdfFrame.hidden &&
+    (!pdfNativeViewer || pdfNativeViewer.hidden);
+}
+
+function reloadPdfFrame(reason = "return") {
+  if (!isPdfFrameModeOpen() || !pdfFrameLastSrc) return;
+
+  window.clearTimeout(pdfFrameReloadTimer);
+  pdfFrameReloadTimer = window.setTimeout(() => {
+    if (!isPdfFrameModeOpen() || !pdfFrameLastSrc) return;
+
+    showLoading();
+    // iOS/PWA + Google Drive preview: quando o usuário clica em um link dentro
+    // do PDF e volta para o app, o iframe pode ficar em branco/travado.
+    // Resetar o iframe dentro do próprio app limpa essa tela sem sair do app.
+    const src = pdfFrameLastSrc;
+    pdfFrame.src = "about:blank";
+    window.setTimeout(() => {
+      if (!isPdfFrameModeOpen()) return;
+      pdfFrame.src = src;
+    }, 80);
+  }, reason === "blur" ? 1000 : 180);
+}
+
+window.addEventListener("blur", () => {
+  if (!isPdfFrameModeOpen()) return;
+  pdfFrameLastBlurAt = Date.now();
+  reloadPdfFrame("blur");
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  if (!isPdfFrameModeOpen()) return;
+
+  // Recarrega quando o usuário volta do YouTube/Drive/visualizador externo.
+  // Mantém um pequeno intervalo para evitar reload sem necessidade em micro-blurs.
+  if (!pdfFrameLastBlurAt || Date.now() - pdfFrameLastBlurAt > 250) {
+    reloadPdfFrame("visible");
+  }
+});
+
+window.addEventListener("focus", () => {
+  if (!isPdfFrameModeOpen()) return;
+  if (pdfFrameLastBlurAt && Date.now() - pdfFrameLastBlurAt > 250) {
+    reloadPdfFrame("focus");
+  }
+});
 
 // Limites de zoom do leitor interno. No iOS/PWA, zoom muito alto pode
 // fazer o WebView tentar ampliar a página inteira e recarregar o PDF.
@@ -476,6 +530,8 @@ function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
+  pdfFrameLastSrc = "";
+
   if (pdfFrame) {
     pdfFrame.hidden = false;
     pdfFrame.src = "about:blank";
@@ -505,6 +561,7 @@ function openPdfOverlay(title, rawUrl) {
       }
       setTimeout(hideLoading, 250);
     } else {
+      pdfFrameLastSrc = preview;
       requestAnimationFrame(() => {
         if (pdfFrame) pdfFrame.src = preview;
       });
@@ -618,6 +675,10 @@ function openContent(type) {
 }
 
 function closePdf() {
+  window.clearTimeout(pdfFrameReloadTimer);
+  pdfFrameReloadTimer = null;
+  pdfFrameLastSrc = "";
+  pdfFrameLastBlurAt = 0;
   clearPdfNativeViewer();
   setPdfNativeMode(false);
   pdfOverlay?.classList.remove("show");

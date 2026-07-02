@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-01-ios-pdf-zoom-stable";
+const VERSION = "rf-fitness-v2026-07-02-pdf-iframe-reset-blur";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -82,6 +82,8 @@ self.addEventListener("message", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
 
+  // Garante que PDFs/Drive não sejam manipulados pelo cache do app.
+
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
@@ -89,6 +91,10 @@ self.addEventListener("fetch", (event) => {
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
   if (url.pathname.startsWith("/api")) {
+    return;
+  }
+
+  if (url.pathname.toLowerCase().endsWith(".pdf")) {
     return;
   }
 
