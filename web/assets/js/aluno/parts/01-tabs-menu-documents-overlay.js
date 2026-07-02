@@ -249,6 +249,15 @@ function openHtmlOverlay(title, html) {
 
 function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
+
+  try {
+    sessionStorage.setItem("rfPdfOpen", JSON.stringify({
+      title: title || "PDF",
+      rawUrl: rawUrl || "",
+      at: Date.now()
+    }));
+  } catch (_) {}
+
   showLoading();
 
   if (!rawUrl) {
@@ -315,8 +324,15 @@ function closePdf() {
   document.body.classList.remove("pdfOpen");
   hideLoading();
 
+  try { sessionStorage.removeItem("rfPdfOpen"); } catch (_) {}
+
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";
+
+    if (window.__rfPendingReloadAfterPdf) {
+      window.__rfPendingReloadAfterPdf = false;
+      window.location.reload();
+    }
   }, 200);
 }
 

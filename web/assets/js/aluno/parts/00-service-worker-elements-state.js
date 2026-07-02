@@ -39,6 +39,16 @@ if ("serviceWorker" in navigator) {
     if (refreshing) return;
 
     refreshing = true;
+
+    // Não recarrega a página enquanto o aluno está com o PDF aberto.
+    // Em alguns celulares, o zoom/pinça dentro do preview do Drive dispara
+    // mudança de viewport e pode coincidir com atualização do service worker,
+    // voltando para a tela inicial. A atualização fica para quando fechar o PDF.
+    if (document.body.classList.contains("pdfOpen")) {
+      window.__rfPendingReloadAfterPdf = true;
+      return;
+    }
+
     window.location.reload();
   });
 

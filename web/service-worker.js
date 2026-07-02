@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-02-pdf-links-unblocked";
+const VERSION = "rf-fitness-v2026-07-02-pdf-zoom-stable";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
