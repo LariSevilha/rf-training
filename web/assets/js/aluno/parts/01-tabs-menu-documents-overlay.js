@@ -237,7 +237,7 @@ let pdfScrollY = 0;
 
 function lockPdfViewport() {
   pdfScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-  document.documentElement.classList.add("pdfOpenHtml");
+  document.documentElement.classList.add("pdfOpenRoot");
   document.body.classList.add("pdfOpen");
   document.body.style.position = "fixed";
   document.body.style.top = `-${pdfScrollY}px`;
@@ -247,7 +247,7 @@ function lockPdfViewport() {
 }
 
 function unlockPdfViewport() {
-  document.documentElement.classList.remove("pdfOpenHtml");
+  document.documentElement.classList.remove("pdfOpenRoot");
   document.body.classList.remove("pdfOpen");
   document.body.style.position = "";
   document.body.style.top = "";
@@ -255,20 +255,6 @@ function unlockPdfViewport() {
   document.body.style.right = "";
   document.body.style.width = "";
   window.scrollTo(0, pdfScrollY || 0);
-}
-
-function resolveMaterialUrl(rawUrl, options = {}) {
-  const value = String(rawUrl || "").trim();
-  if (!value) return "";
-
-  // Treino por link/PDF: usa o arquivo PDF direto quando for Drive.
-  // Isso evita o viewer do Google Drive, que transforma links do YouTube em
-  // google.com/redirect e deixa uma tela branca ao voltar do app do YouTube no iOS.
-  if (options.preferNativePdf && typeof driveToNativePdf === "function") {
-    return driveToNativePdf(value);
-  }
-
-  return driveToPreview(value);
 }
 
 function openHtmlOverlay(title, html) {
@@ -286,7 +272,7 @@ function openHtmlOverlay(title, html) {
   lockPdfViewport();
 }
 
-function openPdfOverlay(title, rawUrl, options = {}) {
+function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
@@ -301,7 +287,7 @@ function openPdfOverlay(title, rawUrl, options = {}) {
     );
     setTimeout(hideLoading, 250);
   } else {
-    const preview = resolveMaterialUrl(rawUrl, options);
+    const preview = driveToPreview(rawUrl);
     if (!preview) {
       pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
         placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
@@ -345,9 +331,7 @@ function openContent(type) {
     return;
   }
 
-  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "", {
-    preferNativePdf: type === "training"
-  });
+  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
 function closePdf() {
@@ -366,21 +350,6 @@ pdfBack?.addEventListener("click", (ev) => {
   ev.stopPropagation();
   closePdf();
 });
-
-// Evita que gestos fora do iframe do PDF escapem para a página do app no iOS.
-// O zoom dentro do PDF continua funcionando; a trava é só no fundo/overlay.
-pdfOverlay?.addEventListener("touchmove", (ev) => {
-  if (!document.body.classList.contains("pdfOpen")) return;
-  if (ev.target?.closest?.("#pdfFrame")) return;
-  ev.preventDefault();
-}, { passive: false });
-
-pdfOverlay?.addEventListener("gesturestart", (ev) => {
-  if (!document.body.classList.contains("pdfOpen")) return;
-  if (ev.target?.closest?.("#pdfFrame")) return;
-  ev.preventDefault();
-}, { passive: false });
-
 
 logoutBtn?.addEventListener("click", () => {
   clearSession();
