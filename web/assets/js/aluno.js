@@ -31,6 +31,7 @@ const ALUNO_PARTS = [
   "02-install-flow.js",
   "03-workouts-history.js",
   "04-sync-and-init.js",
+  "05-ios-fixes.js"          
 ];
 
 function loadClassicScript(src) {

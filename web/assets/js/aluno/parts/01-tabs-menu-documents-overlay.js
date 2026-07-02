@@ -269,7 +269,7 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
-      pdfFrame.src = preview;
+      pdfFrame.src = preview + "#toolbar=1&navpanes=0&scrollbar=1";
     }
   }
 
