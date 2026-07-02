@@ -92,8 +92,8 @@
 
                 // Se já existia SW ativo, então é update
                 if (navigator.serviceWorker.controller) {
-                  console.log("Nova versão detectada. Será aplicada na próxima abertura do app.");
-                  newWorker.postMessage({ type: "SKIP_WAITING" });
+                  console.log("Nova versão detectada. Recarregando...");
+                  window.location.reload();
                 }
               }
             });

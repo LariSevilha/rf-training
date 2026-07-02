@@ -45,7 +45,7 @@ import {
 } from "./helpers/report.js";
 
 // Arquivo principal do Admin.
-// Ele expõe as dependências no window e carrega as partes em ordem.
+// Ele deixa as dependências disponíveis e carrega os módulos em ordem.
 Object.assign(window, {
   requireAuth,
   apiAdminListUsers,

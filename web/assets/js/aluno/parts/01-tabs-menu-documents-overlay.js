@@ -242,406 +242,41 @@ function openHtmlOverlay(title, html) {
 
   setTimeout(hideLoading, 250);
 
-  setPdfViewportLock(true);
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-}
-
-
-let pdfJsLoaderPromise = null;
-let pdfNativeDoc = null;
-let pdfNativeScale = 1;
-let pdfNativeRenderTicket = 0;
-let pdfNativeObjectUrl = "";
-let pdfNativePinch = null;
-let pdfFrameLastSrc = "";
-let pdfFrameReloadTimer = null;
-let pdfFrameLastBlurAt = 0;
-
-function isPdfFrameModeOpen() {
-  return document.body.classList.contains("pdfOpen") &&
-    pdfFrame &&
-    !pdfFrame.hidden &&
-    (!pdfNativeViewer || pdfNativeViewer.hidden);
-}
-
-function reloadPdfFrame(reason = "return") {
-  if (!isPdfFrameModeOpen() || !pdfFrameLastSrc) return;
-
-  window.clearTimeout(pdfFrameReloadTimer);
-  pdfFrameReloadTimer = window.setTimeout(() => {
-    if (!isPdfFrameModeOpen() || !pdfFrameLastSrc) return;
-
-    showLoading();
-    // iOS/PWA + Google Drive preview: quando o usuário clica em um link dentro
-    // do PDF e volta para o app, o iframe pode ficar em branco/travado.
-    // Resetar o iframe dentro do próprio app limpa essa tela sem sair do app.
-    const src = pdfFrameLastSrc;
-    pdfFrame.src = "about:blank";
-    window.setTimeout(() => {
-      if (!isPdfFrameModeOpen()) return;
-      pdfFrame.src = src;
-    }, 80);
-  }, reason === "blur" ? 1000 : 180);
-}
-
-window.addEventListener("blur", () => {
-  if (!isPdfFrameModeOpen()) return;
-  pdfFrameLastBlurAt = Date.now();
-  reloadPdfFrame("blur");
-});
-
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState !== "visible") return;
-  if (!isPdfFrameModeOpen()) return;
-
-  // Recarrega quando o usuário volta do YouTube/Drive/visualizador externo.
-  // Mantém um pequeno intervalo para evitar reload sem necessidade em micro-blurs.
-  if (!pdfFrameLastBlurAt || Date.now() - pdfFrameLastBlurAt > 250) {
-    reloadPdfFrame("visible");
-  }
-});
-
-window.addEventListener("focus", () => {
-  if (!isPdfFrameModeOpen()) return;
-  if (pdfFrameLastBlurAt && Date.now() - pdfFrameLastBlurAt > 250) {
-    reloadPdfFrame("focus");
-  }
-});
-
-// Limites de zoom do leitor interno. No iOS/PWA, zoom muito alto pode
-// fazer o WebView tentar ampliar a página inteira e recarregar o PDF.
-const PDF_NATIVE_MIN_ZOOM = 0.85;
-const PDF_NATIVE_MAX_ZOOM = 1.55;
-const PDF_NATIVE_ZOOM_STEP = 0.15;
-let previousViewportContent = null;
-
-function clampPdfZoom(value) {
-  return Math.max(PDF_NATIVE_MIN_ZOOM, Math.min(PDF_NATIVE_MAX_ZOOM, Number(value || 1)));
-}
-
-function setPdfViewportLock(enabled) {
-  let viewport = document.querySelector('meta[name="viewport"]');
-  if (!viewport) {
-    viewport = document.createElement("meta");
-    viewport.setAttribute("name", "viewport");
-    document.head.appendChild(viewport);
-  }
-
-  if (enabled) {
-    if (previousViewportContent === null) {
-      previousViewportContent = viewport.getAttribute("content") || "width=device-width, initial-scale=1";
-    }
-    viewport.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover");
-    return;
-  }
-
-  if (previousViewportContent !== null) {
-    viewport.setAttribute("content", previousViewportContent);
-    previousViewportContent = null;
-  }
-}
-
-function setPdfNativeMode(enabled) {
-  if (pdfFrame) {
-    pdfFrame.hidden = !!enabled;
-    if (enabled) pdfFrame.src = "about:blank";
-  }
-
-  if (pdfNativeViewer) {
-    pdfNativeViewer.hidden = !enabled;
-  }
-}
-
-function clearPdfNativeViewer() {
-  pdfNativeRenderTicket++;
-  pdfNativeDoc = null;
-  pdfNativePinch = null;
-
-  if (pdfNativePages) {
-    pdfNativePages.innerHTML = "";
-    pdfNativePages.style.transform = "";
-    pdfNativePages.style.transformOrigin = "";
-  }
-
-  if (pdfNativeObjectUrl) {
-    URL.revokeObjectURL(pdfNativeObjectUrl);
-    pdfNativeObjectUrl = "";
-  }
-}
-
-function updatePdfZoomLabel() {
-  if (pdfZoomLabel) pdfZoomLabel.textContent = `${Math.round(pdfNativeScale * 100)}%`;
-}
-
-function loadPdfJs() {
-  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
-
-  if (!pdfJsLoaderPromise) {
-    pdfJsLoaderPromise = new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-      script.async = true;
-      script.onload = () => {
-        if (!window.pdfjsLib) {
-          reject(new Error("PDF.js não carregou."));
-          return;
-        }
-
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-        resolve(window.pdfjsLib);
-      };
-      script.onerror = () => reject(new Error("Falha ao carregar o leitor interno do PDF."));
-      document.head.appendChild(script);
-    });
-  }
-
-  return pdfJsLoaderPromise;
-}
-
-async function renderPdfNative() {
-  if (!pdfNativeDoc || !pdfNativePages) return;
-
-  const ticket = ++pdfNativeRenderTicket;
-  const currentScrollTop = pdfNativeScroller?.scrollTop || 0;
-  const currentHeight = Math.max(1, pdfNativeScroller?.scrollHeight || 1);
-  const scrollRatio = currentScrollTop / currentHeight;
-
-  pdfNativePages.innerHTML = "";
-  pdfNativePages.style.transform = "";
-  pdfNativePages.style.transformOrigin = "";
-  updatePdfZoomLabel();
-
-  const containerWidth = Math.max(320, (pdfNativeScroller?.clientWidth || window.innerWidth) - 22);
-
-  for (let pageNumber = 1; pageNumber <= pdfNativeDoc.numPages; pageNumber += 1) {
-    if (ticket !== pdfNativeRenderTicket) return;
-
-    const page = await pdfNativeDoc.getPage(pageNumber);
-    const baseViewport = page.getViewport({ scale: 1 });
-    const fitScale = containerWidth / baseViewport.width;
-    const viewport = page.getViewport({ scale: fitScale * pdfNativeScale });
-
-    const pageWrap = document.createElement("div");
-    pageWrap.className = "pdfNativePage";
-
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d", { alpha: false });
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-
-    canvas.width = Math.floor(viewport.width * ratio);
-    canvas.height = Math.floor(viewport.height * ratio);
-    canvas.style.width = `${Math.floor(viewport.width)}px`;
-    canvas.style.height = `${Math.floor(viewport.height)}px`;
-
-    pageWrap.appendChild(canvas);
-    pdfNativePages.appendChild(pageWrap);
-
-    await page.render({
-      canvasContext: ctx,
-      viewport,
-      transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : null,
-    }).promise;
-  }
-
-  if (pdfNativeScroller && scrollRatio > 0) {
-    requestAnimationFrame(() => {
-      pdfNativeScroller.scrollTop = pdfNativeScroller.scrollHeight * scrollRatio;
-    });
-  }
-}
-
-async function openPdfNative(title, rawUrl) {
-  if (pdfTitle) pdfTitle.textContent = title || "PDF";
-
-  clearPdfNativeViewer();
-  setPdfNativeMode(true);
-  pdfNativeScale = 1;
-  updatePdfZoomLabel();
-
-  setPdfViewportLock(true);
-  pdfOverlay?.classList.add("show");
-  pdfOverlay?.setAttribute("aria-hidden", "false");
-  document.body.classList.add("pdfOpen");
-  showLoading();
-
-  if (!rawUrl) {
-    if (pdfNativePages) pdfNativePages.innerHTML = placeholderHtml("Material não configurado", "Entre em contato com o personal.");
-    hideLoading();
-    return;
-  }
-
-  if (!navigator.onLine) {
-    if (pdfNativePages) pdfNativePages.innerHTML = placeholderHtml("Você está offline", "Conecte-se para abrir este material.");
-    hideLoading();
-    return;
-  }
-
-  try {
-    const token = session?.token || localStorage.getItem("rf_token") || "";
-    const res = await fetch(`/api/pdf-proxy?url=${encodeURIComponent(rawUrl)}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      let msg = `Erro HTTP ${res.status}`;
-      try {
-        const data = await res.json();
-        msg = data?.message || msg;
-      } catch {}
-      throw new Error(msg);
-    }
-
-    const blob = await res.blob();
-    if (!/pdf/i.test(blob.type || "application/pdf")) {
-      throw new Error("O arquivo recebido não parece ser um PDF.");
-    }
-
-    const pdfjsLib = await loadPdfJs();
-    const data = await blob.arrayBuffer();
-    pdfNativeDoc = await pdfjsLib.getDocument({ data }).promise;
-    await renderPdfNative();
-    hideLoading();
-  } catch (error) {
-    console.error(error);
-    if (pdfNativePages) {
-      pdfNativePages.innerHTML = `
-        <div class="pdfNativeError">
-          <h3>Não foi possível abrir o PDF dentro do app</h3>
-          <p>${escapeHtml(error?.message || "Verifique o link do PDF e tente novamente.")}</p>
-          <small>O link pode continuar sendo o link normal do Drive. O arquivo precisa permitir visualização por link para o app conseguir ler o PDF.</small>
-        </div>
-      `;
-    }
-    hideLoading();
-  }
 }
 
 function openPdfOverlay(title, rawUrl) {
-  // Modo simples e estável: mostra o PDF dentro do app usando o preview do Drive.
-  // Não usa /api/pdf-proxy e não tenta baixar o PDF. Assim o PDF aparece do mesmo jeito
-  // que aparecia antes, desde que o link abra normalmente no Drive.
-  clearPdfNativeViewer();
-  setPdfNativeMode(false);
-
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  pdfFrameLastSrc = "";
-
-  if (pdfFrame) {
-    pdfFrame.hidden = false;
-    pdfFrame.src = "about:blank";
-  }
-
   if (!rawUrl) {
-    if (pdfFrame) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-      );
-    }
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
+    );
     setTimeout(hideLoading, 250);
   } else if (!navigator.onLine) {
-    if (pdfFrame) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-      );
-    }
+    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
+    );
     setTimeout(hideLoading, 250);
   } else {
     const preview = driveToPreview(rawUrl);
     if (!preview) {
-      if (pdfFrame) {
-        pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-          placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-        );
-      }
+      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
+      );
       setTimeout(hideLoading, 250);
     } else {
-      pdfFrameLastSrc = preview;
-      requestAnimationFrame(() => {
-        if (pdfFrame) pdfFrame.src = preview;
-      });
+      pdfFrame.src = preview;
     }
   }
 
-  // Evita que o iOS amplie/recarregue a página principal enquanto o PDF está aberto.
-  // O PDF continua dentro do app, no iframe de preview.
-  setPdfViewportLock(true);
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
 }
-
-function changePdfNativeZoom(delta) {
-  if (!pdfNativeDoc) return;
-  const next = clampPdfZoom(Number((pdfNativeScale + delta).toFixed(2)));
-  if (next === pdfNativeScale) return;
-  pdfNativeScale = next;
-  showLoading();
-  renderPdfNative().finally(() => hideLoading());
-}
-
-pdfZoomIn?.addEventListener("click", (ev) => {
-  ev.preventDefault();
-  ev.stopPropagation();
-  changePdfNativeZoom(PDF_NATIVE_ZOOM_STEP);
-});
-
-pdfZoomOut?.addEventListener("click", (ev) => {
-  ev.preventDefault();
-  ev.stopPropagation();
-  changePdfNativeZoom(-PDF_NATIVE_ZOOM_STEP);
-});
-
-function pdfTouchDistance(touches) {
-  const a = touches[0];
-  const b = touches[1];
-  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-}
-
-pdfNativeScroller?.addEventListener("touchstart", (ev) => {
-  if (ev.touches.length !== 2 || !pdfNativeDoc) return;
-  pdfNativePinch = {
-    distance: pdfTouchDistance(ev.touches),
-    scale: pdfNativeScale,
-  };
-  if (pdfNativePages) {
-    pdfNativePages.style.transformOrigin = "50% 0";
-  }
-}, { passive: false });
-
-pdfNativeScroller?.addEventListener("touchmove", (ev) => {
-  if (!pdfNativePinch || ev.touches.length !== 2 || !pdfNativeDoc) return;
-  ev.preventDefault();
-
-  const ratio = pdfTouchDistance(ev.touches) / Math.max(1, pdfNativePinch.distance);
-  const visualScale = clampPdfZoom(pdfNativePinch.scale * ratio);
-
-  if (pdfNativePages) {
-    pdfNativePages.style.transform = `scale(${visualScale / pdfNativePinch.scale})`;
-  }
-}, { passive: false });
-
-pdfNativeScroller?.addEventListener("touchend", (ev) => {
-  if (!pdfNativePinch || !pdfNativeDoc) return;
-
-  const lastScale = pdfNativePages?.style.transform?.match(/scale\(([^)]+)\)/)?.[1];
-  const multiplier = Number(lastScale || 1);
-  pdfNativeScale = clampPdfZoom(Number((pdfNativePinch.scale * multiplier).toFixed(2)));
-  pdfNativePinch = null;
-
-  if (pdfNativePages) {
-    pdfNativePages.style.transform = "";
-    pdfNativePages.style.transformOrigin = "";
-  }
-
-  showLoading();
-  renderPdfNative().finally(() => hideLoading());
-}, { passive: false });
 
 function openContent(type) {
   if (type === "training" && workouts.length > 0) {
@@ -675,16 +310,9 @@ function openContent(type) {
 }
 
 function closePdf() {
-  window.clearTimeout(pdfFrameReloadTimer);
-  pdfFrameReloadTimer = null;
-  pdfFrameLastSrc = "";
-  pdfFrameLastBlurAt = 0;
-  clearPdfNativeViewer();
-  setPdfNativeMode(false);
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
-  setPdfViewportLock(false);
   hideLoading();
 
   setTimeout(() => {
@@ -697,15 +325,6 @@ pdfBack?.addEventListener("click", (ev) => {
   ev.stopPropagation();
   closePdf();
 });
-
-// Evita que uma pinça fora da área renderizada do PDF vire zoom da página
-// inteira no iOS, o que era o gatilho do recarregamento.
-pdfOverlay?.addEventListener("touchmove", (ev) => {
-  if (!document.body.classList.contains("pdfOpen")) return;
-  if (ev.touches && ev.touches.length > 1) {
-    ev.preventDefault();
-  }
-}, { passive: false });
 
 logoutBtn?.addEventListener("click", () => {
   clearSession();

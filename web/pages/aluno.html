@@ -114,17 +114,7 @@
       <div class="pdfTitle" id="pdfTitle">PDF</div>
     </div>
     <div class="pdfFrameWrap">
-      <iframe id="pdfFrame" title="Visualização de PDF" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"></iframe>
-      <div class="pdfNativeViewer" id="pdfNativeViewer" hidden>
-        <div class="pdfNativeToolbar" id="pdfNativeToolbar" aria-label="Controle de zoom do PDF">
-          <button type="button" id="pdfZoomOut">−</button>
-          <span id="pdfZoomLabel">100%</span>
-          <button type="button" id="pdfZoomIn">+</button>
-        </div>
-        <div class="pdfNativeScroller" id="pdfNativeScroller">
-          <div class="pdfNativePages" id="pdfNativePages"></div>
-        </div>
-      </div>
+      <iframe id="pdfFrame" title="Visualização de PDF" allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
       <div class="loadingLayer" id="loadingLayer">
         <div class="spinner"></div>
         <div class="loadingText">Carregando…</div>
