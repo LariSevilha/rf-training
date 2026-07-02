@@ -233,8 +233,28 @@ function cardioWrittenHtml() {
 }
 
 let pdfPageScrollY = 0;
+let pdfGestureGuardsInstalled = false;
+
+function preventPdfBrowserGesture(event) {
+  if (!document.body.classList.contains("pdfOpen")) return;
+  if (event.type.startsWith("gesture") || event.touches?.length > 1) {
+    if (event.cancelable) event.preventDefault();
+  }
+}
+
+function installPdfGestureGuards() {
+  if (pdfGestureGuardsInstalled) return;
+  pdfGestureGuardsInstalled = true;
+
+  ["gesturestart", "gesturechange", "gestureend"].forEach((name) => {
+    document.addEventListener(name, preventPdfBrowserGesture, { passive: false });
+  });
+
+  document.addEventListener("touchmove", preventPdfBrowserGesture, { passive: false });
+}
 
 function lockPageForPdf() {
+  installPdfGestureGuards();
   pdfPageScrollY = window.scrollY || document.documentElement.scrollTop || 0;
   document.body.style.position = "fixed";
   document.body.style.top = `-${pdfPageScrollY}px`;
@@ -295,7 +315,8 @@ function openPdfOverlay(title, rawUrl, materialType = "") {
     // Assim conseguimos controlar zoom e abrir os links direto no YouTube, sem tela branca de google.com no iOS.
     sessionStorage.setItem("rf_pdf_src", cleanRawUrl);
     sessionStorage.setItem("rf_pdf_title", title || "TREINO");
-    pdfFrame.src = `/pages/pdf-viewer.html?title=${encodeURIComponent(title || "TREINO")}&v=${Date.now()}`;
+    const viewerSrc = `/pages/pdf-viewer.html?title=${encodeURIComponent(title || "TREINO")}&src=${encodeURIComponent(cleanRawUrl)}&v=${Date.now()}`;
+    pdfFrame.src = viewerSrc;
   } else {
     const preview = driveToPreview(cleanRawUrl);
     if (!preview) {

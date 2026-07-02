@@ -34,7 +34,7 @@ function setStatus(message, isError = false) {
   if (!statusEl) return;
   statusEl.textContent = message || "";
   statusEl.classList.toggle("hidden", !message);
-  statusEl.style.borderColor = isError ? "rgba(255, 96, 96, .55)" : "";
+  statusEl.classList.toggle("error", Boolean(isError));
 }
 
 function updateZoomLabel() {
@@ -45,14 +45,71 @@ function clampScale(value) {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, Number(value) || 1));
 }
 
-function getProxyUrl(url) {
+function getProxyUrls(url) {
   const clean = driveToDownload(cleanLinkUrl(url));
-  return `/api/pdf-proxy?url=${encodeURIComponent(clean)}`;
+  const query = `url=${encodeURIComponent(clean)}`;
+  return Array.from(new Set([
+    `/api/pdf-proxy?${query}`,
+    `/pdf-proxy?${query}`,
+  ]));
 }
 
 function getAuthHeaders() {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function isPdfBytes(bytes) {
+  if (!bytes || bytes.byteLength < 5) return false;
+  const head = new Uint8Array(bytes, 0, 5);
+  return head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46 && head[4] === 0x2d;
+}
+
+async function readErrorMessage(response) {
+  try {
+    const text = await response.text();
+    if (!text) return "";
+    try {
+      return JSON.parse(text)?.message || text.slice(0, 180);
+    } catch {
+      return text.slice(0, 180);
+    }
+  } catch {
+    return "";
+  }
+}
+
+async function fetchPdfBytes() {
+  const candidates = getProxyUrls(rawSrc);
+  let lastError = null;
+
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: getAuthHeaders(),
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const message = await readErrorMessage(response);
+        throw new Error(message || `Servidor retornou HTTP ${response.status}.`);
+      }
+
+      const bytes = await response.arrayBuffer();
+      if (!isPdfBytes(bytes)) {
+        throw new Error("O arquivo recebido não é um PDF válido.");
+      }
+
+      return bytes;
+    } catch (error) {
+      lastError = error;
+      console.warn("Falha ao carregar PDF por", url, error);
+    }
+  }
+
+  throw lastError || new Error("Não foi possível carregar o PDF.");
 }
 
 function transformRect(rect, viewport) {
@@ -68,17 +125,18 @@ function openExternalLink(url) {
   const clean = cleanLinkUrl(url);
   if (!clean) return;
 
-  // Abrir link direto, fora do iframe do PDF. Isso evita a tela intermediária do Google no iOS.
+  // Abrir fora do iframe impede que o Google/YouTube substitua a tela do app por uma página branca de redirecionamento.
   const opened = window.open(clean, "_blank", "noopener,noreferrer");
   if (!opened) {
-    window.location.href = clean;
+    window.top.location.href = clean;
   }
 }
 
 async function renderPage(pageNumber) {
   const page = await pdfDoc.getPage(pageNumber);
   const baseViewport = page.getViewport({ scale: 1 });
-  const fitScale = Math.max(0.35, Math.min(1.35, (stage.clientWidth - 16) / baseViewport.width));
+  const availableWidth = Math.max(240, (stage?.clientWidth || window.innerWidth) - 16);
+  const fitScale = Math.max(0.35, Math.min(1.35, availableWidth / baseViewport.width));
   const viewport = page.getViewport({ scale: fitScale * scale });
 
   const pageWrap = document.createElement("section");
@@ -120,7 +178,7 @@ async function renderPage(pageNumber) {
       a.href = target;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
-      a.title = "Abrir link";
+      a.title = "Abrir vídeo/link";
       a.style.left = `${rect.left}px`;
       a.style.top = `${rect.top}px`;
       a.style.width = `${Math.max(12, rect.width)}px`;
@@ -175,17 +233,13 @@ async function loadPdf() {
   setStatus("Carregando PDF…");
 
   try {
-    const task = pdfjsLib.getDocument({
-      url: getProxyUrl(rawSrc),
-      httpHeaders: getAuthHeaders(),
-      withCredentials: false,
-    });
-
+    const pdfBytes = await fetchPdfBytes();
+    const task = pdfjsLib.getDocument({ data: new Uint8Array(pdfBytes) });
     pdfDoc = await task.promise;
     await renderDocument();
   } catch (error) {
     console.error(error);
-    setStatus("Não foi possível carregar este PDF. Verifique se o link está público/compartilhável e aponta para um PDF.", true);
+    setStatus("Não foi possível carregar este PDF. Atualize os arquivos do servidor e confirme que o link do Treino é um PDF público/compartilhável.", true);
   }
 }
 
@@ -207,6 +261,7 @@ back?.addEventListener("click", () => {
 let initialPinchDistance = 0;
 let initialPinchScale = 1;
 let pinchTimer = null;
+let lastTouchY = 0;
 
 function getDistance(touches) {
   const [a, b] = touches;
@@ -215,7 +270,26 @@ function getDistance(touches) {
   return Math.hypot(dx, dy);
 }
 
+function preventDefaultIfPossible(event) {
+  if (event.cancelable) event.preventDefault();
+}
+
+// Safari/iOS: impede zoom nativo da página e pull-to-refresh enquanto o viewer está aberto.
+["gesturestart", "gesturechange", "gestureend"].forEach((name) => {
+  document.addEventListener(name, preventDefaultIfPossible, { passive: false });
+});
+
+document.addEventListener("touchmove", (event) => {
+  if (event.touches.length > 1) {
+    preventDefaultIfPossible(event);
+  }
+}, { passive: false });
+
 stage?.addEventListener("touchstart", (event) => {
+  if (event.touches.length === 1) {
+    lastTouchY = event.touches[0].clientY;
+  }
+
   if (event.touches.length === 2) {
     initialPinchDistance = getDistance(event.touches);
     initialPinchScale = scale;
@@ -224,7 +298,7 @@ stage?.addEventListener("touchstart", (event) => {
 
 stage?.addEventListener("touchmove", (event) => {
   if (event.touches.length === 2 && initialPinchDistance > 0) {
-    event.preventDefault();
+    preventDefaultIfPossible(event);
     const next = clampScale(initialPinchScale * (getDistance(event.touches) / initialPinchDistance));
     if (Math.abs(next - scale) < 0.02) return;
     scale = next;
@@ -232,6 +306,21 @@ stage?.addEventListener("touchmove", (event) => {
 
     clearTimeout(pinchTimer);
     pinchTimer = setTimeout(() => renderDocument(), 120);
+    return;
+  }
+
+  if (event.touches.length === 1) {
+    const y = event.touches[0].clientY;
+    const movingDown = y > lastTouchY;
+    const movingUp = y < lastTouchY;
+    const atTop = stage.scrollTop <= 0;
+    const atBottom = stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 1;
+
+    if ((atTop && movingDown) || (atBottom && movingUp)) {
+      preventDefaultIfPossible(event);
+    }
+
+    lastTouchY = y;
   }
 }, { passive: false });
 

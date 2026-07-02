@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-02-training-pdf-viewer-v2";
+const VERSION = "rf-fitness-v2026-07-02-training-pdf-viewer-v3";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -88,7 +88,7 @@ self.addEventListener("fetch", (event) => {
 
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
-  if (url.pathname.startsWith("/api")) {
+  if (url.pathname.startsWith("/api") || url.pathname === "/pdf-proxy") {
     return;
   }
 

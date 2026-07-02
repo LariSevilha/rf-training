@@ -167,3 +167,15 @@ body {
   .viewerZoomControls { grid-area: zoom; justify-self: center; }
   .viewerStage { padding-inline: 6px; }
 }
+
+.viewerStatus.error {
+  border-color: rgba(255, 96, 96, .62);
+}
+
+@supports (-webkit-touch-callout: none) {
+  html,
+  body,
+  .pdfViewerPage {
+    height: -webkit-fill-available;
+  }
+}

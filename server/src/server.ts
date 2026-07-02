@@ -134,7 +134,10 @@ async function main() {
     try {
       const parsed = new URL(raw);
       const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
-      const isGoogleRedirect = /(^|\.)google\.[a-z.]+$/.test(host) && ["/url", "/interstitial", "/search"].includes(parsed.pathname);
+
+      const isGoogleRedirect =
+        /(^|\.)google\.[a-z.]+$/.test(host) &&
+        ["/url", "/interstitial", "/search"].includes(parsed.pathname);
 
       if (isGoogleRedirect) {
         const real = parsed.searchParams.get("q") || parsed.searchParams.get("url") || parsed.searchParams.get("u");
@@ -152,22 +155,42 @@ async function main() {
     }
   }
 
-  function driveToDownloadServer(value: string): string {
+  function getDriveFileIdServer(parsed: URL): string {
+    return (
+      parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1] ||
+      parsed.pathname.match(/\/document\/d\/([^/]+)/)?.[1] ||
+      parsed.pathname.match(/\/spreadsheets\/d\/([^/]+)/)?.[1] ||
+      parsed.searchParams.get("id") ||
+      ""
+    );
+  }
+
+  function normalizePdfDownloadUrlServer(value: string): string {
     const clean = cleanRedirectUrlServer(value);
     if (!clean) return "";
 
     try {
       const parsed = new URL(clean);
       const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
-      const isDrive = host.endsWith("drive.google.com") || host.endsWith("docs.google.com");
-      if (!isDrive) return clean;
 
-      const fromPath = parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1];
-      const fromQuery = parsed.searchParams.get("id");
-      const id = fromPath || fromQuery;
-      if (!id) return clean;
+      if (host.endsWith("drive.google.com")) {
+        const id = getDriveFileIdServer(parsed);
+        if (id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}&confirm=t`;
+      }
 
-      return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+      if (host.endsWith("docs.google.com")) {
+        const id = getDriveFileIdServer(parsed);
+        if (id && parsed.pathname.includes("/document/d/")) {
+          return `https://docs.google.com/document/d/${encodeURIComponent(id)}/export?format=pdf`;
+        }
+      }
+
+      if (host.endsWith("dropbox.com")) {
+        parsed.searchParams.set("dl", "1");
+        return parsed.href;
+      }
+
+      return parsed.href;
     } catch {
       return clean;
     }
@@ -191,49 +214,133 @@ async function main() {
     );
   }
 
-  app.get(`${API_PREFIX}/pdf-proxy`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const schema = z.object({ url: z.string().min(1).max(5000) });
-    const { url } = schema.parse(req.query || {});
-    const target = driveToDownloadServer(url);
-
-    let parsed: URL;
-    try {
-      parsed = new URL(target);
-    } catch {
-      return reply.code(400).send({ message: "Link do PDF inválido." });
-    }
-
+  function assertAllowedPdfTarget(value: string): URL {
+    const parsed = new URL(value);
     if (!["http:", "https:"].includes(parsed.protocol) || isBlockedProxyHost(parsed.hostname)) {
-      return reply.code(400).send({ message: "Link do PDF não permitido." });
+      throw new Error("Link do PDF não permitido.");
     }
+    return parsed;
+  }
+
+  function isPdfBuffer(buffer: Buffer): boolean {
+    return buffer.length >= 5 && buffer.subarray(0, 5).toString("utf8") === "%PDF-";
+  }
+
+  function decodeHtmlEntities(value: string): string {
+    return String(value || "")
+      .replace(/&amp;/g, "&")
+      .replace(/&#38;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+  }
+
+  function getSetCookieHeader(headers: Headers): string {
+    const anyHeaders = headers as any;
+    const cookies = typeof anyHeaders.getSetCookie === "function" ? anyHeaders.getSetCookie() : [];
+    if (Array.isArray(cookies) && cookies.length) {
+      return cookies.map((cookie: string) => cookie.split(";")[0]).filter(Boolean).join("; ");
+    }
+
+    const single = headers.get("set-cookie") || "";
+    return single ? single.split(",").map((cookie) => cookie.split(";")[0]).filter(Boolean).join("; ") : "";
+  }
+
+  function extractDownloadLinkFromGoogleHtml(html: string, baseUrl: string): string {
+    const text = decodeHtmlEntities(html);
+    const patterns = [
+      /href=["']([^"']*(?:\/uc\?export=download|drive\.usercontent\.google\.com\/download)[^"']*)["']/i,
+      /href=["']([^"']*confirm=[^"']*id=[^"']*)["']/i,
+      /downloadUrl["']?\s*[:=]\s*["']([^"']+)["']/i,
+    ];
+
+    for (const pattern of patterns) {
+      const match = text.match(pattern)?.[1];
+      if (!match) continue;
+      try {
+        return new URL(match, baseUrl).href;
+      } catch {
+        // continua procurando
+      }
+    }
+
+    return "";
+  }
+
+  async function fetchPdfBufferServer(url: string, depth = 0, cookieHeader = ""): Promise<Buffer> {
+    if (depth > 8) throw new Error("Redirecionamentos demais ao baixar o PDF.");
+
+    const parsed = assertAllowedPdfTarget(url);
+    const headers: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0 RF-Training-PDF-Viewer/2.0",
+      "Accept": "application/pdf,application/octet-stream,text/html,*/*;q=0.8",
+    };
+    if (cookieHeader) headers.Cookie = cookieHeader;
 
     const response = await fetch(parsed.href, {
-      redirect: "follow",
-      headers: {
-        "User-Agent": "RF-Training-PDF-Viewer/1.0",
-        "Accept": "application/pdf,application/octet-stream,*/*;q=0.8",
-      },
+      redirect: "manual",
+      headers,
     });
 
+    const setCookie = getSetCookieHeader(response.headers);
+    const nextCookies = [cookieHeader, setCookie].filter(Boolean).join("; ");
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location) throw new Error("Redirecionamento do PDF sem destino.");
+      const nextUrl = new URL(location, parsed.href).href;
+      return fetchPdfBufferServer(nextUrl, depth + 1, nextCookies);
+    }
+
     if (!response.ok) {
-      return reply.code(400).send({ message: "Não foi possível baixar o PDF. Verifique se o link está público/compartilhável." });
+      throw new Error("Não foi possível baixar o PDF. Verifique se o link está público/compartilhável.");
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const firstBytes = buffer.subarray(0, 5).toString("utf8");
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const contentType = response.headers.get("content-type") || "";
 
-    if (firstBytes !== "%PDF-") {
-      return reply.code(400).send({ message: "O link informado não retornou um arquivo PDF direto." });
+    if (isPdfBuffer(buffer)) return buffer;
+
+    const looksHtml = contentType.includes("text/html") || buffer.subarray(0, 128).toString("utf8").toLowerCase().includes("<html");
+    const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+    const isGoogleFile = host.endsWith("drive.google.com") || host.endsWith("googleusercontent.com") || host.endsWith("docs.google.com");
+
+    if (looksHtml && isGoogleFile) {
+      const html = buffer.toString("utf8");
+      const downloadUrl = extractDownloadLinkFromGoogleHtml(html, parsed.href);
+      if (downloadUrl) {
+        return fetchPdfBufferServer(downloadUrl, depth + 1, nextCookies);
+      }
     }
 
-    reply
-      .header("Content-Type", "application/pdf")
-      .header("Content-Disposition", "inline; filename=treino.pdf")
-      .header("Cache-Control", "no-store");
+    throw new Error("O link informado não retornou um arquivo PDF direto.");
+  }
 
-    return reply.send(buffer);
-  });
+  async function handlePdfProxy(req: any, reply: any) {
+    const schema = z.object({ url: z.string().min(1).max(5000) });
+    const { url } = schema.parse(req.query || {});
+    const target = normalizePdfDownloadUrlServer(url);
+
+    try {
+      const buffer = await fetchPdfBufferServer(target);
+
+      reply
+        .header("Content-Type", "application/pdf")
+        .header("Content-Disposition", "inline; filename=treino.pdf")
+        .header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        .header("Pragma", "no-cache");
+
+      return reply.send(buffer);
+    } catch (error: any) {
+      req.log?.warn?.({ err: error, target }, "Falha no pdf-proxy");
+      return reply.code(400).send({ message: error?.message || "Não foi possível carregar o PDF." });
+    }
+  }
+
+  const pdfProxyRoutes = Array.from(new Set([`${API_PREFIX}/pdf-proxy`, "/pdf-proxy"]));
+  for (const route of pdfProxyRoutes) {
+    app.get(route, { preHandler: (app as any).auth }, handlePdfProxy);
+  }
+
 
   // ===== ALUNO =====
   app.get(`${API_PREFIX}/documents`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
