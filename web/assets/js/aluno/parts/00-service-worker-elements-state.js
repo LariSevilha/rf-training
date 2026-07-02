@@ -1,13 +1,24 @@
 // Service worker, elementos, estado e utilitários básicos
 // Dependências importadas pelo arquivo principal: ../aluno.js
 
+// iOS/PWA: não forçamos update/reload em tempo real.
+// O reload automático durante controllerchange era o principal gatilho de
+// "voltar para a tela inicial" quando o aluno dava zoom no PDF ou retornava do YouTube.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     try {
-      await navigator.serviceWorker.register("/service-worker.js");
+      await navigator.serviceWorker.register("/service-worker.js", {
+        updateViaCache: "none"
+      });
       console.log("SW registrado com sucesso");
     } catch (e) {
       console.warn("SW register falhou:", e);
+    }
+  });
+
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "APP_UPDATED") {
+      console.log("App atualizado:", event.data.version);
     }
   });
 }

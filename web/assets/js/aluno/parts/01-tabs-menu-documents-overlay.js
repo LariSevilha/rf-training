@@ -237,7 +237,7 @@ let pdfScrollY = 0;
 
 function lockPdfViewport() {
   pdfScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-  document.documentElement.classList.add("pdfOpenRoot");
+  document.documentElement.classList.add("pdfOpenHtml");
   document.body.classList.add("pdfOpen");
   document.body.style.position = "fixed";
   document.body.style.top = `-${pdfScrollY}px`;
@@ -247,7 +247,7 @@ function lockPdfViewport() {
 }
 
 function unlockPdfViewport() {
-  document.documentElement.classList.remove("pdfOpenRoot");
+  document.documentElement.classList.remove("pdfOpenHtml");
   document.body.classList.remove("pdfOpen");
   document.body.style.position = "";
   document.body.style.top = "";
@@ -255,6 +255,34 @@ function unlockPdfViewport() {
   document.body.style.right = "";
   document.body.style.width = "";
   window.scrollTo(0, pdfScrollY || 0);
+}
+
+function resolveMaterialUrl(rawUrl) {
+  const value = String(rawUrl || "").trim();
+  if (!value) return "";
+
+  // Mantém o comportamento antigo: Google Drive abre em /preview.
+  // A tentativa de usar /uc?export=view quebra quando o proprietário bloqueia download.
+  return driveToPreview(value);
+}
+
+function openTrainingLinkExternally(rawUrl) {
+  const url = resolveMaterialUrl(rawUrl);
+
+  if (!url) {
+    openPdfOverlay("TREINO", rawUrl);
+    return;
+  }
+
+  // iOS/PWA não lida bem com Google Drive Preview dentro de iframe:
+  // 1) pinch/zoom pode recarregar a WebView do app;
+  // 2) links internos do PDF podem levar a google.com/redirect e deixar tela branca ao voltar do YouTube.
+  // Abrindo o Treino por link em uma janela externa, o app fica parado no menu e o aluno volta sem tela branca.
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+
+  if (!opened) {
+    window.location.href = url;
+  }
 }
 
 function openHtmlOverlay(title, html) {
@@ -287,7 +315,7 @@ function openPdfOverlay(title, rawUrl) {
     );
     setTimeout(hideLoading, 250);
   } else {
-    const preview = driveToPreview(rawUrl);
+    const preview = resolveMaterialUrl(rawUrl);
     if (!preview) {
       pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
         placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
@@ -331,6 +359,11 @@ function openContent(type) {
     return;
   }
 
+  if (type === "training" && isIOSDevice()) {
+    openTrainingLinkExternally(urls.training || "");
+    return;
+  }
+
   openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
@@ -350,6 +383,21 @@ pdfBack?.addEventListener("click", (ev) => {
   ev.stopPropagation();
   closePdf();
 });
+
+// Evita que gestos fora do iframe do PDF escapem para a página do app no iOS.
+// O zoom dentro do PDF continua funcionando; a trava é só no fundo/overlay.
+pdfOverlay?.addEventListener("touchmove", (ev) => {
+  if (!document.body.classList.contains("pdfOpen")) return;
+  if (ev.target?.closest?.("#pdfFrame")) return;
+  ev.preventDefault();
+}, { passive: false });
+
+pdfOverlay?.addEventListener("gesturestart", (ev) => {
+  if (!document.body.classList.contains("pdfOpen")) return;
+  if (ev.target?.closest?.("#pdfFrame")) return;
+  ev.preventDefault();
+}, { passive: false });
+
 
 logoutBtn?.addEventListener("click", () => {
   clearSession();
