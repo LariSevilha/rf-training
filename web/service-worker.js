@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-02-pdf-iframe-reset-blur";
+const VERSION = "rf-fitness-v2026-07-02-pdf-iframe-no-external";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -7,7 +7,7 @@ const APP_SHELL = [
   "/manifest.webmanifest",
 
   "/pages/index.html",
-  "/pages/aluno.html",
+  "/pages/aluno.html", 
   "/pages/politica-privacidade.html",
 
   "/assets/css/main.css",

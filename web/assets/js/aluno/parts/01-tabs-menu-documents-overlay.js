@@ -522,6 +522,8 @@ async function openPdfNative(title, rawUrl) {
 
 function openPdfOverlay(title, rawUrl) {
   // Modo simples e estável: mostra o PDF dentro do app usando o preview do Drive.
+  // No iOS, o iframe do PDF fica sandboxado no HTML para impedir que links internos
+  // do Drive/YouTube tomem a tela principal e deixem o aluno preso em tela branca.
   // Não usa /api/pdf-proxy e não tenta baixar o PDF. Assim o PDF aparece do mesmo jeito
   // que aparecia antes, desde que o link abra normalmente no Drive.
   clearPdfNativeViewer();
