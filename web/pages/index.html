@@ -80,26 +80,7 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/service-worker.js").then((reg) => {
-
-          // Detecta nova versão
-          reg.addEventListener("updatefound", () => {
-            const newWorker = reg.installing;
-            if (!newWorker) return;
-
-            newWorker.addEventListener("statechange", () => {
-              if (newWorker.state === "installed") {
-
-                // Se já existia SW ativo, então é update
-                if (navigator.serviceWorker.controller) {
-                  console.log("Nova versão detectada. Recarregando...");
-                  window.location.reload();
-                }
-              }
-            });
-          });
-
-        }).catch(() => { });
+        navigator.serviceWorker.register("/service-worker.js", { updateViaCache: "none" }).catch(() => {});
       });
     }
   </script>

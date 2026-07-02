@@ -8,7 +8,7 @@ import {
   apiExtraItems,
 } from "./api.js";
 import { clearSession } from "./state.js";
-import { driveToPreview, placeholderHtml, cleanLinkUrl } from "./pdf.js";
+import { driveToPreview, placeholderHtml, cleanLinkUrl, isPdfLikeUrl } from "./pdf.js";
 
 // Arquivo principal da área do aluno.
 // As funções reais ficam separadas em web/assets/js/aluno/parts/.
@@ -24,6 +24,7 @@ Object.assign(window, {
   driveToPreview,
   placeholderHtml,
   cleanLinkUrl,
+  isPdfLikeUrl,
 });
 
 const ALUNO_PARTS = [

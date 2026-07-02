@@ -62,6 +62,83 @@ async function main() {
             return { user: null };
         return { user: { email: user.email, active: user.active, role: user.role } };
     });
+
+    function cleanRedirectUrlServer(value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        try {
+            const parsed = new URL(raw);
+            const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+            const isGoogleRedirect = /(^|\.)google\.[a-z.]+$/.test(host) && ["/url", "/interstitial", "/search"].includes(parsed.pathname);
+            if (isGoogleRedirect) {
+                const real = parsed.searchParams.get("q") || parsed.searchParams.get("url") || parsed.searchParams.get("u");
+                if (real) return cleanRedirectUrlServer(real);
+            }
+            if ((host === "youtube.com" || host === "youtu.be") && parsed.pathname === "/redirect") {
+                const real = parsed.searchParams.get("q") || parsed.searchParams.get("url");
+                if (real) return cleanRedirectUrlServer(real);
+            }
+            return parsed.href;
+        }
+        catch {
+            return raw;
+        }
+    }
+    function driveToDownloadServer(value) {
+        const clean = cleanRedirectUrlServer(value);
+        if (!clean) return "";
+        try {
+            const parsed = new URL(clean);
+            const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+            const isDrive = host.endsWith("drive.google.com") || host.endsWith("docs.google.com");
+            if (!isDrive) return clean;
+            const fromPath = parsed.pathname.match(/\/file\/d\/([^/]+)/)?.[1];
+            const fromQuery = parsed.searchParams.get("id");
+            const id = fromPath || fromQuery;
+            if (!id) return clean;
+            return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+        }
+        catch {
+            return clean;
+        }
+    }
+    function isBlockedProxyHost(hostname) {
+        const host = String(hostname || "").trim().toLowerCase();
+        return (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host === "0.0.0.0" || host === "127.0.0.1" || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host) || host === "::1" || host === "[::1]");
+    }
+    app.get("/pdf-proxy", { preHandler: app.auth }, async (req, reply) => {
+        const schema = z.object({ url: z.string().min(1).max(5000) });
+        const { url } = schema.parse(req.query || {});
+        const target = driveToDownloadServer(url);
+        let parsed;
+        try {
+            parsed = new URL(target);
+        }
+        catch {
+            return reply.code(400).send({ message: "Link do PDF inválido." });
+        }
+        if (!["http:", "https:"].includes(parsed.protocol) || isBlockedProxyHost(parsed.hostname)) {
+            return reply.code(400).send({ message: "Link do PDF não permitido." });
+        }
+        const response = await fetch(parsed.href, {
+            redirect: "follow",
+            headers: {
+                "User-Agent": "RF-Training-PDF-Viewer/1.0",
+                "Accept": "application/pdf,application/octet-stream,*/*;q=0.8"
+            }
+        });
+        if (!response.ok) {
+            return reply.code(400).send({ message: "Não foi possível baixar o PDF. Verifique se o link está público/compartilhável." });
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const firstBytes = buffer.subarray(0, 5).toString("utf8");
+        if (firstBytes !== "%PDF-") {
+            return reply.code(400).send({ message: "O link informado não retornou um arquivo PDF direto." });
+        }
+        reply.header("Content-Type", "application/pdf").header("Content-Disposition", "inline; filename=treino.pdf").header("Cache-Control", "no-store");
+        return reply.send(buffer);
+    });
     // ===== ALUNO =====
     app.get("/documents", { preHandler: app.auth }, async (req, reply) => {
         const payload = req.user;

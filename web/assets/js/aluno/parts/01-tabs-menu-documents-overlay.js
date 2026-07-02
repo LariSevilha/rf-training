@@ -269,11 +269,18 @@ function openHtmlOverlay(title, html) {
   lockPageForPdf();
 }
 
-function openPdfOverlay(title, rawUrl) {
+function openPdfOverlay(title, rawUrl, materialType = "") {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  if (!rawUrl) {
+  const cleanRawUrl = window.cleanLinkUrl ? window.cleanLinkUrl(rawUrl || "") : String(rawUrl || "").trim();
+  const shouldUseTrainingViewer =
+    materialType === "training" &&
+    cleanRawUrl &&
+    navigator.onLine &&
+    (!window.isPdfLikeUrl || window.isPdfLikeUrl(cleanRawUrl));
+
+  if (!cleanRawUrl) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
       placeholderHtml("Material não configurado", "Entre em contato com o personal.")
     );
@@ -283,8 +290,14 @@ function openPdfOverlay(title, rawUrl) {
       placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
     );
     setTimeout(hideLoading, 250);
+  } else if (shouldUseTrainingViewer) {
+    // Treino em PDF com links de vídeo: usa viewer próprio, não o preview do Google Drive.
+    // Assim conseguimos controlar zoom e abrir os links direto no YouTube, sem tela branca de google.com no iOS.
+    sessionStorage.setItem("rf_pdf_src", cleanRawUrl);
+    sessionStorage.setItem("rf_pdf_title", title || "TREINO");
+    pdfFrame.src = `/pages/pdf-viewer.html?title=${encodeURIComponent(title || "TREINO")}&v=${Date.now()}`;
   } else {
-    const preview = driveToPreview(rawUrl);
+    const preview = driveToPreview(cleanRawUrl);
     if (!preview) {
       pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
         placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
@@ -325,11 +338,11 @@ function openContent(type) {
 
   if (type.startsWith("extra-")) {
     const extra = extraItems.find((item) => `extra-${item.id}` === type);
-    openPdfOverlay(extra?.title || "MATERIAL EXTRA", extraUrls[type] || "");
+    openPdfOverlay(extra?.title || "MATERIAL EXTRA", extraUrls[type] || "", type);
     return;
   }
 
-  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
+  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "", type);
 }
 
 function closePdf() {
@@ -348,6 +361,13 @@ pdfBack?.addEventListener("click", (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
   closePdf();
+});
+
+window.addEventListener("message", (event) => {
+  if (event.origin !== window.location.origin) return;
+  if (event.data?.type === "RF_CLOSE_PDF_VIEWER") {
+    closePdf();
+  }
 });
 
 logoutBtn?.addEventListener("click", () => {

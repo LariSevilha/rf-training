@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#111111" />
+  <title>Visualizador de PDF</title>
+  <link rel="stylesheet" href="/assets/css/pdf-viewer.css" />
+</head>
+<body class="pdfViewerPage">
+  <header class="viewerBar">
+    <button class="viewerBack" id="viewerBack" type="button">← Voltar</button>
+    <div class="viewerTitle" id="viewerTitle">PDF</div>
+    <div class="viewerZoomControls" aria-label="Controles de zoom">
+      <button id="zoomOut" type="button" aria-label="Diminuir zoom">−</button>
+      <span id="zoomLabel">100%</span>
+      <button id="zoomIn" type="button" aria-label="Aumentar zoom">+</button>
+    </div>
+  </header>
+
+  <main class="viewerStage" id="viewerStage">
+    <div class="viewerStatus" id="viewerStatus">Carregando PDF…</div>
+    <div class="pdfPages" id="pdfPages" aria-label="Páginas do PDF"></div>
+  </main>
+
+  <script type="module" src="/assets/js/pdf-viewer.js"></script>
+</body>
+</html>

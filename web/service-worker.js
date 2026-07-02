@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-06-19-ios-pdf-fix";
+const VERSION = "rf-fitness-v2026-07-02-training-pdf-viewer-v2";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -8,10 +8,12 @@ const APP_SHELL = [
 
   "/pages/index.html",
   "/pages/aluno.html",
+  "/pages/pdf-viewer.html",
   "/pages/politica-privacidade.html",
 
   "/assets/css/main.css",
   "/assets/css/aluno-clean.css",
+  "/assets/css/pdf-viewer.css",
   "/assets/js/aluno.js",
   "/assets/js/aluno/parts/00-service-worker-elements-state.js",
   "/assets/js/aluno/parts/01-tabs-menu-documents-overlay.js",
@@ -22,6 +24,7 @@ const APP_SHELL = [
   "/assets/js/guard.js",
   "/assets/js/state.js",
   "/assets/js/pdf.js",
+  "/assets/js/pdf-viewer.js",
 
   "/img/logoapp-192.png",
   "/img/logoapp-512.png",
