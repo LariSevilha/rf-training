@@ -18,6 +18,22 @@ export function extractDriveFileId(url) {
   return "";
 }
 
+export function driveToNativePdf(url) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+
+  if (!/drive\.google\.com|docs\.google\.com/i.test(value)) {
+    return value;
+  }
+
+  const fileId = extractDriveFileId(value);
+  if (!fileId) return driveToPreview(value);
+
+  // Link direto/inline do arquivo. Evita o visualizador do Google Drive,
+  // que embrulha links do PDF em google.com/redirect e causa tela branca no iOS.
+  return `https://drive.google.com/uc?export=view&id=${encodeURIComponent(fileId)}`;
+}
+
 export function driveToPreview(url) {
   const value = String(url || "").trim();
   if (!value) return "";

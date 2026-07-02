@@ -257,32 +257,18 @@ function unlockPdfViewport() {
   window.scrollTo(0, pdfScrollY || 0);
 }
 
-function resolveMaterialUrl(rawUrl) {
+function resolveMaterialUrl(rawUrl, options = {}) {
   const value = String(rawUrl || "").trim();
   if (!value) return "";
 
-  // Mantém o comportamento antigo: Google Drive abre em /preview.
-  // A tentativa de usar /uc?export=view quebra quando o proprietário bloqueia download.
+  // Treino por link/PDF: usa o arquivo PDF direto quando for Drive.
+  // Isso evita o viewer do Google Drive, que transforma links do YouTube em
+  // google.com/redirect e deixa uma tela branca ao voltar do app do YouTube no iOS.
+  if (options.preferNativePdf && typeof driveToNativePdf === "function") {
+    return driveToNativePdf(value);
+  }
+
   return driveToPreview(value);
-}
-
-function openTrainingLinkExternally(rawUrl) {
-  const url = resolveMaterialUrl(rawUrl);
-
-  if (!url) {
-    openPdfOverlay("TREINO", rawUrl);
-    return;
-  }
-
-  // iOS/PWA não lida bem com Google Drive Preview dentro de iframe:
-  // 1) pinch/zoom pode recarregar a WebView do app;
-  // 2) links internos do PDF podem levar a google.com/redirect e deixar tela branca ao voltar do YouTube.
-  // Abrindo o Treino por link em uma janela externa, o app fica parado no menu e o aluno volta sem tela branca.
-  const opened = window.open(url, "_blank", "noopener,noreferrer");
-
-  if (!opened) {
-    window.location.href = url;
-  }
 }
 
 function openHtmlOverlay(title, html) {
@@ -300,7 +286,7 @@ function openHtmlOverlay(title, html) {
   lockPdfViewport();
 }
 
-function openPdfOverlay(title, rawUrl) {
+function openPdfOverlay(title, rawUrl, options = {}) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
@@ -315,7 +301,7 @@ function openPdfOverlay(title, rawUrl) {
     );
     setTimeout(hideLoading, 250);
   } else {
-    const preview = resolveMaterialUrl(rawUrl);
+    const preview = resolveMaterialUrl(rawUrl, options);
     if (!preview) {
       pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
         placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
@@ -359,12 +345,9 @@ function openContent(type) {
     return;
   }
 
-  if (type === "training" && isIOSDevice()) {
-    openTrainingLinkExternally(urls.training || "");
-    return;
-  }
-
-  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
+  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "", {
+    preferNativePdf: type === "training"
+  });
 }
 
 function closePdf() {

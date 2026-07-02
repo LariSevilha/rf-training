@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-06-01-aluno-ios-v6";
+const VERSION = "rf-fitness-v2026-06-01-aluno-ios-v7";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
