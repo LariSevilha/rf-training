@@ -1,188 +1,155 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="format-detection" content="telephone=no">
-    
-    <title>Área do Aluno - RF Fitness</title>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-        }
-        
-        /* Fix para PDF no iOS */
-        .pdf-container {
-            width: 100%;
-            height: 75vh;
-            background: white;
-            border-radius: 12px;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pinch-zoom;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        .pdf-container iframe,
-        .pdf-container embed,
-        .pdf-container object {
-            width: 100% !important;
-            height: 100% !important;
-            border: none;
-        }
-        
-        /* Melhor renderização de canvas no PDF.js */
-        .pdfViewer .canvasWrapper,
-        .pdfViewer .page canvas {
-            width: inherit !important;
-            max-width: 100% !important;
-        }
-        
-        .offline-banner {
-            display: none;
-            background: #ff9800;
-            color: white;
-            padding: 12px;
-            text-align: center;
-            font-size: 14px;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>RF Fitness</title>
+
+  <link rel="stylesheet" href="/assets/css/main.css" />
+  <link rel="stylesheet" href="/assets/css/aluno-clean.css" />
+
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="RF Fitness">
+  <link rel="icon" type="image/png" sizes="192x192" href="/img/logoapp-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/img/logoapp-512.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RF Fitness">
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/logoapp-ios-180.png">
 </head>
-<body>
-
-    <!-- Offline Banner -->
-    <div class="offline-banner" id="offlineBanner">
-        📡 Você está offline. Alguns conteúdos precisam de internet.
+<body class="pageAluno alunoClean studentBooting">
+  <div class="studentBootScreen" id="studentBootScreen" aria-live="polite" aria-busy="true">
+    <div class="studentBootCard">
+      <img src="/img/logoapp.png" alt="RF Fitness" draggable="false">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Carregando acesso…</p>
     </div>
+  </div>
 
-    <div class="container">
-        <!-- Header -->
-        <header>
-            <h1>RF FITNESS</h1>
-            <p>Olá, <span id="alunoNome">Aluno</span></p>
-            <button onclick="atualizarPagina()">Atualizar</button>
-        </header>
-
-        <!-- Navegação -->
-        <nav>
-            <a href="#" onclick="mostrarSecao('inicio')">Início</a>
-            <a href="#" onclick="mostrarSecao('treino')">Treino</a>
-        </nav>
-
-        <!-- Seção Início -->
-        <section id="inicio" class="secao">
-            <h2>Seu acompanhamento</h2>
-            <div id="materiais">
-                <p>Nenhum material disponível no momento.</p>
-            </div>
-        </section>
-
-        <!-- Seção Treino -->
-        <section id="treino" class="secao" style="display: none;">
-            <h2>Seu Treino</h2>
-            <div id="pdf-treino" class="pdf-container">
-                <p>Carregando treino...</p>
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <button onclick="voltarInicio()">← Voltar ao Início</button>
-            </div>
-        </section>
-
-        <footer>
-            © 2026 RF Fitness · <a href="politica-privacidade.html">Política de Privacidade</a>
-        </footer>
+  <div class="offlineMask" id="offlineMask" aria-hidden="true">
+    <div class="offlineCard" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
+      <div class="offlineIcon" aria-hidden="true">📡</div>
+      <div class="offlineTitle" id="offlineTitle">Você está offline</div>
+      <div class="offlineSub">Sem internet no momento. Alguns conteúdos dependem de conexão para abrir ou salvar.</div>
+      <button class="btn" id="offlineTryBtn" type="button">Tentar novamente</button>
+      <div class="offlineHint">Quando a internet voltar, atualize a página e tente novamente.</div>
     </div>
+  </div>
 
-    <script>
-        // ==================== FUNÇÕES CORRIGIDAS PARA iOS ====================
-        
-        // Abrir links externos sem tela branca
-        function openExternalLink(url) {
-            if (!url) return;
-            console.log('Abrindo link externo:', url);
-            
-            const win = window.open(url, '_blank');
-            
-            // Listener para quando voltar
-            const handleReturn = () => {
-                console.log('Retornando do link externo');
-                // Se necessário, recarrega a página
-                // setTimeout(() => location.reload(), 500);
-            };
-            
-            window.addEventListener('pageshow', handleReturn, { once: true });
-        }
+  <header class="topNav alunoTop" role="banner">
+    <div class="topNavInner alunoTopInner">
+      <a class="topBrand" href="/pages/aluno.html" aria-label="Consultoria RF">
+        <img class="topLogo" src="/img/logo-consultoria.png" alt="Consultoria RF" draggable="false">
+      </a>
+      <div class="topNavRight">
+        <button class="pill installPill" id="installBtn" type="button" style="display:none;">Instalar</button>
+        <button class="pill" id="logoutBtn" type="button">Sair</button>
+      </div>
+    </div>
+  </header>
 
-        // Carregar PDF de forma estável
-        function carregarPdf(url, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            
-            if (!url) {
-                container.innerHTML = `<p style="padding:20px; text-align:center;">Nenhum PDF disponível no momento.</p>`;
-                return;
-            }
-            
-            // Usa iframe com parâmetros otimizados para iOS
-            container.innerHTML = `
-                <iframe 
-                    src="${url}#toolbar=1&navpanes=0&scrollbar=1&view=FitH" 
-                    allowfullscreen 
-                    frameborder="0"
-                    scrolling="yes">
-                </iframe>
-            `;
-        }
+  <main class="alunoPage">
+    <section class="alunoHero" id="alunoHero" aria-label="Resumo do aluno">
+      <div>
+        <div class="eyebrow">Área do aluno</div>
+        <h1><span id="greeting">Olá</span>, <span id="studentName">Aluno</span></h1>
+        <p id="status">Carregando seus materiais…</p>
+      </div>
+      <button class="softRefresh" id="refreshStudentBtn" type="button">Atualizar</button>
+    </section>
 
-        // Mostrar seções
-        function mostrarSecao(secao) {
-            document.querySelectorAll('.secao').forEach(s => {
-                s.style.display = 'none';
-            });
-            document.getElementById(secao).style.display = 'block';
-        }
+    <section class="studentMessage" id="studentMessage" aria-live="polite" style="display:none;"></section>
 
-        function voltarInicio() {
-            mostrarSecao('inicio');
-        }
+    <section class="alunoTabs" id="alunoTabs" aria-label="Tipo de conteúdo" hidden>
+      <button class="alunoTab active" id="documentsTab" data-student-tab="documents" type="button">Início</button>
+      <button class="alunoTab" id="manualTab" data-student-tab="manual" type="button">Treino</button>
+    </section>
 
-        function atualizarPagina() {
-            location.reload();
-        }
+    <section class="alunoPanel active" id="panel-documents">
+      <div class="panelHead studentHomeHead">
+        <div>
+          <span class="sectionBadge">Seu acompanhamento</span>
+        </div>
+      </div>
 
-        // Detectar offline
-        function checkOnline() {
-            const banner = document.getElementById('offlineBanner');
-            if (!navigator.onLine) {
-                banner.style.display = 'block';
-            } else {
-                banner.style.display = 'none';
-            }
-        }
+      <div class="studentGrid" id="menuGrid" aria-live="polite"></div>
 
-        // Inicialização
-        window.onload = function() {
-            checkOnline();
-            window.addEventListener('online', checkOnline);
-            window.addEventListener('offline', checkOnline);
-            
-            // Exemplo: carregar treino (substitua pela sua lógica real)
-            // carregarPdf('https://seu-link-do-treino.pdf', 'pdf-treino');
-            
-            mostrarSecao('inicio');
-        };
-    </script>
+      <div class="emptyState" id="docsEmpty" style="display:none;">
+        <div class="emptyIcon">📄</div>
+        <h3>Nenhum material disponível</h3>
+        <p>Seu personal ainda não liberou materiais para este acesso.</p>
+      </div>
+    </section>
 
+    <section class="alunoPanel" id="panel-manual">
+      <div class="panelHead manualPanelHead">
+        <div>
+          <span class="sectionBadge">Treino</span>
+          <h2>Seu treino</h2>
+          <p>Registre carga e repetições de cada série.</p>
+        </div>
+        <button class="softRefresh backHomeBtn" id="backHomeBtn" type="button">← Voltar ao início</button>
+      </div>
+
+      <div class="workoutTabs" id="workoutTabs"></div>
+      <div class="workoutArea" id="workoutArea"></div>
+
+      <div class="emptyState" id="workoutsEmpty" style="display:none;">
+        <div class="emptyIcon">📋</div>
+        <h3>Nenhum treino disponível</h3>
+        <p>Quando seu treino for liberado, ele aparecerá aqui.</p>
+      </div>
+    </section>
+
+    <footer class="alunoFooter">
+      © <span id="yearNow">2026</span> Consultoria RF · <a href="./politica-privacidade.html">Política de Privacidade</a>
+    </footer>
+  </main>
+
+  <div class="pdfOverlay" id="pdfOverlay" aria-hidden="true">
+    <div class="pdfBar">
+      <button class="backBtn" id="pdfBack" type="button">← Voltar</button>
+      <div class="pdfTitle" id="pdfTitle">PDF</div>
+    </div>
+    <div class="pdfFrameWrap">
+      <iframe id="pdfFrame" title="Visualização de PDF" allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div class="loadingLayer" id="loadingLayer">
+        <div class="spinner"></div>
+        <div class="loadingText">Carregando…</div>
+        <div class="loadingSub">Se demorar, verifique sua conexão.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="iosInstallMask" id="iosInstallModal" aria-hidden="true">
+    <div class="iosInstallCard" role="dialog" aria-modal="true" aria-labelledby="iosInstallTitle">
+      <button class="iosX" id="iosInstallClose" type="button" aria-label="Fechar">×</button>
+      <div class="iosHead">
+        <div class="iosIcon" aria-hidden="true"><img src="/img/logoapp.png" alt="RF" draggable="false"></div>
+        <div><div class="iosBrand">RF FITNESS</div><div class="iosTitle" id="iosInstallTitle">Adicionar à Tela de Início</div></div>
+      </div>
+      <div class="iosSteps">
+        <div class="iosStep"><span class="n">1</span> Abra no <b>Safari</b></div>
+        <div class="iosStep"><span class="n">2</span> Toque em <b>Compartilhar</b></div>
+        <div class="iosStep"><span class="n">3</span> “Adicionar à Tela de Início”</div>
+        <div class="iosStep"><span class="n">4</span> Toque em <b>Adicionar</b></div>
+      </div>
+      <label class="iosDont"><input type="checkbox" id="iosDontShowChk"> Não mostrar por 7 dias</label>
+      <div class="iosActions"><button class="btnGhost" id="iosLaterBtn" type="button">Agora não</button><button class="btn" id="iosOkBtn" type="button">Entendi</button></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("yearNow").textContent = String(new Date().getFullYear());
+    (function () {
+      const h = new Date().getHours();
+      const t = (h < 12) ? "Bom dia" : (h < 18) ? "Boa tarde" : "Boa noite";
+      const el = document.getElementById("greeting");
+      if (el) el.textContent = t;
+    })();
+  </script>
+  <script type="module" src="../assets/js/aluno.js"></script>
 </body>
 </html>
