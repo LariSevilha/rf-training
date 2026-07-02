@@ -39,6 +39,117 @@ function parseDateParam(value: any) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+
+function extractDriveFileId(rawUrl: string) {
+  const value = String(rawUrl || "").trim();
+  if (!value) return "";
+
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([^/]+)/i,
+    /drive\.google\.com\/open\?id=([^&]+)/i,
+    /drive\.google\.com\/uc\?[^#]*id=([^&]+)/i,
+    /docs\.google\.com\/[^/]+\/d\/([^/]+)/i,
+    /[?&]id=([^&]+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = value.match(pattern);
+    if (match?.[1]) return decodeURIComponent(match[1]);
+  }
+
+  return "";
+}
+
+function isAllowedPdfSource(rawUrl: string) {
+  try {
+    const url = new URL(rawUrl);
+    if (!["https:", "http:"].includes(url.protocol)) return false;
+
+    const host = url.hostname.toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1" || host.startsWith("10.") || host.startsWith("192.168.")) return false;
+
+    return (
+      host === "drive.google.com" ||
+      host.endsWith(".google.com") ||
+      host.endsWith(".googleusercontent.com") ||
+      url.pathname.toLowerCase().endsWith(".pdf")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function cookieHeaderFromResponse(res: Response) {
+  const raw = res.headers.get("set-cookie") || "";
+  if (!raw) return "";
+
+  return raw
+    .split(/,(?=[^;]+?=)/g)
+    .map((cookie) => cookie.split(";")[0]?.trim())
+    .filter(Boolean)
+    .join("; ");
+}
+
+function looksLikePdf(buffer: Buffer) {
+  return buffer.subarray(0, 5).toString("utf8") === "%PDF-";
+}
+
+async function fetchPdfBuffer(rawUrl: string) {
+  const driveId = extractDriveFileId(rawUrl);
+  const firstUrl = driveId
+    ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(driveId)}`
+    : rawUrl;
+
+  let res = await fetch(firstUrl, {
+    redirect: "follow",
+    headers: {
+      "user-agent": "Mozilla/5.0 RF-Fitness-PDF-Proxy",
+      accept: "application/pdf,*/*;q=0.8",
+    },
+  });
+
+  let contentLength = Number(res.headers.get("content-length") || 0);
+  if (contentLength > 80 * 1024 * 1024) {
+    throw new Error("PDF muito grande para abrir dentro do app.");
+  }
+
+  let buffer = Buffer.from(await res.arrayBuffer());
+
+  // Google Drive pode devolver uma página HTML de confirmação em vez do PDF.
+  if (driveId && !looksLikePdf(buffer)) {
+    const html = buffer.toString("utf8");
+    const confirm =
+      html.match(/[?&]confirm=([0-9A-Za-z_-]+)/)?.[1] ||
+      html.match(/confirm=([0-9A-Za-z_-]+)&amp;/)?.[1] ||
+      html.match(/name="confirm"\s+value="([^"]+)"/)?.[1];
+    const uuid = html.match(/[?&]uuid=([0-9A-Za-z_-]+)/)?.[1] || html.match(/name="uuid"\s+value="([^"]+)"/)?.[1];
+    const cookie = cookieHeaderFromResponse(res);
+
+    if (confirm) {
+      const confirmedUrl = `https://drive.google.com/uc?export=download&confirm=${encodeURIComponent(confirm)}&id=${encodeURIComponent(driveId)}${uuid ? `&uuid=${encodeURIComponent(uuid)}` : ""}`;
+      res = await fetch(confirmedUrl, {
+        redirect: "follow",
+        headers: {
+          "user-agent": "Mozilla/5.0 RF-Fitness-PDF-Proxy",
+          accept: "application/pdf,*/*;q=0.8",
+          ...(cookie ? { cookie } : {}),
+        },
+      });
+      buffer = Buffer.from(await res.arrayBuffer());
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(`Não foi possível baixar o PDF. HTTP ${res.status}`);
+  }
+
+  if (!looksLikePdf(buffer)) {
+    throw new Error("O link não retornou um PDF válido. No Drive, deixe como 'qualquer pessoa com o link pode ver'.");
+  }
+
+  return buffer;
+}
+
 async function main() {
   const app = Fastify({ logger: true });
 
@@ -79,6 +190,33 @@ async function main() {
 
   // Health
   app.get(`${API_PREFIX}/health`, async () => ({ ok: true }));
+
+
+  // ===== PDF PROXY =====
+  // Renderiza PDFs do Drive dentro do próprio app. Assim os links internos do PDF
+  // podem ser capturados pelo front-end e vídeos do YouTube abrem em modal,
+  // sem sair para a tela branca do google.com no iPhone.
+  app.get(`${API_PREFIX}/pdf-proxy`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
+    const rawUrl = String(req.query?.url || "").trim();
+
+    if (!rawUrl || !isAllowedPdfSource(rawUrl)) {
+      return reply.code(400).send({ message: "Link de PDF inválido ou não permitido." });
+    }
+
+    try {
+      const buffer = await fetchPdfBuffer(rawUrl);
+
+      reply
+        .header("Cache-Control", "private, no-store, max-age=0")
+        .header("Content-Type", "application/pdf")
+        .header("Content-Length", String(buffer.length));
+
+      return reply.send(buffer);
+    } catch (error: any) {
+      req.log.error({ error }, "Falha ao carregar PDF pelo proxy");
+      return reply.code(502).send({ message: error?.message || "Não foi possível abrir o PDF." });
+    }
+  });
 
   // ===== AUTH =====
   app.post(`${API_PREFIX}/auth/login`, async (req, reply) => {

@@ -40,16 +40,10 @@ if ("serviceWorker" in navigator) {
 
     refreshing = true;
 
-    // Não recarrega a página enquanto o aluno está com o PDF aberto.
-    // Em alguns celulares, o zoom/pinça dentro do preview do Drive dispara
-    // mudança de viewport e pode coincidir com atualização do service worker,
-    // voltando para a tela inicial. A atualização fica para quando fechar o PDF.
-    if (document.body.classList.contains("pdfOpen")) {
-      window.__rfPendingReloadAfterPdf = true;
-      return;
-    }
-
-    window.location.reload();
+    // Não recarrega a página sozinho enquanto o aluno está usando PDF/vídeo.
+    // No iPhone isso derrubava o visualizador e voltava para tela branca.
+    window.__rfUpdateReady = true;
+    console.log("Nova versão do app instalada. Atualização será aplicada no próximo carregamento manual.");
   });
 
   navigator.serviceWorker.addEventListener("message", (event) => {
@@ -69,9 +63,17 @@ const refreshStudentBtn = document.getElementById("refreshStudentBtn");
 
 const pdfOverlay = document.getElementById("pdfOverlay");
 const pdfFrame = document.getElementById("pdfFrame");
+const pdfViewer = document.getElementById("pdfJsViewer");
 const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
+const pdfZoomControls = document.getElementById("pdfZoomControls");
+const pdfZoomIn = document.getElementById("pdfZoomIn");
+const pdfZoomOut = document.getElementById("pdfZoomOut");
+const pdfZoomLabel = document.getElementById("pdfZoomLabel");
 const loadingLayer = document.getElementById("loadingLayer");
+const studentVideoModal = document.getElementById("studentVideoModal");
+const studentVideoFrame = document.getElementById("studentVideoFrame");
+const studentVideoClose = document.getElementById("studentVideoClose");
 
 const offlineMask = document.getElementById("offlineMask");
 const offlineTryBtn = document.getElementById("offlineTryBtn");

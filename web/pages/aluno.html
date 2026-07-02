@@ -112,14 +112,27 @@
     <div class="pdfBar">
       <button class="backBtn" id="pdfBack" type="button">← Voltar</button>
       <div class="pdfTitle" id="pdfTitle">PDF</div>
+      <div class="pdfZoomControls" id="pdfZoomControls" aria-label="Zoom do PDF">
+        <button class="pdfZoomBtn" id="pdfZoomOut" type="button" aria-label="Diminuir zoom">−</button>
+        <span class="pdfZoomLabel" id="pdfZoomLabel">100%</span>
+        <button class="pdfZoomBtn" id="pdfZoomIn" type="button" aria-label="Aumentar zoom">+</button>
+      </div>
     </div>
     <div class="pdfFrameWrap">
+      <div id="pdfJsViewer" class="pdfJsViewer" role="document" aria-label="Visualização de PDF"></div>
       <iframe id="pdfFrame" title="Visualização de PDF" allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
       <div class="loadingLayer" id="loadingLayer">
         <div class="spinner"></div>
         <div class="loadingText">Carregando…</div>
         <div class="loadingSub">Se demorar, verifique sua conexão.</div>
       </div>
+    </div>
+  </div>
+
+  <div class="studentVideoModal" id="studentVideoModal" aria-hidden="true">
+    <div class="studentVideoBox" role="dialog" aria-modal="true" aria-label="Vídeo do treino">
+      <button class="studentVideoClose" id="studentVideoClose" type="button" aria-label="Fechar vídeo">×</button>
+      <iframe id="studentVideoFrame" title="Vídeo do treino" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
     </div>
   </div>
 
