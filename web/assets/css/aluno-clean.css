@@ -1807,6 +1807,20 @@ body.pdfOpen {
   border-radius: 4px;
   overflow: hidden;
   max-width: none;
+  position: relative;
+}
+
+.alunoClean .pdfNativeLinkArea {
+  position: absolute;
+  display: block;
+  z-index: 2;
+  background: rgba(206,172,94,.001);
+  border-radius: 4px;
+}
+
+.alunoClean .pdfNativeLinkArea:active {
+  outline: 2px solid rgba(206,172,94,.55);
+  background: rgba(206,172,94,.18);
 }
 
 .alunoClean .pdfNativePage canvas {
