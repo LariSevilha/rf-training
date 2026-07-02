@@ -2,49 +2,12 @@
 // Dependências importadas pelo arquivo principal: ../aluno.js
 
 if ("serviceWorker" in navigator) {
-  let refreshing = false;
-
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("/service-worker.js", {
-        updateViaCache: "none"
-      });
-
-      await reg.update();
-
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: "SKIP_WAITING" });
-      }
-
-      reg.addEventListener("updatefound", () => {
-        const newWorker = reg.installing;
-
-        if (!newWorker) return;
-
-        newWorker.addEventListener("statechange", () => {
-          if (
-            newWorker.state === "installed" &&
-            navigator.serviceWorker.controller
-          ) {
-            newWorker.postMessage({ type: "SKIP_WAITING" });
-          }
-        });
-      });
+      await navigator.serviceWorker.register("/service-worker.js");
+      console.log("SW registrado com sucesso");
     } catch (e) {
       console.warn("SW register falhou:", e);
-    }
-  });
-
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-
-    refreshing = true;
-    window.location.reload();
-  });
-
-  navigator.serviceWorker.addEventListener("message", (event) => {
-    if (event.data?.type === "APP_UPDATED") {
-      console.log("App atualizado:", event.data.version);
     }
   });
 }

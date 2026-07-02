@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-02-pdf-links-unblocked";
+const VERSION = "rf-fitness-v2026-07-02-ios-old-pdf";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -57,27 +57,10 @@ self.addEventListener("activate", (event) => {
       );
 
       await self.clients.claim();
-
-      const clients = await self.clients.matchAll({
-        type: "window",
-        includeUncontrolled: true
-      });
-
-      clients.forEach((client) => {
-        client.postMessage({
-          type: "APP_UPDATED",
-          version: VERSION
-        });
-      });
     })()
   );
 });
 
-self.addEventListener("message", (event) => {
-  if (event.data?.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-});
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;

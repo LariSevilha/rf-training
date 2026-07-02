@@ -232,6 +232,31 @@ function cardioWrittenHtml() {
   `;
 }
 
+
+let pdfScrollY = 0;
+
+function lockPdfViewport() {
+  pdfScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  document.documentElement.classList.add("pdfOpenRoot");
+  document.body.classList.add("pdfOpen");
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${pdfScrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+}
+
+function unlockPdfViewport() {
+  document.documentElement.classList.remove("pdfOpenRoot");
+  document.body.classList.remove("pdfOpen");
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  window.scrollTo(0, pdfScrollY || 0);
+}
+
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
@@ -244,7 +269,7 @@ function openHtmlOverlay(title, html) {
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
-  document.body.classList.add("pdfOpen");
+  lockPdfViewport();
 }
 
 function openPdfOverlay(title, rawUrl) {
@@ -275,7 +300,7 @@ function openPdfOverlay(title, rawUrl) {
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
-  document.body.classList.add("pdfOpen");
+  lockPdfViewport();
 }
 
 function openContent(type) {
@@ -312,7 +337,7 @@ function openContent(type) {
 function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("pdfOpen");
+  unlockPdfViewport();
   hideLoading();
 
   setTimeout(() => {
