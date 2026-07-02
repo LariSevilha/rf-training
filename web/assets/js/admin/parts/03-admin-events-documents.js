@@ -102,10 +102,12 @@ saveBtn?.addEventListener("click", async () => {
     if (exams) exams.value = saved.exams || "";
     if (stretch) stretch.value = saved.stretch || "";
 
-    // Se o treino for manual, salva os treinos também.
-    if (mode === "manual") {
-      await apiAdminSaveWorkouts(token, em, studentWorkoutList);
-    }
+    // Sempre sincroniza os treinos manuais: salva a lista quando o modo é
+    // "manual", ou limpa (envia lista vazia) quando o modo é "pdf". Isso evita
+    // que um treino manual antigo fique "preso" no banco e continue sendo
+    // exibido no app do aluno (com prioridade sobre o PDF) mesmo depois de o
+    // admin trocar para o modo PDF.
+    await apiAdminSaveWorkouts(token, em, mode === "manual" ? studentWorkoutList : []);
 
     toast(
       "ok",
