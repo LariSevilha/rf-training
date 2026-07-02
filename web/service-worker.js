@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-02-training-pdf-viewer-v3";
+const VERSION = "rf-fitness-v2026-07-02-pdf-links-unblocked";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -8,12 +8,10 @@ const APP_SHELL = [
 
   "/pages/index.html",
   "/pages/aluno.html",
-  "/pages/pdf-viewer.html",
   "/pages/politica-privacidade.html",
 
   "/assets/css/main.css",
   "/assets/css/aluno-clean.css",
-  "/assets/css/pdf-viewer.css",
   "/assets/js/aluno.js",
   "/assets/js/aluno/parts/00-service-worker-elements-state.js",
   "/assets/js/aluno/parts/01-tabs-menu-documents-overlay.js",
@@ -24,7 +22,6 @@ const APP_SHELL = [
   "/assets/js/guard.js",
   "/assets/js/state.js",
   "/assets/js/pdf.js",
-  "/assets/js/pdf-viewer.js",
 
   "/img/logoapp-192.png",
   "/img/logoapp-512.png",
@@ -43,6 +40,7 @@ self.addEventListener("install", (event) => {
         APP_SHELL.map((url) => cache.add(url))
       );
 
+      await self.skipWaiting();
     })()
   );
 });
@@ -57,6 +55,8 @@ self.addEventListener("activate", (event) => {
           .filter((key) => ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
           .map((key) => caches.delete(key))
       );
+
+      await self.clients.claim();
 
       const clients = await self.clients.matchAll({
         type: "window",
@@ -88,7 +88,7 @@ self.addEventListener("fetch", (event) => {
 
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
-  if (url.pathname.startsWith("/api") || url.pathname === "/pdf-proxy") {
+  if (url.pathname.startsWith("/api")) {
     return;
   }
 

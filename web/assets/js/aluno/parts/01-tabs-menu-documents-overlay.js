@@ -232,47 +232,6 @@ function cardioWrittenHtml() {
   `;
 }
 
-let pdfPageScrollY = 0;
-let pdfGestureGuardsInstalled = false;
-
-function preventPdfBrowserGesture(event) {
-  if (!document.body.classList.contains("pdfOpen")) return;
-  if (event.type.startsWith("gesture") || event.touches?.length > 1) {
-    if (event.cancelable) event.preventDefault();
-  }
-}
-
-function installPdfGestureGuards() {
-  if (pdfGestureGuardsInstalled) return;
-  pdfGestureGuardsInstalled = true;
-
-  ["gesturestart", "gesturechange", "gestureend"].forEach((name) => {
-    document.addEventListener(name, preventPdfBrowserGesture, { passive: false });
-  });
-
-  document.addEventListener("touchmove", preventPdfBrowserGesture, { passive: false });
-}
-
-function lockPageForPdf() {
-  installPdfGestureGuards();
-  pdfPageScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${pdfPageScrollY}px`;
-  document.body.style.left = "0";
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
-}
-
-function unlockPageForPdf() {
-  const top = Math.abs(parseInt(document.body.style.top || "0", 10)) || pdfPageScrollY || 0;
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.left = "";
-  document.body.style.right = "";
-  document.body.style.width = "";
-  window.scrollTo(0, top);
-}
-
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
@@ -286,21 +245,13 @@ function openHtmlOverlay(title, html) {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-  lockPageForPdf();
 }
 
-function openPdfOverlay(title, rawUrl, materialType = "") {
+function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
 
-  const cleanRawUrl = window.cleanLinkUrl ? window.cleanLinkUrl(rawUrl || "") : String(rawUrl || "").trim();
-  const shouldUseTrainingViewer =
-    materialType === "training" &&
-    cleanRawUrl &&
-    navigator.onLine &&
-    (!window.isPdfLikeUrl || window.isPdfLikeUrl(cleanRawUrl));
-
-  if (!cleanRawUrl) {
+  if (!rawUrl) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
       placeholderHtml("Material não configurado", "Entre em contato com o personal.")
     );
@@ -310,15 +261,8 @@ function openPdfOverlay(title, rawUrl, materialType = "") {
       placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
     );
     setTimeout(hideLoading, 250);
-  } else if (shouldUseTrainingViewer) {
-    // Treino em PDF com links de vídeo: usa viewer próprio, não o preview do Google Drive.
-    // Assim conseguimos controlar zoom e abrir os links direto no YouTube, sem tela branca de google.com no iOS.
-    sessionStorage.setItem("rf_pdf_src", cleanRawUrl);
-    sessionStorage.setItem("rf_pdf_title", title || "TREINO");
-    const viewerSrc = `/pages/pdf-viewer.html?title=${encodeURIComponent(title || "TREINO")}&src=${encodeURIComponent(cleanRawUrl)}&v=${Date.now()}`;
-    pdfFrame.src = viewerSrc;
   } else {
-    const preview = driveToPreview(cleanRawUrl);
+    const preview = driveToPreview(rawUrl);
     if (!preview) {
       pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
         placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
@@ -332,7 +276,6 @@ function openPdfOverlay(title, rawUrl, materialType = "") {
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
-  lockPageForPdf();
 }
 
 function openContent(type) {
@@ -359,18 +302,17 @@ function openContent(type) {
 
   if (type.startsWith("extra-")) {
     const extra = extraItems.find((item) => `extra-${item.id}` === type);
-    openPdfOverlay(extra?.title || "MATERIAL EXTRA", extraUrls[type] || "", type);
+    openPdfOverlay(extra?.title || "MATERIAL EXTRA", extraUrls[type] || "");
     return;
   }
 
-  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "", type);
+  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
 }
 
 function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
-  unlockPageForPdf();
   hideLoading();
 
   setTimeout(() => {
@@ -382,13 +324,6 @@ pdfBack?.addEventListener("click", (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
   closePdf();
-});
-
-window.addEventListener("message", (event) => {
-  if (event.origin !== window.location.origin) return;
-  if (event.data?.type === "RF_CLOSE_PDF_VIEWER") {
-    closePdf();
-  }
 });
 
 logoutBtn?.addEventListener("click", () => {
