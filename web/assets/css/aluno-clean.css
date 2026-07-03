@@ -2378,7 +2378,7 @@ body.pdfOpen {
 */
 .alunoClean .pdfOverlay.show {
   --pdf-bottom-read-spacer: calc(56px + env(safe-area-inset-bottom, 0px));
-  grid-template-rows: auto minmax(0, 1fr) var(--pdf-bottom-read-spacer) !important;
+  /* grid-template-rows: auto minmax(0, 1fr) var(--pdf-bottom-read-spacer) !important; */
 }
 
 .alunoClean .pdfOverlay.show .pdfFrameWrap {
