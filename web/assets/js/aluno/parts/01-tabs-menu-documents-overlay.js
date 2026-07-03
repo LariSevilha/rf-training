@@ -261,6 +261,8 @@ let pdfVisualZoom = 1;
 let lastPdfFrameUrl = "";
 let pdfPinchStartDistance = 0;
 let pdfPinchStartZoom = 1;
+let pdfWasHiddenWhileOpen = false;
+let pdfRestoreTimer = 0;
 
 function clampPdfZoom(value) {
   const n = Number(value) || 1;
@@ -362,16 +364,46 @@ function shouldRestorePdfFrame(src) {
   return /(^|\.)google\.com\/(url|search|sorry|amp)|youtube\.com|youtu\.be|accounts\.google\.com/i.test(value);
 }
 
-function restorePdfFrameIfNeeded() {
+function forceRestorePdfFrame(reason = "return") {
   if (!pdfOverlay?.classList.contains("show")) return;
   if (!pdfFrame || !lastPdfFrameUrl) return;
+
+  const original = lastPdfFrameUrl;
+  pdfWasHiddenWhileOpen = false;
+  showLoading();
+
+  // iOS/Drive: quando o vídeo externo volta, o iframe pode ficar preso em
+  // google.com/url, youtube.com ou about:blank sem atualizar o atributo src.
+  // Por isso a restauração precisa ser FORÇADA, zerando antes de recolocar o PDF.
+  pdfFrame.src = "about:blank";
+
+  window.setTimeout(() => {
+    if (!pdfOverlay?.classList.contains("show")) return;
+    if (lastPdfFrameUrl !== original) return;
+    pdfFrame.src = original;
+    window.setTimeout(hideLoading, 1800);
+    console.log(`PDF restaurado após ${reason}.`);
+  }, 80);
+}
+
+function restorePdfFrameIfNeeded(force = false, reason = "check") {
+  if (!pdfOverlay?.classList.contains("show")) return;
+  if (!pdfFrame || !lastPdfFrameUrl) return;
+
+  if (force) {
+    forceRestorePdfFrame(reason);
+    return;
+  }
 
   const current = pdfFrame.getAttribute("src") || pdfFrame.src || "";
   if (!shouldRestorePdfFrame(current)) return;
 
-  showLoading();
-  pdfFrame.src = lastPdfFrameUrl;
-  setTimeout(hideLoading, 1600);
+  forceRestorePdfFrame(reason);
+}
+
+function schedulePdfRestore(force = false, reason = "return") {
+  clearTimeout(pdfRestoreTimer);
+  pdfRestoreTimer = window.setTimeout(() => restorePdfFrameIfNeeded(force, reason), 300);
 }
 
 pdfZoomOut?.addEventListener("click", (ev) => {
@@ -392,11 +424,22 @@ window.addEventListener("resize", () => {
   }
 });
 
-window.addEventListener("pageshow", () => setTimeout(restorePdfFrameIfNeeded, 350));
-window.addEventListener("focus", () => setTimeout(restorePdfFrameIfNeeded, 350));
+window.addEventListener("pageshow", () => {
+  if (pdfWasHiddenWhileOpen) schedulePdfRestore(true, "pageshow");
+});
+
+window.addEventListener("focus", () => {
+  if (pdfWasHiddenWhileOpen) schedulePdfRestore(true, "focus");
+});
+
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
-    setTimeout(restorePdfFrameIfNeeded, 350);
+  if (document.visibilityState === "hidden" && pdfOverlay?.classList.contains("show")) {
+    pdfWasHiddenWhileOpen = true;
+    return;
+  }
+
+  if (document.visibilityState === "visible" && pdfWasHiddenWhileOpen) {
+    schedulePdfRestore(true, "visibilitychange");
   }
 });
 
@@ -406,6 +449,8 @@ function openPdfOverlay(title, rawUrl) {
   installPdfSafeGestures();
   resetPdfVisualZoom();
   lastPdfFrameUrl = "";
+  pdfWasHiddenWhileOpen = false;
+  clearTimeout(pdfRestoreTimer);
 
   if (!rawUrl) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
@@ -471,6 +516,8 @@ function closePdf() {
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
   hideLoading();
+  pdfWasHiddenWhileOpen = false;
+  clearTimeout(pdfRestoreTimer);
 
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";

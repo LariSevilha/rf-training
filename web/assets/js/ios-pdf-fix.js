@@ -31,41 +31,41 @@
    (Também já adicionei este arquivo no service-worker.js — veja lá.)
    ============================================================================ */
 
-(function () {
-  "use strict";
-
-  /* --------------------------------------------------------------
-     [PASSO 1] Detectar se o aparelho é iPhone/iPad.
-     A segunda condição pega iPad novo, que se disfarça de Mac.
-     -------------------------------------------------------------- */
-  var isIOS =
-    /iP(hone|ad|od)/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
-  /* Se NÃO for iOS (Android, PC...), sai sem alterar nada. */
-  if (!isIOS) return;
-
-  /* --------------------------------------------------------------
-     [PASSO 2] Limitar o devicePixelRatio a no máximo 2 no iOS.
-     Todo código que ler window.devicePixelRatio (inclusive o pdf.js)
-     passa a enxergar 2 em vez de 3, e cria canvases 2,25× menores.
-     -------------------------------------------------------------- */
-  var dprReal = window.devicePixelRatio || 1; // guarda o valor original (3 no iPhone)
-  var DPR_MAXIMO = 2;                          // teto seguro (igual ao Android)
-
-  try {
-    Object.defineProperty(window, "devicePixelRatio", {
-      get: function () {
-        return Math.min(dprReal, DPR_MAXIMO);
-      },
-      configurable: true
-    });
-  } catch (e) {
-    /* Se o navegador não permitir a substituição, apenas segue em
-       frente — o app continua funcionando como antes. */
-  }
-})();
-
-/* ============================================================================
-   <<< FIM ALTERAÇÃO (02/07/2026) — correção do zoom de PDF no iOS
-   ============================================================================ */
+   (function () {
+    "use strict";
+  
+    /* --------------------------------------------------------------
+       [PASSO 1] Detectar se o aparelho é iPhone/iPad.
+       A segunda condição pega iPad novo, que se disfarça de Mac.
+       -------------------------------------------------------------- */
+    var isIOS =
+      /iP(hone|ad|od)/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  
+    /* Se NÃO for iOS (Android, PC...), sai sem alterar nada. */
+    if (!isIOS) return;
+  
+    /* --------------------------------------------------------------
+       [PASSO 2] Limitar o devicePixelRatio a no máximo 2 no iOS.
+       Todo código que ler window.devicePixelRatio (inclusive o pdf.js)
+       passa a enxergar 2 em vez de 3, e cria canvases 2,25× menores.
+       -------------------------------------------------------------- */
+    var dprReal = window.devicePixelRatio || 1; // guarda o valor original (3 no iPhone)
+    var DPR_MAXIMO = 2;                          // teto seguro (igual ao Android)
+  
+    try {
+      Object.defineProperty(window, "devicePixelRatio", {
+        get: function () {
+          return Math.min(dprReal, DPR_MAXIMO);
+        },
+        configurable: true
+      });
+    } catch (e) {
+      /* Se o navegador não permitir a substituição, apenas segue em
+         frente — o app continua funcionando como antes. */
+    }
+  })();
+  
+  /* ============================================================================
+     <<< FIM ALTERAÇÃO (02/07/2026) — correção do zoom de PDF no iOS
+     ============================================================================ */
