@@ -1788,3 +1788,34 @@ body.pdfOpen {
     justify-self: auto !important;
   }
 }
+
+/* =========================================================
+   V10 — zoom com movimento em todas as direções
+   ========================================================= */
+.alunoClean .pdfFrameWrap.pdfZoomed {
+  cursor: grab !important;
+  overflow: auto !important;
+  touch-action: pan-x pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.alunoClean .pdfFrameScale.pdfZoomed {
+  min-width: max-content !important;
+  min-height: max-content !important;
+}
+
+.alunoClean .pdfFrameWrap.pdfZoomed #pdfFrame {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfZoomControls {
+  box-shadow: 0 18px 52px rgba(0,0,0,.56) !important;
+}
+
+.alunoClean .pdfZoomLabel {
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}

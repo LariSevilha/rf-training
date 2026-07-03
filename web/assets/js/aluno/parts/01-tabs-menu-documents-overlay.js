@@ -270,16 +270,59 @@ function clampPdfZoom(value) {
 }
 
 function updatePdfZoomLabel() {
-  if (pdfZoomLabel) pdfZoomLabel.textContent = `${Math.round(pdfVisualZoom * 100)}%`;
+  const zoomed = pdfVisualZoom > PDF_VISUAL_ZOOM_MIN + 0.001;
+
+  if (pdfZoomLabel) {
+    pdfZoomLabel.textContent = `${Math.round(pdfVisualZoom * 100)}%`;
+    pdfZoomLabel.title = zoomed ? "Toque para voltar para 100%" : "Zoom em 100%";
+  }
+
   if (pdfZoomOut) pdfZoomOut.disabled = pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001;
   if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
+
+  pdfOverlay?.classList.toggle("pdfZoomed", zoomed);
+  pdfFrameWrap?.classList.toggle("pdfZoomed", zoomed);
+  pdfFrameScale?.classList.toggle("pdfZoomed", zoomed);
+
+  if (pdfFrame) {
+    // Quando está aproximado, o iframe do Google Drive captura o toque e impede
+    // o usuário de mover a área ampliada. Desativando os eventos do iframe
+    // acima de 100%, o scroll do shell volta a funcionar em todas as direções.
+    // Para clicar nos links internos do PDF, basta retornar para 100%.
+    pdfFrame.style.pointerEvents = zoomed ? "none" : "auto";
+  }
 }
 
-function applyPdfVisualZoom(nextZoom, keepCenter = false) {
+function normalizePdfZoomOptions(options) {
+  if (!options) return { anchor: false };
+  if (options === true) return { anchor: "center" };
+  if (typeof options === "object") return options;
+  return { anchor: false };
+}
+
+function getPdfZoomAnchor(wrap, options) {
+  const rect = wrap.getBoundingClientRect();
+
+  if (options.anchor && typeof options.clientX === "number" && typeof options.clientY === "number") {
+    return {
+      x: Math.max(0, Math.min(wrap.clientWidth, options.clientX - rect.left)),
+      y: Math.max(0, Math.min(wrap.clientHeight, options.clientY - rect.top))
+    };
+  }
+
+  if (options.anchor === "center" || options.anchor === true) {
+    return { x: wrap.clientWidth / 2, y: wrap.clientHeight / 2 };
+  }
+
+  return null;
+}
+
+function applyPdfVisualZoom(nextZoom, options = false) {
   const next = clampPdfZoom(nextZoom);
-  const previous = pdfVisualZoom;
+  const previous = pdfVisualZoom || 1;
   const wrap = pdfFrameWrap;
   const scaleHost = pdfFrameScale;
+  const zoomOptions = normalizePdfZoomOptions(options);
 
   if (!wrap || !scaleHost || !pdfFrame) {
     pdfVisualZoom = next;
@@ -290,11 +333,15 @@ function applyPdfVisualZoom(nextZoom, keepCenter = false) {
   const rect = wrap.getBoundingClientRect();
   const baseWidth = Math.max(1, Math.floor(rect.width));
   const baseHeight = Math.max(1, Math.floor(rect.height));
+  const anchor = getPdfZoomAnchor(wrap, zoomOptions);
 
-  const centerX = wrap.scrollLeft + wrap.clientWidth / 2;
-  const centerY = wrap.scrollTop + wrap.clientHeight / 2;
-  const relX = previous ? centerX / previous : centerX;
-  const relY = previous ? centerY / previous : centerY;
+  let relX = 0;
+  let relY = 0;
+
+  if (anchor) {
+    relX = (wrap.scrollLeft + anchor.x) / previous;
+    relY = (wrap.scrollTop + anchor.y) / previous;
+  }
 
   pdfVisualZoom = next;
 
@@ -308,9 +355,9 @@ function applyPdfVisualZoom(nextZoom, keepCenter = false) {
 
   updatePdfZoomLabel();
 
-  if (keepCenter) {
-    wrap.scrollLeft = Math.max(0, relX * pdfVisualZoom - wrap.clientWidth / 2);
-    wrap.scrollTop = Math.max(0, relY * pdfVisualZoom - wrap.clientHeight / 2);
+  if (anchor) {
+    wrap.scrollLeft = Math.max(0, relX * pdfVisualZoom - anchor.x);
+    wrap.scrollTop = Math.max(0, relY * pdfVisualZoom - anchor.y);
   }
 }
 
@@ -349,7 +396,13 @@ function installPdfSafeGestures() {
     if (!preventTwoFinger(ev)) return;
     const distance = touchDistance(ev.touches) || pdfPinchStartDistance || 1;
     const ratio = distance / (pdfPinchStartDistance || distance || 1);
-    applyPdfVisualZoom(pdfPinchStartZoom * ratio, true);
+    const a = ev.touches[0];
+    const b = ev.touches[1];
+    applyPdfVisualZoom(pdfPinchStartZoom * ratio, {
+      anchor: true,
+      clientX: (a.clientX + b.clientX) / 2,
+      clientY: (a.clientY + b.clientY) / 2
+    });
   }, { passive: false, capture: true });
 
   pdfFrameWrap.addEventListener("touchend", () => {
@@ -409,18 +462,24 @@ function schedulePdfRestore(force = false, reason = "return") {
 pdfZoomOut?.addEventListener("click", (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
-  applyPdfVisualZoom(pdfVisualZoom - PDF_VISUAL_ZOOM_STEP, true);
+  applyPdfVisualZoom(pdfVisualZoom - PDF_VISUAL_ZOOM_STEP, { anchor: "center" });
 });
 
 pdfZoomIn?.addEventListener("click", (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
-  applyPdfVisualZoom(pdfVisualZoom + PDF_VISUAL_ZOOM_STEP, true);
+  applyPdfVisualZoom(pdfVisualZoom + PDF_VISUAL_ZOOM_STEP, { anchor: "center" });
+});
+
+pdfZoomLabel?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  applyPdfVisualZoom(1, { anchor: "center" });
 });
 
 window.addEventListener("resize", () => {
   if (pdfOverlay?.classList.contains("show")) {
-    requestAnimationFrame(() => applyPdfVisualZoom(pdfVisualZoom, true));
+    requestAnimationFrame(() => applyPdfVisualZoom(pdfVisualZoom, { anchor: "center" }));
   }
 });
 
