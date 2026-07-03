@@ -264,8 +264,12 @@ let pdfPinchStartZoom = 1;
 let pdfWasHiddenWhileOpen = false;
 let pdfRestoreTimer = 0;
 let pdfVisualPanX = 0;
-const pdfPanLeft = document.getElementById("pdfPanLeft");
-const pdfPanRight = document.getElementById("pdfPanRight");
+let pdfPanDragActive = false;
+let pdfPanDragStartX = 0;
+let pdfPanDragStartPanX = 0;
+let pdfPanDragPointerId = null;
+const pdfZoomControls = document.getElementById("pdfZoomControls");
+const pdfPanDrag = document.getElementById("pdfPanDrag");
 
 function clampPdfZoom(value) {
   const n = Number(value) || 1;
@@ -310,8 +314,17 @@ function updatePdfZoomLabel() {
 
   if (pdfZoomOut) pdfZoomOut.disabled = pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001;
   if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
-  if (pdfPanLeft) pdfPanLeft.disabled = !zoomed || pdfVisualPanX <= 1;
-  if (pdfPanRight) pdfPanRight.disabled = !zoomed || pdfVisualPanX >= maxPanX - 1;
+
+  if (pdfPanDrag) {
+    pdfPanDrag.classList.toggle("isDisabled", !zoomed || maxPanX <= 1);
+    pdfPanDrag.setAttribute("aria-disabled", zoomed && maxPanX > 1 ? "false" : "true");
+    pdfPanDrag.setAttribute("aria-valuemin", "0");
+    pdfPanDrag.setAttribute("aria-valuemax", String(Math.max(0, Math.round(maxPanX))));
+    pdfPanDrag.setAttribute("aria-valuenow", String(Math.round(pdfVisualPanX)));
+    pdfPanDrag.title = zoomed
+      ? "Arraste com o dedo para mover o PDF para os lados"
+      : "Aumente o zoom para mover o PDF para os lados";
+  }
 
   pdfOverlay?.classList.toggle("pdfZoomed", zoomed);
   pdfFrameWrap?.classList.toggle("pdfZoomed", zoomed);
@@ -411,6 +424,40 @@ function nudgePdfVisualPan(direction) {
   if (pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001) return;
   const step = Math.max(90, Math.floor(getPdfBaseWidth() * 0.38));
   setPdfVisualPanX(pdfVisualPanX + direction * step);
+}
+
+function canDragPdfPan() {
+  return pdfVisualZoom > PDF_VISUAL_ZOOM_MIN + 0.001 && getPdfMaxPanX() > 1;
+}
+
+function beginPdfPanDrag(clientX, pointerId = null) {
+  if (!canDragPdfPan()) return false;
+
+  pdfPanDragActive = true;
+  pdfPanDragStartX = Number(clientX) || 0;
+  pdfPanDragStartPanX = pdfVisualPanX;
+  pdfPanDragPointerId = pointerId;
+  pdfPanDrag?.classList.add("isPanning");
+  pdfZoomControls?.classList.add("isPanning");
+  return true;
+}
+
+function movePdfPanDrag(clientX) {
+  if (!pdfPanDragActive) return;
+
+  const currentX = Number(clientX) || pdfPanDragStartX;
+  // Mesma sensação de rolagem nativa: arrastar para a esquerda mostra a parte direita.
+  const deltaX = pdfPanDragStartX - currentX;
+  setPdfVisualPanX(pdfPanDragStartPanX + deltaX);
+}
+
+function endPdfPanDrag() {
+  if (!pdfPanDragActive) return;
+
+  pdfPanDragActive = false;
+  pdfPanDragPointerId = null;
+  pdfPanDrag?.classList.remove("isPanning");
+  pdfZoomControls?.classList.remove("isPanning");
 }
 
 function resetPdfVisualZoom() {
@@ -524,16 +571,62 @@ pdfZoomIn?.addEventListener("click", (ev) => {
   applyPdfVisualZoom(pdfVisualZoom + PDF_VISUAL_ZOOM_STEP, { anchor: "center" });
 });
 
-pdfPanLeft?.addEventListener("click", (ev) => {
-  ev.preventDefault();
-  ev.stopPropagation();
-  nudgePdfVisualPan(-1);
-});
+if (window.PointerEvent && pdfPanDrag) {
+  pdfPanDrag.addEventListener("pointerdown", (ev) => {
+    if (!beginPdfPanDrag(ev.clientX, ev.pointerId)) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    try {
+      pdfPanDrag.setPointerCapture(ev.pointerId);
+    } catch {}
+  });
 
-pdfPanRight?.addEventListener("click", (ev) => {
-  ev.preventDefault();
-  ev.stopPropagation();
-  nudgePdfVisualPan(1);
+  pdfPanDrag.addEventListener("pointermove", (ev) => {
+    if (!pdfPanDragActive || pdfPanDragPointerId !== ev.pointerId) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    movePdfPanDrag(ev.clientX);
+  });
+
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
+    pdfPanDrag.addEventListener(eventName, (ev) => {
+      if (pdfPanDragPointerId !== null && ev.pointerId !== pdfPanDragPointerId) return;
+      ev.preventDefault?.();
+      ev.stopPropagation?.();
+      endPdfPanDrag();
+    });
+  });
+} else if (pdfPanDrag) {
+  pdfPanDrag.addEventListener("touchstart", (ev) => {
+    const touch = ev.touches?.[0];
+    if (!touch || !beginPdfPanDrag(touch.clientX)) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+  }, { passive: false });
+
+  pdfPanDrag.addEventListener("touchmove", (ev) => {
+    const touch = ev.touches?.[0];
+    if (!touch || !pdfPanDragActive) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    movePdfPanDrag(touch.clientX);
+  }, { passive: false });
+
+  ["touchend", "touchcancel"].forEach((eventName) => {
+    pdfPanDrag.addEventListener(eventName, () => endPdfPanDrag(), { passive: true });
+  });
+}
+
+pdfPanDrag?.addEventListener("keydown", (ev) => {
+  if (!canDragPdfPan()) return;
+
+  if (ev.key === "ArrowLeft") {
+    ev.preventDefault();
+    nudgePdfVisualPan(-1);
+  } else if (ev.key === "ArrowRight") {
+    ev.preventDefault();
+    nudgePdfVisualPan(1);
+  }
 });
 
 pdfZoomLabel?.addEventListener("click", (ev) => {

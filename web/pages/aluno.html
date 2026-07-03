@@ -123,12 +123,14 @@
         <div class="loadingSub">Se demorar, verifique sua conexão.</div>
       </div>
     </div>
-    <div class="pdfZoomControls" aria-label="Zoom e movimento horizontal do PDF">
-      <button class="pdfPanBtn" id="pdfPanLeft" type="button" aria-label="Mover PDF para a esquerda">←</button>
+    <div class="pdfZoomControls" id="pdfZoomControls" aria-label="Zoom e movimento horizontal do PDF">
       <button class="pdfZoomBtn" id="pdfZoomOut" type="button" aria-label="Diminuir zoom">−</button>
       <span class="pdfZoomLabel" id="pdfZoomLabel" role="button" tabindex="0">100%</span>
       <button class="pdfZoomBtn" id="pdfZoomIn" type="button" aria-label="Aumentar zoom">+</button>
-      <button class="pdfPanBtn" id="pdfPanRight" type="button" aria-label="Mover PDF para a direita">→</button>
+      <div class="pdfPanDrag" id="pdfPanDrag" role="slider" tabindex="0" aria-label="Arraste para mover o PDF para os lados" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+        <span class="pdfPanDragIcon" aria-hidden="true">↔</span>
+        <span class="pdfPanDragText">arraste</span>
+      </div>
     </div>
   </div>
 

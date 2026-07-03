@@ -1950,3 +1950,64 @@ body.pdfOpen {
     min-width: 48px !important;
   }
 }
+
+/* =========================================================
+   V12 — movimento lateral com o dedo na barra inferior
+   ========================================================= */
+.alunoClean .pdfZoomControls {
+  touch-action: manipulation !important;
+}
+
+.alunoClean .pdfPanDrag {
+  height: 42px !important;
+  min-width: 104px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  background: rgba(255,255,255,.09) !important;
+  color: rgba(255,255,255,.92) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: .02em !important;
+  line-height: 1 !important;
+  cursor: grab !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  touch-action: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.alunoClean .pdfPanDragIcon {
+  font-size: 17px !important;
+  line-height: 1 !important;
+}
+
+.alunoClean .pdfPanDrag.isPanning,
+.alunoClean .pdfZoomControls.isPanning .pdfPanDrag {
+  cursor: grabbing !important;
+  background: rgba(206,172,94,.24) !important;
+  border-color: rgba(206,172,94,.52) !important;
+  color: #fff !important;
+}
+
+.alunoClean .pdfPanDrag.isDisabled {
+  opacity: .34 !important;
+  cursor: default !important;
+}
+
+@media (max-width: 380px) {
+  .alunoClean .pdfPanDrag {
+    height: 38px !important;
+    min-width: 86px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
+
+  .alunoClean .pdfPanDragIcon {
+    font-size: 15px !important;
+  }
+}
