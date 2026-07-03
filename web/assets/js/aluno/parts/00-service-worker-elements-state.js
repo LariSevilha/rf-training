@@ -39,7 +39,10 @@ if ("serviceWorker" in navigator) {
     if (refreshing) return;
 
     refreshing = true;
-    console.log("Service Worker atualizado sem recarregar a tela do aluno.");
+    // iOS/PWA: não recarregar automaticamente aqui. Quando o WebKit mata
+    // a aba por memória durante o PDF, qualquer reload forçado piora o efeito
+    // de "voltar para a tela inicial". A nova versão entra no próximo acesso.
+    console.log("Service Worker atualizado; reload automático desativado no aluno.");
   });
 
   navigator.serviceWorker.addEventListener("message", (event) => {
@@ -59,8 +62,13 @@ const refreshStudentBtn = document.getElementById("refreshStudentBtn");
 
 const pdfOverlay = document.getElementById("pdfOverlay");
 const pdfFrame = document.getElementById("pdfFrame");
+const pdfFrameWrap = document.getElementById("pdfFrameWrap");
+const pdfFrameScale = document.getElementById("pdfFrameScale");
 const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
+const pdfZoomOut = document.getElementById("pdfZoomOut");
+const pdfZoomIn = document.getElementById("pdfZoomIn");
+const pdfZoomLabel = document.getElementById("pdfZoomLabel");
 const loadingLayer = document.getElementById("loadingLayer");
 
 const offlineMask = document.getElementById("offlineMask");

@@ -1,9 +1,4 @@
-// >>> INÍCIO ALTERAÇÃO (02/07/2026) — correção zoom PDF no iOS
-// Versão atualizada para forçar os aparelhos a baixarem o novo cache
-// (com o arquivo ios-pdf-fix.js incluído).
-// ANTES ERA: const VERSION = "rf-fitness-v2026-06-01-aluno-modular";
-const VERSION = "rf-fitness-v2026-07-03-ios-training-v7";
-// <<< FIM ALTERAÇÃO (02/07/2026)
+const VERSION = "rf-fitness-v2026-07-03-ios-internal-pdf-v8";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -26,14 +21,7 @@ const APP_SHELL = [
   "/assets/js/api.js",
   "/assets/js/guard.js",
   "/assets/js/state.js",
-
-  // >>> INÍCIO ALTERAÇÃO (02/07/2026) — correção zoom PDF no iOS
-  // Novo arquivo que limita o devicePixelRatio no iPhone para o canvas
-  // do PDF não estourar a memória e derrubar a página.
-  // Precisa vir cacheado junto com o app shell para funcionar offline.
   "/assets/js/ios-pdf-fix.js",
-  // <<< FIM ALTERAÇÃO (02/07/2026)
-
   "/assets/js/pdf.js",
 
   "/img/logoapp-192.png",

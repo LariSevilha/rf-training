@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
   <title>RF Fitness</title>
 
   <link rel="stylesheet" href="/assets/css/main.css" />
@@ -112,9 +112,16 @@
     <div class="pdfBar">
       <button class="backBtn" id="pdfBack" type="button">← Voltar</button>
       <div class="pdfTitle" id="pdfTitle">PDF</div>
+      <div class="pdfZoomControls" aria-label="Zoom do PDF">
+        <button class="pdfZoomBtn" id="pdfZoomOut" type="button" aria-label="Diminuir zoom">−</button>
+        <span class="pdfZoomLabel" id="pdfZoomLabel">100%</span>
+        <button class="pdfZoomBtn" id="pdfZoomIn" type="button" aria-label="Aumentar zoom">+</button>
+      </div>
     </div>
-    <div class="pdfFrameWrap">
-      <iframe id="pdfFrame" title="Visualização de PDF" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+    <div class="pdfFrameWrap" id="pdfFrameWrap">
+      <div class="pdfFrameScale" id="pdfFrameScale">
+        <iframe id="pdfFrame" title="Visualização de PDF" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
       <div class="loadingLayer" id="loadingLayer">
         <div class="spinner"></div>
         <div class="loadingText">Carregando…</div>

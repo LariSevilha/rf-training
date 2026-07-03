@@ -235,6 +235,9 @@ function cardioWrittenHtml() {
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
+  installPdfSafeGestures();
+  resetPdfVisualZoom();
+  lastPdfFrameUrl = "";
 
   if (pdfFrame) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(html);
@@ -248,33 +251,161 @@ function openHtmlOverlay(title, html) {
 }
 
 
-function isTrainingLinkInIOS(type) {
-  return type === "training" && !workouts.length && isIOSDevice();
+// PDF interno no app: zoom visual seguro + recuperação ao voltar do YouTube/Drive.
+// O PDF do Drive continua dentro do app, mas o zoom do iOS é feito pelo shell
+// da aplicação para evitar que o WebKit re-renderize canvas gigante no iframe.
+const PDF_VISUAL_ZOOM_MIN = 1;
+const PDF_VISUAL_ZOOM_MAX = 2.75;
+const PDF_VISUAL_ZOOM_STEP = 0.25;
+let pdfVisualZoom = 1;
+let lastPdfFrameUrl = "";
+let pdfPinchStartDistance = 0;
+let pdfPinchStartZoom = 1;
+
+function clampPdfZoom(value) {
+  const n = Number(value) || 1;
+  return Math.max(PDF_VISUAL_ZOOM_MIN, Math.min(PDF_VISUAL_ZOOM_MAX, n));
 }
 
-function openExternalPdfForIOS(title, rawUrl) {
-  const preview = driveToPreview(rawUrl || "");
+function updatePdfZoomLabel() {
+  if (pdfZoomLabel) pdfZoomLabel.textContent = `${Math.round(pdfVisualZoom * 100)}%`;
+  if (pdfZoomOut) pdfZoomOut.disabled = pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001;
+  if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
+}
 
-  if (!preview) {
-    openPdfOverlay(title, rawUrl);
+function applyPdfVisualZoom(nextZoom, keepCenter = false) {
+  const next = clampPdfZoom(nextZoom);
+  const previous = pdfVisualZoom;
+  const wrap = pdfFrameWrap;
+  const scaleHost = pdfFrameScale;
+
+  if (!wrap || !scaleHost || !pdfFrame) {
+    pdfVisualZoom = next;
+    updatePdfZoomLabel();
     return;
   }
 
-  hideLoading();
+  const rect = wrap.getBoundingClientRect();
+  const baseWidth = Math.max(1, Math.floor(rect.width));
+  const baseHeight = Math.max(1, Math.floor(rect.height));
 
-  // iOS + Google Drive dentro de iframe é o ponto que causava reload no zoom
-  // e tela branca ao voltar do YouTube. Para o treino cadastrado por link,
-  // abrimos fora do iframe e mantemos o app intacto ao fundo.
-  const opened = window.open(preview, "_blank", "noopener,noreferrer");
+  const centerX = wrap.scrollLeft + wrap.clientWidth / 2;
+  const centerY = wrap.scrollTop + wrap.clientHeight / 2;
+  const relX = previous ? centerX / previous : centerX;
+  const relY = previous ? centerY / previous : centerY;
 
-  if (!opened) {
-    window.location.href = preview;
+  pdfVisualZoom = next;
+
+  scaleHost.style.width = `${Math.ceil(baseWidth * pdfVisualZoom)}px`;
+  scaleHost.style.height = `${Math.ceil(baseHeight * pdfVisualZoom)}px`;
+
+  pdfFrame.style.width = `${baseWidth}px`;
+  pdfFrame.style.height = `${baseHeight}px`;
+  pdfFrame.style.transform = `scale(${pdfVisualZoom})`;
+  pdfFrame.style.transformOrigin = "0 0";
+
+  updatePdfZoomLabel();
+
+  if (keepCenter) {
+    wrap.scrollLeft = Math.max(0, relX * pdfVisualZoom - wrap.clientWidth / 2);
+    wrap.scrollTop = Math.max(0, relY * pdfVisualZoom - wrap.clientHeight / 2);
   }
 }
+
+function resetPdfVisualZoom() {
+  pdfVisualZoom = 1;
+  requestAnimationFrame(() => applyPdfVisualZoom(1, false));
+}
+
+function touchDistance(touches) {
+  if (!touches || touches.length < 2) return 0;
+  const a = touches[0];
+  const b = touches[1];
+  const dx = a.clientX - b.clientX;
+  const dy = a.clientY - b.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function installPdfSafeGestures() {
+  if (!pdfFrameWrap || pdfFrameWrap.dataset.safeGestures === "1") return;
+  pdfFrameWrap.dataset.safeGestures = "1";
+
+  const preventTwoFinger = (ev) => {
+    if (!ev.touches || ev.touches.length < 2) return false;
+    ev.preventDefault();
+    ev.stopPropagation();
+    return true;
+  };
+
+  pdfFrameWrap.addEventListener("touchstart", (ev) => {
+    if (!preventTwoFinger(ev)) return;
+    pdfPinchStartDistance = touchDistance(ev.touches) || 1;
+    pdfPinchStartZoom = pdfVisualZoom;
+  }, { passive: false, capture: true });
+
+  pdfFrameWrap.addEventListener("touchmove", (ev) => {
+    if (!preventTwoFinger(ev)) return;
+    const distance = touchDistance(ev.touches) || pdfPinchStartDistance || 1;
+    const ratio = distance / (pdfPinchStartDistance || distance || 1);
+    applyPdfVisualZoom(pdfPinchStartZoom * ratio, true);
+  }, { passive: false, capture: true });
+
+  pdfFrameWrap.addEventListener("touchend", () => {
+    pdfPinchStartDistance = 0;
+    pdfPinchStartZoom = pdfVisualZoom;
+  }, { passive: true, capture: true });
+}
+
+function shouldRestorePdfFrame(src) {
+  const value = String(src || "").trim();
+  if (!value || value === "about:blank") return true;
+  return /(^|\.)google\.com\/(url|search|sorry|amp)|youtube\.com|youtu\.be|accounts\.google\.com/i.test(value);
+}
+
+function restorePdfFrameIfNeeded() {
+  if (!pdfOverlay?.classList.contains("show")) return;
+  if (!pdfFrame || !lastPdfFrameUrl) return;
+
+  const current = pdfFrame.getAttribute("src") || pdfFrame.src || "";
+  if (!shouldRestorePdfFrame(current)) return;
+
+  showLoading();
+  pdfFrame.src = lastPdfFrameUrl;
+  setTimeout(hideLoading, 1600);
+}
+
+pdfZoomOut?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  applyPdfVisualZoom(pdfVisualZoom - PDF_VISUAL_ZOOM_STEP, true);
+});
+
+pdfZoomIn?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  applyPdfVisualZoom(pdfVisualZoom + PDF_VISUAL_ZOOM_STEP, true);
+});
+
+window.addEventListener("resize", () => {
+  if (pdfOverlay?.classList.contains("show")) {
+    requestAnimationFrame(() => applyPdfVisualZoom(pdfVisualZoom, true));
+  }
+});
+
+window.addEventListener("pageshow", () => setTimeout(restorePdfFrameIfNeeded, 350));
+window.addEventListener("focus", () => setTimeout(restorePdfFrameIfNeeded, 350));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    setTimeout(restorePdfFrameIfNeeded, 350);
+  }
+});
 
 function openPdfOverlay(title, rawUrl) {
   if (pdfTitle) pdfTitle.textContent = title || "PDF";
   showLoading();
+  installPdfSafeGestures();
+  resetPdfVisualZoom();
+  lastPdfFrameUrl = "";
 
   if (!rawUrl) {
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
@@ -294,6 +425,7 @@ function openPdfOverlay(title, rawUrl) {
       );
       setTimeout(hideLoading, 250);
     } else {
+      lastPdfFrameUrl = preview;
       pdfFrame.src = preview;
     }
   }
@@ -309,11 +441,6 @@ function openContent(type) {
     setTab("manual");
     renderWorkouts();
     window.scrollTo({ top: 0, behavior: "smooth" });
-    return;
-  }
-
-  if (isTrainingLinkInIOS(type)) {
-    openExternalPdfForIOS("TREINO", urls.training || "");
     return;
   }
 
@@ -347,6 +474,8 @@ function closePdf() {
 
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";
+    lastPdfFrameUrl = "";
+    resetPdfVisualZoom();
   }, 200);
 }
 
