@@ -1804,4 +1804,268 @@ body.pdfOpen {
   min-height: max-content !important;
 }
 
-.alunoClean .
+.alunoClean .pdfFrameWrap.pdfZoomed #pdfFrame {
+  pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfZoomControls {
+  box-shadow: 0 18px 52px rgba(0,0,0,.56) !important;
+}
+
+.alunoClean .pdfZoomLabel {
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+
+/* =========================================================
+   V11 — PDF dentro do app: barra inferior real + rolagem do Drive ativa
+   ========================================================= */
+.alunoClean .pdfOverlay.show {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.alunoClean .pdfBar {
+  flex: 0 0 auto !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  grid-template-areas: "back title" !important;
+}
+
+.alunoClean #pdfBack {
+  grid-area: back !important;
+}
+
+.alunoClean .pdfTitle {
+  grid-area: title !important;
+}
+
+.alunoClean .pdfFrameWrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding-bottom: 0 !important;
+  overflow: hidden !important;
+  background: #111 !important;
+  touch-action: auto !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+.alunoClean .pdfFrameWrap.pdfZoomed {
+  overflow: hidden !important;
+  touch-action: auto !important;
+  cursor: default !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+.alunoClean .pdfFrameScale,
+.alunoClean .pdfFrameScale.pdfZoomed {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+  background: #fff !important;
+}
+
+.alunoClean #pdfFrame,
+.alunoClean .pdfFrameWrap.pdfZoomed #pdfFrame {
+  pointer-events: auto !important;
+  user-select: auto !important;
+  -webkit-user-select: auto !important;
+  will-change: transform !important;
+}
+
+.alunoClean .pdfZoomControls {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  z-index: 80 !important;
+  flex: 0 0 auto !important;
+  width: fit-content !important;
+  max-width: calc(100vw - 18px) !important;
+  margin: 10px auto calc(10px + env(safe-area-inset-bottom)) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 9px 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  background: rgba(12,12,12,.92) !important;
+  box-shadow: 0 14px 38px rgba(0,0,0,.46) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  white-space: nowrap !important;
+}
+
+.alunoClean .pdfPanBtn,
+.alunoClean .pdfZoomBtn {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  background: rgba(255,255,255,.08) !important;
+  color: #fff !important;
+  font-size: 19px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  touch-action: manipulation !important;
+}
+
+.alunoClean .pdfPanBtn:disabled,
+.alunoClean .pdfZoomBtn:disabled {
+  opacity: .34 !important;
+}
+
+.alunoClean .pdfZoomLabel {
+  min-width: 54px !important;
+  font-size: 13px !important;
+}
+
+@media (max-width: 380px) {
+  .alunoClean .pdfZoomControls {
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+
+  .alunoClean .pdfPanBtn,
+  .alunoClean .pdfZoomBtn {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+  }
+
+  .alunoClean .pdfZoomLabel {
+    min-width: 48px !important;
+  }
+}
+
+/* =========================================================
+   V12 — movimento lateral com o dedo na barra inferior
+   ========================================================= */
+.alunoClean .pdfZoomControls {
+  touch-action: manipulation !important;
+}
+
+.alunoClean .pdfPanDrag {
+  height: 42px !important;
+  min-width: 104px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,255,255,.18) !important;
+  background: rgba(255,255,255,.09) !important;
+  color: rgba(255,255,255,.92) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: .02em !important;
+  line-height: 1 !important;
+  cursor: grab !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  touch-action: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.alunoClean .pdfPanDragIcon {
+  font-size: 17px !important;
+  line-height: 1 !important;
+}
+
+.alunoClean .pdfPanDrag.isPanning,
+.alunoClean .pdfZoomControls.isPanning .pdfPanDrag {
+  cursor: grabbing !important;
+  background: rgba(206,172,94,.24) !important;
+  border-color: rgba(206,172,94,.52) !important;
+  color: #fff !important;
+}
+
+.alunoClean .pdfPanDrag.isDisabled {
+  opacity: .34 !important;
+  cursor: default !important;
+}
+
+@media (max-width: 380px) {
+  .alunoClean .pdfPanDrag {
+    height: 38px !important;
+    min-width: 86px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
+
+  .alunoClean .pdfPanDragIcon {
+    font-size: 15px !important;
+  }
+}
+
+
+/* =========================================================
+   V13 — arraste lateral direto em cima do PDF
+   ========================================================= */
+.alunoClean .pdfZoomControls {
+  touch-action: manipulation !important;
+}
+
+.alunoClean .pdfPanDrag {
+  display: none !important;
+}
+
+.alunoClean .pdfTouchPanLayer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 35 !important;
+  display: none !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  touch-action: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfTouchPanLayer.isEnabled {
+  display: block !important;
+  pointer-events: auto !important;
+  cursor: grab !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfTouchPanLayer.isPanning {
+  cursor: grabbing !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfTouchPanLayer.isPassthrough {
+  pointer-events: none !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfFrameWrap {
+  touch-action: auto !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed #pdfFrame {
+  pointer-events: auto !important;
+}
+
+/* =========================================================
+   V14 — zoom com pinça diretamente sobre o PDF
+   ========================================================= */
+.alunoClean .pdfOverlay.pdfPinching .pdfTouchPanLayer {
+  display: block !important;
+  pointer-events: auto !important;
+  cursor: zoom-in !important;
+}
+
+.alunoClean .pdfOverlay.pdfPinching .pdfZoomControls {
+  opacity: .92 !important;
+}
