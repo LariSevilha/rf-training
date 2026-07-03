@@ -2069,3 +2069,102 @@ body.pdfOpen {
 .alunoClean .pdfOverlay.pdfPinching .pdfZoomControls {
   opacity: .92 !important;
 }
+
+
+/* =========================================================
+   V15 — barra de zoom no rodapé real, sem cobrir o PDF
+   ========================================================= */
+.alunoClean .pdfOverlay.show {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  overflow: hidden !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfBar {
+  grid-row: 1 !important;
+  grid-column: 1 !important;
+  position: relative !important;
+  z-index: 40 !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfFrameWrap {
+  grid-row: 2 !important;
+  grid-column: 1 !important;
+  position: relative !important;
+  flex: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfFrameScale {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+}
+
+.alunoClean .pdfOverlay.show #pdfFrame {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomControls {
+  grid-row: 3 !important;
+  grid-column: 1 !important;
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  z-index: 80 !important;
+  justify-self: center !important;
+  align-self: center !important;
+  margin: 6px auto calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+  padding: 7px 9px !important;
+  border-radius: 999px !important;
+  background: rgba(10, 10, 10, .92) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .38) !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomBtn {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomLabel {
+  min-width: 50px !important;
+  font-size: 13px !important;
+}
+
+@media (max-width: 380px) {
+  .alunoClean .pdfOverlay.show .pdfZoomControls {
+    margin-top: 4px !important;
+    margin-bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+
+  .alunoClean .pdfOverlay.show .pdfZoomBtn {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    font-size: 18px !important;
+  }
+
+  .alunoClean .pdfOverlay.show .pdfZoomLabel {
+    min-width: 46px !important;
+    font-size: 12px !important;
+  }
+}
