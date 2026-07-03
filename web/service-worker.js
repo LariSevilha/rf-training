@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-03-ios-pdf-v24-technique-inline-pan-y";
+const VERSION = "rf-fitness-v2026-07-03-ios-pdf-v25-no-negative-zoom";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

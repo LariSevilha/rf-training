@@ -40,7 +40,8 @@ function renderAdminWorkoutTechniqueInline(ex = {}) {
 
   return `
     <span class="workoutTechniqueInline">
-      <span class="workoutTechniqueSep"> • </span> 
+      <span class="workoutTechniqueSep"> • </span>
+      <span class="workoutTechniqueLabel">Técnica:</span>
       <span class="workoutTechniqueName">${escapeHtml(technique.name)}</span>
       ${technique.note ? `<span class="workoutTechniqueNote"> · ${escapeHtml(technique.note)}</span>` : ""}
     </span>
