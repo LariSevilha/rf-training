@@ -264,12 +264,15 @@ let pdfPinchStartZoom = 1;
 let pdfWasHiddenWhileOpen = false;
 let pdfRestoreTimer = 0;
 let pdfVisualPanX = 0;
-let pdfPanDragActive = false;
-let pdfPanDragStartX = 0;
-let pdfPanDragStartPanX = 0;
-let pdfPanDragPointerId = null;
+let pdfTouchPanActive = false;
+let pdfTouchPanLocked = false;
+let pdfTouchPanStartX = 0;
+let pdfTouchPanStartY = 0;
+let pdfTouchPanStartPanX = 0;
+let pdfTouchPanPointerId = null;
+let pdfTouchPanPassthroughTimer = 0;
 const pdfZoomControls = document.getElementById("pdfZoomControls");
-const pdfPanDrag = document.getElementById("pdfPanDrag");
+const pdfTouchPanLayer = document.getElementById("pdfTouchPanLayer");
 
 function clampPdfZoom(value) {
   const n = Number(value) || 1;
@@ -315,14 +318,13 @@ function updatePdfZoomLabel() {
   if (pdfZoomOut) pdfZoomOut.disabled = pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001;
   if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
 
-  if (pdfPanDrag) {
-    pdfPanDrag.classList.toggle("isDisabled", !zoomed || maxPanX <= 1);
-    pdfPanDrag.setAttribute("aria-disabled", zoomed && maxPanX > 1 ? "false" : "true");
-    pdfPanDrag.setAttribute("aria-valuemin", "0");
-    pdfPanDrag.setAttribute("aria-valuemax", String(Math.max(0, Math.round(maxPanX))));
-    pdfPanDrag.setAttribute("aria-valuenow", String(Math.round(pdfVisualPanX)));
-    pdfPanDrag.title = zoomed
-      ? "Arraste com o dedo para mover o PDF para os lados"
+  const panEnabled = zoomed && maxPanX > 1;
+
+  if (pdfTouchPanLayer) {
+    pdfTouchPanLayer.classList.toggle("isEnabled", panEnabled);
+    pdfTouchPanLayer.setAttribute("aria-hidden", panEnabled ? "false" : "true");
+    pdfTouchPanLayer.title = panEnabled
+      ? "Arraste o PDF para os lados com o dedo"
       : "Aumente o zoom para mover o PDF para os lados";
   }
 
@@ -331,9 +333,9 @@ function updatePdfZoomLabel() {
   pdfFrameScale?.classList.toggle("pdfZoomed", zoomed);
 
   if (pdfFrame) {
-    // V11: manter o iframe clicável/rolável. Assim o Google Drive continua
-    // trocando de página e os links do YouTube seguem funcionando mesmo com zoom.
-    // O movimento horizontal é feito pelos botões ←/→ da barra inferior.
+    // V13: quando o PDF está ampliado, uma camada transparente do app recebe
+    // o arraste horizontal com o dedo. Em 100%, o iframe fica totalmente livre
+    // para rolagem e cliques dos vídeos.
     pdfFrame.style.pointerEvents = "auto";
   }
 }
@@ -420,44 +422,84 @@ function setPdfVisualPanX(nextPanX) {
   updatePdfVisualTransform();
 }
 
-function nudgePdfVisualPan(direction) {
-  if (pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001) return;
-  const step = Math.max(90, Math.floor(getPdfBaseWidth() * 0.38));
-  setPdfVisualPanX(pdfVisualPanX + direction * step);
-}
-
 function canDragPdfPan() {
   return pdfVisualZoom > PDF_VISUAL_ZOOM_MIN + 0.001 && getPdfMaxPanX() > 1;
 }
 
-function beginPdfPanDrag(clientX, pointerId = null) {
-  if (!canDragPdfPan()) return false;
+function temporarilyPassPdfTouchLayer(ms = 700) {
+  if (!pdfTouchPanLayer) return;
 
-  pdfPanDragActive = true;
-  pdfPanDragStartX = Number(clientX) || 0;
-  pdfPanDragStartPanX = pdfVisualPanX;
-  pdfPanDragPointerId = pointerId;
-  pdfPanDrag?.classList.add("isPanning");
-  pdfZoomControls?.classList.add("isPanning");
+  pdfTouchPanLayer.classList.add("isPassthrough");
+  clearTimeout(pdfTouchPanPassthroughTimer);
+  pdfTouchPanPassthroughTimer = window.setTimeout(() => {
+    pdfTouchPanLayer.classList.remove("isPassthrough");
+    updatePdfZoomLabel();
+  }, ms);
+}
+
+function beginPdfTouchPan(clientX, clientY, pointerId = null) {
+  if (!canDragPdfPan()) {
+    temporarilyPassPdfTouchLayer(500);
+    return false;
+  }
+
+  pdfTouchPanActive = true;
+  pdfTouchPanLocked = false;
+  pdfTouchPanStartX = Number(clientX) || 0;
+  pdfTouchPanStartY = Number(clientY) || 0;
+  pdfTouchPanStartPanX = pdfVisualPanX;
+  pdfTouchPanPointerId = pointerId;
+  pdfTouchPanLayer?.classList.add("isTouching");
   return true;
 }
 
-function movePdfPanDrag(clientX) {
-  if (!pdfPanDragActive) return;
+function movePdfTouchPan(clientX, clientY) {
+  if (!pdfTouchPanActive) return false;
 
-  const currentX = Number(clientX) || pdfPanDragStartX;
+  const currentX = Number(clientX) || pdfTouchPanStartX;
+  const currentY = Number(clientY) || pdfTouchPanStartY;
+  const rawDeltaX = currentX - pdfTouchPanStartX;
+  const rawDeltaY = currentY - pdfTouchPanStartY;
+  const absX = Math.abs(rawDeltaX);
+  const absY = Math.abs(rawDeltaY);
+
+  if (!pdfTouchPanLocked) {
+    if (absX < 7 && absY < 7) return false;
+
+    // Se o gesto for vertical, libera rapidamente a camada para o Drive receber
+    // a rolagem/página no próximo toque, em vez de prender a tela.
+    if (absY > absX * 1.15) {
+      endPdfTouchPan(false);
+      temporarilyPassPdfTouchLayer(650);
+      return false;
+    }
+
+    pdfTouchPanLocked = true;
+    pdfTouchPanLayer?.classList.add("isPanning");
+    pdfZoomControls?.classList.add("isPanning");
+  }
+
   // Mesma sensação de rolagem nativa: arrastar para a esquerda mostra a parte direita.
-  const deltaX = pdfPanDragStartX - currentX;
-  setPdfVisualPanX(pdfPanDragStartPanX + deltaX);
+  const deltaX = pdfTouchPanStartX - currentX;
+  setPdfVisualPanX(pdfTouchPanStartPanX + deltaX);
+  return true;
 }
 
-function endPdfPanDrag() {
-  if (!pdfPanDragActive) return;
+function endPdfTouchPan(allowTapPassthrough = true) {
+  if (!pdfTouchPanActive) return;
 
-  pdfPanDragActive = false;
-  pdfPanDragPointerId = null;
-  pdfPanDrag?.classList.remove("isPanning");
+  const wasLocked = pdfTouchPanLocked;
+  pdfTouchPanActive = false;
+  pdfTouchPanLocked = false;
+  pdfTouchPanPointerId = null;
+  pdfTouchPanLayer?.classList.remove("isTouching", "isPanning");
   pdfZoomControls?.classList.remove("isPanning");
+
+  if (!wasLocked && allowTapPassthrough) {
+    // Um toque curto acima do PDF não abre link porque a camada estava por cima.
+    // Liberamos por um instante para o próximo toque ir direto ao Drive/YouTube.
+    temporarilyPassPdfTouchLayer(900);
+  }
 }
 
 function resetPdfVisualZoom() {
@@ -571,63 +613,50 @@ pdfZoomIn?.addEventListener("click", (ev) => {
   applyPdfVisualZoom(pdfVisualZoom + PDF_VISUAL_ZOOM_STEP, { anchor: "center" });
 });
 
-if (window.PointerEvent && pdfPanDrag) {
-  pdfPanDrag.addEventListener("pointerdown", (ev) => {
-    if (!beginPdfPanDrag(ev.clientX, ev.pointerId)) return;
-    ev.preventDefault();
-    ev.stopPropagation();
+if (window.PointerEvent && pdfTouchPanLayer) {
+  pdfTouchPanLayer.addEventListener("pointerdown", (ev) => {
+    if (!beginPdfTouchPan(ev.clientX, ev.clientY, ev.pointerId)) return;
     try {
-      pdfPanDrag.setPointerCapture(ev.pointerId);
+      pdfTouchPanLayer.setPointerCapture(ev.pointerId);
     } catch {}
   });
 
-  pdfPanDrag.addEventListener("pointermove", (ev) => {
-    if (!pdfPanDragActive || pdfPanDragPointerId !== ev.pointerId) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    movePdfPanDrag(ev.clientX);
+  pdfTouchPanLayer.addEventListener("pointermove", (ev) => {
+    if (!pdfTouchPanActive || pdfTouchPanPointerId !== ev.pointerId) return;
+    const handled = movePdfTouchPan(ev.clientX, ev.clientY);
+    if (handled) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
   });
 
   ["pointerup", "pointercancel", "lostpointercapture"].forEach((eventName) => {
-    pdfPanDrag.addEventListener(eventName, (ev) => {
-      if (pdfPanDragPointerId !== null && ev.pointerId !== pdfPanDragPointerId) return;
-      ev.preventDefault?.();
-      ev.stopPropagation?.();
-      endPdfPanDrag();
+    pdfTouchPanLayer.addEventListener(eventName, (ev) => {
+      if (pdfTouchPanPointerId !== null && ev.pointerId !== pdfTouchPanPointerId) return;
+      endPdfTouchPan(true);
     });
   });
-} else if (pdfPanDrag) {
-  pdfPanDrag.addEventListener("touchstart", (ev) => {
-    const touch = ev.touches?.[0];
-    if (!touch || !beginPdfPanDrag(touch.clientX)) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-  }, { passive: false });
+} else if (pdfTouchPanLayer) {
+  pdfTouchPanLayer.addEventListener("touchstart", (ev) => {
+    if (ev.touches?.length !== 1) return;
+    const touch = ev.touches[0];
+    beginPdfTouchPan(touch.clientX, touch.clientY);
+  }, { passive: true });
 
-  pdfPanDrag.addEventListener("touchmove", (ev) => {
-    const touch = ev.touches?.[0];
-    if (!touch || !pdfPanDragActive) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    movePdfPanDrag(touch.clientX);
+  pdfTouchPanLayer.addEventListener("touchmove", (ev) => {
+    if (ev.touches?.length !== 1 || !pdfTouchPanActive) return;
+    const touch = ev.touches[0];
+    const handled = movePdfTouchPan(touch.clientX, touch.clientY);
+    if (handled) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
   }, { passive: false });
 
   ["touchend", "touchcancel"].forEach((eventName) => {
-    pdfPanDrag.addEventListener(eventName, () => endPdfPanDrag(), { passive: true });
+    pdfTouchPanLayer.addEventListener(eventName, () => endPdfTouchPan(true), { passive: true });
   });
 }
-
-pdfPanDrag?.addEventListener("keydown", (ev) => {
-  if (!canDragPdfPan()) return;
-
-  if (ev.key === "ArrowLeft") {
-    ev.preventDefault();
-    nudgePdfVisualPan(-1);
-  } else if (ev.key === "ArrowRight") {
-    ev.preventDefault();
-    nudgePdfVisualPan(1);
-  }
-});
 
 pdfZoomLabel?.addEventListener("click", (ev) => {
   ev.preventDefault();
@@ -735,6 +764,8 @@ function closePdf() {
   hideLoading();
   pdfWasHiddenWhileOpen = false;
   clearTimeout(pdfRestoreTimer);
+  clearTimeout(pdfTouchPanPassthroughTimer);
+  pdfTouchPanLayer?.classList.remove("isPassthrough", "isTouching", "isPanning");
 
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";

@@ -2011,3 +2011,48 @@ body.pdfOpen {
     font-size: 15px !important;
   }
 }
+
+
+/* =========================================================
+   V13 — arraste lateral direto em cima do PDF
+   ========================================================= */
+.alunoClean .pdfZoomControls {
+  touch-action: manipulation !important;
+}
+
+.alunoClean .pdfPanDrag {
+  display: none !important;
+}
+
+.alunoClean .pdfTouchPanLayer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 35 !important;
+  display: none !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  touch-action: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfTouchPanLayer.isEnabled {
+  display: block !important;
+  pointer-events: auto !important;
+  cursor: grab !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfTouchPanLayer.isPanning {
+  cursor: grabbing !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfTouchPanLayer.isPassthrough {
+  pointer-events: none !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfFrameWrap {
+  touch-action: auto !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed #pdfFrame {
+  pointer-events: auto !important;
+}
