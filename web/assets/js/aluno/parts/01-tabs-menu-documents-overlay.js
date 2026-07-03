@@ -254,10 +254,13 @@ function openHtmlOverlay(title, html) {
 // PDF interno no app: zoom visual seguro + recuperação ao voltar do YouTube/Drive.
 // O PDF do Drive continua dentro do app, mas o zoom do iOS é feito pelo shell
 // da aplicação para evitar que o WebKit re-renderize canvas gigante no iframe.
-const PDF_VISUAL_ZOOM_MIN = 1;
+// V21: abre o PDF um pouco menor no iPhone para caber melhor a última página.
+// O zoom visual pode começar abaixo de 100%, mas a pinça continua funcionando.
+const PDF_VISUAL_ZOOM_MIN = 0.85;
+const PDF_VISUAL_ZOOM_DEFAULT = 0.9;
 const PDF_VISUAL_ZOOM_MAX = 2.75;
 const PDF_VISUAL_ZOOM_STEP = 0.25;
-let pdfVisualZoom = 1;
+let pdfVisualZoom = PDF_VISUAL_ZOOM_DEFAULT;
 let lastPdfFrameUrl = "";
 let pdfPinchStartDistance = 0;
 let pdfPinchStartZoom = 1;
@@ -310,7 +313,7 @@ function clampPdfPanX(value) {
 }
 
 function updatePdfZoomLabel() {
-  const zoomed = pdfVisualZoom > PDF_VISUAL_ZOOM_MIN + 0.001;
+  const zoomed = pdfVisualZoom > PDF_VISUAL_ZOOM_DEFAULT + 0.001;
   const maxPanX = getPdfMaxPanX();
 
   pdfVisualPanX = zoomed ? clampPdfPanX(pdfVisualPanX) : 0;
@@ -324,7 +327,7 @@ function updatePdfZoomLabel() {
   if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
 
   const panEnabled = zoomed && maxPanX > 1;
-  const pinchCatcherEnabled = !zoomed && pdfOverlay?.classList.contains("show");
+  const pinchCatcherEnabled = pdfVisualZoom <= 1.001 && pdfOverlay?.classList.contains("show");
 
   if (pdfTouchPanLayer) {
     pdfTouchPanLayer.classList.toggle("isEnabled", panEnabled);
@@ -340,9 +343,8 @@ function updatePdfZoomLabel() {
   pdfFrameScale?.classList.toggle("pdfZoomed", zoomed);
 
   if (pdfFrame) {
-    // V13: quando o PDF está ampliado, uma camada transparente do app recebe
-    // o arraste horizontal com o dedo. Em 100%, o iframe fica totalmente livre
-    // para rolagem e cliques dos vídeos.
+    // V21: abaixo/acima do zoom padrão, o iframe continua controlado pelo shell visual.
+    // Em gestos simples, a camada libera rapidamente para rolagem/cliques do Drive.
     pdfFrame.style.pointerEvents = "auto";
   }
 }
@@ -358,12 +360,20 @@ function updatePdfVisualTransform() {
 
   pdfVisualPanX = clampPdfPanX(pdfVisualPanX);
 
+  // Quando o zoom fica abaixo de 100%, aumentamos a área interna do iframe
+  // e reduzimos visualmente com transform. Assim o Google Drive tem mais
+  // altura/largura útil e a página aparece menor, sem cortar o fim.
+  const internalScale = Math.max(0.01, Math.min(1, pdfVisualZoom));
+  const frameWidth = Math.ceil(baseWidth / internalScale);
+  const frameHeight = Math.ceil(baseHeight / internalScale);
+  const centerX = pdfVisualZoom < 1 ? Math.max(0, (baseWidth - frameWidth * pdfVisualZoom) / 2) : 0;
+
   pdfFrameScale.style.width = `${baseWidth}px`;
   pdfFrameScale.style.height = `${baseHeight}px`;
 
-  pdfFrame.style.width = `${baseWidth}px`;
-  pdfFrame.style.height = `${baseHeight}px`;
-  pdfFrame.style.transform = `matrix(${pdfVisualZoom}, 0, 0, ${pdfVisualZoom}, ${-pdfVisualPanX}, 0)`;
+  pdfFrame.style.width = `${frameWidth}px`;
+  pdfFrame.style.height = `${frameHeight}px`;
+  pdfFrame.style.transform = `matrix(${pdfVisualZoom}, 0, 0, ${pdfVisualZoom}, ${centerX - pdfVisualPanX}, 0)`;
   pdfFrame.style.transformOrigin = "0 0";
 
   updatePdfZoomLabel();
@@ -401,7 +411,7 @@ function applyPdfVisualZoom(nextZoom, options = false) {
 
   if (!wrap || !pdfFrameScale || !pdfFrame) {
     pdfVisualZoom = next;
-    if (next <= PDF_VISUAL_ZOOM_MIN + 0.001) pdfVisualPanX = 0;
+    if (next <= PDF_VISUAL_ZOOM_DEFAULT + 0.001) pdfVisualPanX = 0;
     updatePdfZoomLabel();
     return;
   }
@@ -415,7 +425,7 @@ function applyPdfVisualZoom(nextZoom, options = false) {
 
   pdfVisualZoom = next;
 
-  if (pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001) {
+  if (pdfVisualZoom <= PDF_VISUAL_ZOOM_DEFAULT + 0.001) {
     pdfVisualPanX = 0;
   } else if (anchor) {
     pdfVisualPanX = relX * pdfVisualZoom - anchor.x;
@@ -430,7 +440,7 @@ function setPdfVisualPanX(nextPanX) {
 }
 
 function canDragPdfPan() {
-  return pdfVisualZoom > PDF_VISUAL_ZOOM_MIN + 0.001 && getPdfMaxPanX() > 1;
+  return pdfVisualZoom > PDF_VISUAL_ZOOM_DEFAULT + 0.001 && getPdfMaxPanX() > 1;
 }
 
 function temporarilyPassPdfTouchLayer(ms = 700) {
@@ -513,11 +523,11 @@ function endPdfTouchPan(allowTapPassthrough = true) {
 }
 
 function resetPdfVisualZoom() {
-  pdfVisualZoom = 1;
+  pdfVisualZoom = PDF_VISUAL_ZOOM_DEFAULT;
   pdfVisualPanX = 0;
   clearTimeout(pdfSingleTouchBypassTimer);
   pdfTouchPanLayer?.classList.remove("isTouching", "isPanning", "isPassthrough");
-  requestAnimationFrame(() => applyPdfVisualZoom(1, false));
+  requestAnimationFrame(() => applyPdfVisualZoom(PDF_VISUAL_ZOOM_DEFAULT, false));
 }
 
 function touchDistance(touches) {
@@ -612,7 +622,7 @@ function installPdfSafeGestures() {
     if (!preventTwoFinger(ev)) {
       // No 100%, a camada transparente fica por cima somente para permitir
       // a pinça inicial. Um toque com 1 dedo deve sair do caminho quase na hora.
-      if (pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001 && ev.touches?.length === 1) {
+      if (pdfVisualZoom <= PDF_VISUAL_ZOOM_DEFAULT + 0.001 && ev.touches?.length === 1) {
         clearTimeout(pdfSingleTouchBypassTimer);
         pdfTouchPanLayer?.classList.add("isPassthrough");
         pdfSingleTouchBypassTimer = window.setTimeout(() => {
@@ -771,7 +781,7 @@ if (window.PointerEvent && pdfTouchPanLayer) {
 pdfZoomLabel?.addEventListener("click", (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
-  applyPdfVisualZoom(1, { anchor: "center" });
+  applyPdfVisualZoom(PDF_VISUAL_ZOOM_DEFAULT, { anchor: "center" });
 });
 
 window.addEventListener("resize", () => {

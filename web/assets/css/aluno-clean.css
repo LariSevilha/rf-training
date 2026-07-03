@@ -2460,3 +2460,37 @@ body.pdfOpen {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+
+/* =========================================================
+   V21 — PDF um pouco menor para caber melhor na tela
+   =========================================================
+   O iframe continua dentro do app e o zoom segue por pinça.
+   A escala inicial agora é controlada pelo JS em 90%, com o iframe
+   interno maior para revelar mais da folha e reduzir cortes no rodapé.
+*/
+.alunoClean .pdfOverlay.show {
+  background: #3a3a3a !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfFrameWrap {
+  background: #3a3a3a !important;
+  overflow: hidden !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfFrameScale {
+  background: #3a3a3a !important;
+  overflow: hidden !important;
+}
+
+.alunoClean .pdfOverlay.show #pdfFrame {
+  background: #3a3a3a !important;
+}
+
+/* Em telas menores, reduzimos um pouco mais a chance de a última página
+   ficar rente demais ao rodapé do iOS. */
+@media (max-width: 430px) {
+  .alunoClean .pdfOverlay.show .pdfBar {
+    padding-bottom: 8px !important;
+  }
+}
