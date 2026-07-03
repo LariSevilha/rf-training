@@ -263,14 +263,45 @@ let pdfPinchStartDistance = 0;
 let pdfPinchStartZoom = 1;
 let pdfWasHiddenWhileOpen = false;
 let pdfRestoreTimer = 0;
+let pdfVisualPanX = 0;
+const pdfPanLeft = document.getElementById("pdfPanLeft");
+const pdfPanRight = document.getElementById("pdfPanRight");
 
 function clampPdfZoom(value) {
   const n = Number(value) || 1;
   return Math.max(PDF_VISUAL_ZOOM_MIN, Math.min(PDF_VISUAL_ZOOM_MAX, n));
 }
 
+function getPdfBaseWidth() {
+  const wrap = pdfFrameWrap;
+  if (!wrap) return 0;
+  const rect = wrap.getBoundingClientRect();
+  return Math.max(1, Math.floor(rect.width || wrap.clientWidth || 1));
+}
+
+function getPdfBaseHeight() {
+  const wrap = pdfFrameWrap;
+  if (!wrap) return 0;
+  const rect = wrap.getBoundingClientRect();
+  return Math.max(1, Math.floor(rect.height || wrap.clientHeight || 1));
+}
+
+function getPdfMaxPanX() {
+  const baseWidth = getPdfBaseWidth();
+  return Math.max(0, Math.ceil(baseWidth * pdfVisualZoom - baseWidth));
+}
+
+function clampPdfPanX(value) {
+  const max = getPdfMaxPanX();
+  const n = Number(value) || 0;
+  return Math.max(0, Math.min(max, n));
+}
+
 function updatePdfZoomLabel() {
   const zoomed = pdfVisualZoom > PDF_VISUAL_ZOOM_MIN + 0.001;
+  const maxPanX = getPdfMaxPanX();
+
+  pdfVisualPanX = zoomed ? clampPdfPanX(pdfVisualPanX) : 0;
 
   if (pdfZoomLabel) {
     pdfZoomLabel.textContent = `${Math.round(pdfVisualZoom * 100)}%`;
@@ -279,18 +310,41 @@ function updatePdfZoomLabel() {
 
   if (pdfZoomOut) pdfZoomOut.disabled = pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001;
   if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
+  if (pdfPanLeft) pdfPanLeft.disabled = !zoomed || pdfVisualPanX <= 1;
+  if (pdfPanRight) pdfPanRight.disabled = !zoomed || pdfVisualPanX >= maxPanX - 1;
 
   pdfOverlay?.classList.toggle("pdfZoomed", zoomed);
   pdfFrameWrap?.classList.toggle("pdfZoomed", zoomed);
   pdfFrameScale?.classList.toggle("pdfZoomed", zoomed);
 
   if (pdfFrame) {
-    // Quando está aproximado, o iframe do Google Drive captura o toque e impede
-    // o usuário de mover a área ampliada. Desativando os eventos do iframe
-    // acima de 100%, o scroll do shell volta a funcionar em todas as direções.
-    // Para clicar nos links internos do PDF, basta retornar para 100%.
-    pdfFrame.style.pointerEvents = zoomed ? "none" : "auto";
+    // V11: manter o iframe clicável/rolável. Assim o Google Drive continua
+    // trocando de página e os links do YouTube seguem funcionando mesmo com zoom.
+    // O movimento horizontal é feito pelos botões ←/→ da barra inferior.
+    pdfFrame.style.pointerEvents = "auto";
   }
+}
+
+function updatePdfVisualTransform() {
+  if (!pdfFrameWrap || !pdfFrameScale || !pdfFrame) {
+    updatePdfZoomLabel();
+    return;
+  }
+
+  const baseWidth = getPdfBaseWidth();
+  const baseHeight = getPdfBaseHeight();
+
+  pdfVisualPanX = clampPdfPanX(pdfVisualPanX);
+
+  pdfFrameScale.style.width = `${baseWidth}px`;
+  pdfFrameScale.style.height = `${baseHeight}px`;
+
+  pdfFrame.style.width = `${baseWidth}px`;
+  pdfFrame.style.height = `${baseHeight}px`;
+  pdfFrame.style.transform = `matrix(${pdfVisualZoom}, 0, 0, ${pdfVisualZoom}, ${-pdfVisualPanX}, 0)`;
+  pdfFrame.style.transformOrigin = "0 0";
+
+  updatePdfZoomLabel();
 }
 
 function normalizePdfZoomOptions(options) {
@@ -321,48 +375,47 @@ function applyPdfVisualZoom(nextZoom, options = false) {
   const next = clampPdfZoom(nextZoom);
   const previous = pdfVisualZoom || 1;
   const wrap = pdfFrameWrap;
-  const scaleHost = pdfFrameScale;
   const zoomOptions = normalizePdfZoomOptions(options);
 
-  if (!wrap || !scaleHost || !pdfFrame) {
+  if (!wrap || !pdfFrameScale || !pdfFrame) {
     pdfVisualZoom = next;
+    if (next <= PDF_VISUAL_ZOOM_MIN + 0.001) pdfVisualPanX = 0;
     updatePdfZoomLabel();
     return;
   }
 
-  const rect = wrap.getBoundingClientRect();
-  const baseWidth = Math.max(1, Math.floor(rect.width));
-  const baseHeight = Math.max(1, Math.floor(rect.height));
   const anchor = getPdfZoomAnchor(wrap, zoomOptions);
-
   let relX = 0;
-  let relY = 0;
 
   if (anchor) {
-    relX = (wrap.scrollLeft + anchor.x) / previous;
-    relY = (wrap.scrollTop + anchor.y) / previous;
+    relX = (pdfVisualPanX + anchor.x) / previous;
   }
 
   pdfVisualZoom = next;
 
-  scaleHost.style.width = `${Math.ceil(baseWidth * pdfVisualZoom)}px`;
-  scaleHost.style.height = `${Math.ceil(baseHeight * pdfVisualZoom)}px`;
-
-  pdfFrame.style.width = `${baseWidth}px`;
-  pdfFrame.style.height = `${baseHeight}px`;
-  pdfFrame.style.transform = `scale(${pdfVisualZoom})`;
-  pdfFrame.style.transformOrigin = "0 0";
-
-  updatePdfZoomLabel();
-
-  if (anchor) {
-    wrap.scrollLeft = Math.max(0, relX * pdfVisualZoom - anchor.x);
-    wrap.scrollTop = Math.max(0, relY * pdfVisualZoom - anchor.y);
+  if (pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001) {
+    pdfVisualPanX = 0;
+  } else if (anchor) {
+    pdfVisualPanX = relX * pdfVisualZoom - anchor.x;
   }
+
+  updatePdfVisualTransform();
+}
+
+function setPdfVisualPanX(nextPanX) {
+  pdfVisualPanX = clampPdfPanX(nextPanX);
+  updatePdfVisualTransform();
+}
+
+function nudgePdfVisualPan(direction) {
+  if (pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001) return;
+  const step = Math.max(90, Math.floor(getPdfBaseWidth() * 0.38));
+  setPdfVisualPanX(pdfVisualPanX + direction * step);
 }
 
 function resetPdfVisualZoom() {
   pdfVisualZoom = 1;
+  pdfVisualPanX = 0;
   requestAnimationFrame(() => applyPdfVisualZoom(1, false));
 }
 
@@ -469,6 +522,18 @@ pdfZoomIn?.addEventListener("click", (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
   applyPdfVisualZoom(pdfVisualZoom + PDF_VISUAL_ZOOM_STEP, { anchor: "center" });
+});
+
+pdfPanLeft?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  nudgePdfVisualPan(-1);
+});
+
+pdfPanRight?.addEventListener("click", (ev) => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  nudgePdfVisualPan(1);
 });
 
 pdfZoomLabel?.addEventListener("click", (ev) => {

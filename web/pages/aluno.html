@@ -112,11 +112,6 @@
     <div class="pdfBar">
       <button class="backBtn" id="pdfBack" type="button">← Voltar</button>
       <div class="pdfTitle" id="pdfTitle">PDF</div>
-      <div class="pdfZoomControls" aria-label="Zoom do PDF">
-        <button class="pdfZoomBtn" id="pdfZoomOut" type="button" aria-label="Diminuir zoom">−</button>
-        <span class="pdfZoomLabel" id="pdfZoomLabel" role="button" tabindex="0">100%</span>
-        <button class="pdfZoomBtn" id="pdfZoomIn" type="button" aria-label="Aumentar zoom">+</button>
-      </div>
     </div>
     <div class="pdfFrameWrap" id="pdfFrameWrap">
       <div class="pdfFrameScale" id="pdfFrameScale">
@@ -127,6 +122,13 @@
         <div class="loadingText">Carregando…</div>
         <div class="loadingSub">Se demorar, verifique sua conexão.</div>
       </div>
+    </div>
+    <div class="pdfZoomControls" aria-label="Zoom e movimento horizontal do PDF">
+      <button class="pdfPanBtn" id="pdfPanLeft" type="button" aria-label="Mover PDF para a esquerda">←</button>
+      <button class="pdfZoomBtn" id="pdfZoomOut" type="button" aria-label="Diminuir zoom">−</button>
+      <span class="pdfZoomLabel" id="pdfZoomLabel" role="button" tabindex="0">100%</span>
+      <button class="pdfZoomBtn" id="pdfZoomIn" type="button" aria-label="Aumentar zoom">+</button>
+      <button class="pdfPanBtn" id="pdfPanRight" type="button" aria-label="Mover PDF para a direita">→</button>
     </div>
   </div>
 
