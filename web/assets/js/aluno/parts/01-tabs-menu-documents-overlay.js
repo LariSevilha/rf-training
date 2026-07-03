@@ -275,6 +275,7 @@ let pdfTouchPanStartY = 0;
 let pdfTouchPanStartPanX = 0;
 let pdfTouchPanPointerId = null;
 let pdfTouchPanPassthroughTimer = 0;
+let pdfSingleTouchBypassTimer = 0;
 const pdfZoomControls = document.getElementById("pdfZoomControls");
 const pdfTouchPanLayer = document.getElementById("pdfTouchPanLayer");
 
@@ -323,10 +324,12 @@ function updatePdfZoomLabel() {
   if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
 
   const panEnabled = zoomed && maxPanX > 1;
+  const pinchCatcherEnabled = !zoomed && pdfOverlay?.classList.contains("show");
 
   if (pdfTouchPanLayer) {
     pdfTouchPanLayer.classList.toggle("isEnabled", panEnabled);
-    pdfTouchPanLayer.setAttribute("aria-hidden", panEnabled ? "false" : "true");
+    pdfTouchPanLayer.classList.toggle("isPinchCatcher", pinchCatcherEnabled);
+    pdfTouchPanLayer.setAttribute("aria-hidden", panEnabled || pinchCatcherEnabled ? "false" : "true");
     pdfTouchPanLayer.title = panEnabled
       ? "Arraste o PDF com o dedo; use dois dedos para aproximar/afastar"
       : "Use dois dedos para aproximar o PDF";
@@ -443,7 +446,10 @@ function temporarilyPassPdfTouchLayer(ms = 700) {
 
 function beginPdfTouchPan(clientX, clientY, pointerId = null) {
   if (!canDragPdfPan()) {
-    temporarilyPassPdfTouchLayer(500);
+    // Em 100%, a camada só existe para captar pinça com dois dedos.
+    // Toque/arraste com um dedo precisa ser liberado rápido para o iframe do Drive
+    // continuar recebendo rolagem e cliques.
+    temporarilyPassPdfTouchLayer(650);
     return false;
   }
 
@@ -509,6 +515,8 @@ function endPdfTouchPan(allowTapPassthrough = true) {
 function resetPdfVisualZoom() {
   pdfVisualZoom = 1;
   pdfVisualPanX = 0;
+  clearTimeout(pdfSingleTouchBypassTimer);
+  pdfTouchPanLayer?.classList.remove("isTouching", "isPanning", "isPassthrough");
   requestAnimationFrame(() => applyPdfVisualZoom(1, false));
 }
 
@@ -601,7 +609,21 @@ function installPdfSafeGestures() {
   };
 
   pdfFrameWrap.addEventListener("touchstart", (ev) => {
-    if (!preventTwoFinger(ev)) return;
+    if (!preventTwoFinger(ev)) {
+      // No 100%, a camada transparente fica por cima somente para permitir
+      // a pinça inicial. Um toque com 1 dedo deve sair do caminho quase na hora.
+      if (pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001 && ev.touches?.length === 1) {
+        clearTimeout(pdfSingleTouchBypassTimer);
+        pdfTouchPanLayer?.classList.add("isPassthrough");
+        pdfSingleTouchBypassTimer = window.setTimeout(() => {
+          pdfTouchPanLayer?.classList.remove("isPassthrough");
+          updatePdfZoomLabel();
+        }, 1200);
+      }
+      return;
+    }
+    clearTimeout(pdfSingleTouchBypassTimer);
+    pdfTouchPanLayer?.classList.remove("isPassthrough");
     const center = touchCenter(ev.touches);
     pdfPinchStartDistance = touchDistance(ev.touches) || 1;
     pdfPinchStartZoom = pdfVisualZoom;
@@ -627,13 +649,13 @@ function installPdfSafeGestures() {
     pdfPinchStartDistance = 0;
     pdfPinchStartZoom = pdfVisualZoom;
     pdfOverlay?.classList.remove("pdfPinching");
-    updatePdfZoomLabel();
+    window.setTimeout(updatePdfZoomLabel, 80);
   }, { passive: true, capture: true });
 
   // V14/iOS: captura o gesto nativo de pinça do Safari/PWA sem precisar de botão.
   // Isso é o que permite pinçar diretamente sobre o PDF/iframe do Drive quando
   // o navegador envia o gesto para a página principal.
-  const gestureTargets = [pdfFrameWrap, pdfOverlay, window].filter(Boolean);
+  const gestureTargets = [pdfFrameWrap, pdfFrame, pdfOverlay, document, window].filter(Boolean);
   gestureTargets.forEach((target) => {
     target.addEventListener("gesturestart", beginPdfGestureZoom, { passive: false, capture: true });
     target.addEventListener("gesturechange", movePdfGestureZoom, { passive: false, capture: true });
@@ -853,7 +875,8 @@ function closePdf() {
   pdfWasHiddenWhileOpen = false;
   clearTimeout(pdfRestoreTimer);
   clearTimeout(pdfTouchPanPassthroughTimer);
-  pdfTouchPanLayer?.classList.remove("isPassthrough", "isTouching", "isPanning");
+  clearTimeout(pdfSingleTouchBypassTimer);
+  pdfTouchPanLayer?.classList.remove("isPassthrough", "isTouching", "isPanning", "isPinchCatcher");
 
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";

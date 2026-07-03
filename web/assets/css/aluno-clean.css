@@ -2240,3 +2240,112 @@ body.pdfOpen {
     padding: 8px 7px !important;
   }
 }
+
+/* =========================================================
+   V17 — pinça no 100% + rodapé transparente sem cobrir última página
+   =========================================================
+   A barra volta a ocupar uma linha própria no grid, mas sem faixa preta.
+   Assim o PDF termina acima do controle e a última página não fica escondida.
+   A camada transparente também fica ativa em 100% para captar o primeiro
+   gesto de pinça; toque/arraste com 1 dedo é liberado rapidamente para o Drive.
+*/
+.alunoClean .pdfOverlay.show {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfBar {
+  grid-row: 1 !important;
+  grid-column: 1 !important;
+  position: relative !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfFrameWrap {
+  grid-row: 2 !important;
+  grid-column: 1 !important;
+  position: relative !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomControls {
+  grid-row: 3 !important;
+  grid-column: 1 !important;
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  justify-self: center !important;
+  align-self: center !important;
+  margin: 2px auto calc(2px + env(safe-area-inset-bottom, 0px)) !important;
+  padding: 3px 5px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none !important;
+  z-index: 95 !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomBtn,
+.alunoClean .pdfOverlay.show .pdfZoomLabel {
+  pointer-events: auto !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomBtn {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  background: rgba(10, 10, 10, .50) !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomLabel {
+  min-width: 44px !important;
+  padding: 7px 6px !important;
+  background: rgba(10, 10, 10, .34) !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfTouchPanLayer.isPinchCatcher {
+  display: block !important;
+  pointer-events: auto !important;
+  cursor: zoom-in !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfTouchPanLayer.isPinchCatcher.isPassthrough,
+.alunoClean .pdfOverlay.show .pdfTouchPanLayer.isPassthrough {
+  pointer-events: none !important;
+}
+
+.alunoClean .pdfOverlay.pdfZoomed .pdfTouchPanLayer.isPinchCatcher {
+  cursor: grab !important;
+}
+
+@media (max-width: 380px) {
+  .alunoClean .pdfOverlay.show .pdfZoomControls {
+    margin-top: 1px !important;
+    margin-bottom: calc(1px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 2px 4px !important;
+    gap: 5px !important;
+  }
+
+  .alunoClean .pdfOverlay.show .pdfZoomBtn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+
+  .alunoClean .pdfOverlay.show .pdfZoomLabel {
+    min-width: 42px !important;
+    padding: 6px 5px !important;
+  }
+}
