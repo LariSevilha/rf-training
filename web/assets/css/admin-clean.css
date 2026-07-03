@@ -1977,3 +1977,53 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   V23 — técnica do exercício em dourado no treino manual
+   ========================================================= */
+.workoutTechniqueLine {
+  margin-top: 6px;
+  color: var(--rf-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.workoutTechniqueLine .workoutTechniqueLabel {
+  font-weight: 800;
+  color: var(--rf-text);
+}
+
+.workoutTechniqueLine .workoutTechniqueName {
+  color: var(--rf-gold-2);
+  font-weight: 900;
+}
+
+.workoutTechniqueLine .workoutTechniqueNote {
+  color: var(--rf-muted);
+}
+
+
+/* =========================================================
+   V24 — técnica na mesma linha do exercício
+   ========================================================= */
+.workoutTechniqueInline {
+  display: inline !important;
+  margin-left: 6px !important;
+  white-space: normal !important;
+  font-size: .92em !important;
+}
+
+.workoutTechniqueInline .workoutTechniqueLabel {
+  color: rgba(255,255,255,.78) !important;
+  font-weight: 800 !important;
+}
+
+.workoutTechniqueInline .workoutTechniqueName {
+  color: var(--rf-gold-2, #d9b45f) !important;
+  font-weight: 900 !important;
+}
+
+.workoutTechniqueInline .workoutTechniqueNote {
+  color: var(--rf-muted, rgba(255,255,255,.62)) !important;
+  font-weight: 700 !important;
+}

@@ -271,11 +271,13 @@ let pdfGestureActive = false;
 let pdfWasHiddenWhileOpen = false;
 let pdfRestoreTimer = 0;
 let pdfVisualPanX = 0;
+let pdfVisualPanY = 0;
 let pdfTouchPanActive = false;
 let pdfTouchPanLocked = false;
 let pdfTouchPanStartX = 0;
 let pdfTouchPanStartY = 0;
 let pdfTouchPanStartPanX = 0;
+let pdfTouchPanStartPanY = 0;
 let pdfTouchPanPointerId = null;
 let pdfTouchPanPassthroughTimer = 0;
 let pdfSingleTouchBypassTimer = 0;
@@ -303,7 +305,16 @@ function getPdfBaseHeight() {
 
 function getPdfMaxPanX() {
   const baseWidth = getPdfBaseWidth();
-  return Math.max(0, Math.ceil(baseWidth * pdfVisualZoom - baseWidth));
+  const extra = pdfVisualZoom > PDF_VISUAL_ZOOM_DEFAULT + 0.001 ? 32 : 0;
+  return Math.max(0, Math.ceil(baseWidth * pdfVisualZoom - baseWidth + extra));
+}
+
+function getPdfMaxPanY() {
+  const baseHeight = getPdfBaseHeight();
+  const extra = pdfVisualZoom > PDF_VISUAL_ZOOM_DEFAULT + 0.001
+    ? Math.max(96, Math.round(baseHeight * 0.10))
+    : 0;
+  return Math.max(0, Math.ceil(baseHeight * pdfVisualZoom - baseHeight + extra));
 }
 
 function clampPdfPanX(value) {
@@ -312,11 +323,19 @@ function clampPdfPanX(value) {
   return Math.max(0, Math.min(max, n));
 }
 
+function clampPdfPanY(value) {
+  const max = getPdfMaxPanY();
+  const n = Number(value) || 0;
+  return Math.max(0, Math.min(max, n));
+}
+
 function updatePdfZoomLabel() {
   const zoomed = pdfVisualZoom > PDF_VISUAL_ZOOM_DEFAULT + 0.001;
   const maxPanX = getPdfMaxPanX();
+  const maxPanY = getPdfMaxPanY();
 
   pdfVisualPanX = zoomed ? clampPdfPanX(pdfVisualPanX) : 0;
+  pdfVisualPanY = zoomed ? clampPdfPanY(pdfVisualPanY) : 0;
 
   if (pdfZoomLabel) {
     pdfZoomLabel.textContent = `${Math.round(pdfVisualZoom * 100)}%`;
@@ -326,7 +345,7 @@ function updatePdfZoomLabel() {
   if (pdfZoomOut) pdfZoomOut.disabled = pdfVisualZoom <= PDF_VISUAL_ZOOM_MIN + 0.001;
   if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
 
-  const panEnabled = zoomed && maxPanX > 1;
+  const panEnabled = zoomed && (maxPanX > 1 || maxPanY > 1);
   const pinchCatcherEnabled = pdfVisualZoom <= 1.001 && pdfOverlay?.classList.contains("show");
 
   if (pdfTouchPanLayer) {
@@ -334,7 +353,7 @@ function updatePdfZoomLabel() {
     pdfTouchPanLayer.classList.toggle("isPinchCatcher", pinchCatcherEnabled);
     pdfTouchPanLayer.setAttribute("aria-hidden", panEnabled || pinchCatcherEnabled ? "false" : "true");
     pdfTouchPanLayer.title = panEnabled
-      ? "Arraste o PDF com o dedo; use dois dedos para aproximar/afastar"
+      ? "Arraste o PDF com o dedo para qualquer direção; use dois dedos para aproximar/afastar"
       : "Use dois dedos para aproximar o PDF";
   }
 
@@ -359,6 +378,7 @@ function updatePdfVisualTransform() {
   const baseHeight = getPdfBaseHeight();
 
   pdfVisualPanX = clampPdfPanX(pdfVisualPanX);
+  pdfVisualPanY = clampPdfPanY(pdfVisualPanY);
 
   // V22: não aumentamos mais o iframe interno abaixo de 100%.
   // A v21 revelava mais altura, mas o Drive recalculava o layout e deixava
@@ -373,7 +393,7 @@ function updatePdfVisualTransform() {
 
   pdfFrame.style.width = `${frameWidth}px`;
   pdfFrame.style.height = `${frameHeight}px`;
-  pdfFrame.style.transform = `matrix(${pdfVisualZoom}, 0, 0, ${pdfVisualZoom}, ${centerX - pdfVisualPanX}, 0)`;
+  pdfFrame.style.transform = `matrix(${pdfVisualZoom}, 0, 0, ${pdfVisualZoom}, ${centerX - pdfVisualPanX}, ${-pdfVisualPanY})`;
   pdfFrame.style.transformOrigin = "0 0";
 
   updatePdfZoomLabel();
@@ -411,36 +431,49 @@ function applyPdfVisualZoom(nextZoom, options = false) {
 
   if (!wrap || !pdfFrameScale || !pdfFrame) {
     pdfVisualZoom = next;
-    if (next <= PDF_VISUAL_ZOOM_DEFAULT + 0.001) pdfVisualPanX = 0;
+    if (next <= PDF_VISUAL_ZOOM_DEFAULT + 0.001) { pdfVisualPanX = 0; pdfVisualPanY = 0; }
     updatePdfZoomLabel();
     return;
   }
 
   const anchor = getPdfZoomAnchor(wrap, zoomOptions);
   let relX = 0;
+  let relY = 0;
 
   if (anchor) {
     relX = (pdfVisualPanX + anchor.x) / previous;
+    relY = (pdfVisualPanY + anchor.y) / previous;
   }
 
   pdfVisualZoom = next;
 
   if (pdfVisualZoom <= PDF_VISUAL_ZOOM_DEFAULT + 0.001) {
     pdfVisualPanX = 0;
+    pdfVisualPanY = 0;
   } else if (anchor) {
     pdfVisualPanX = relX * pdfVisualZoom - anchor.x;
+    pdfVisualPanY = relY * pdfVisualZoom - anchor.y;
   }
 
   updatePdfVisualTransform();
 }
 
-function setPdfVisualPanX(nextPanX) {
+function setPdfVisualPan(nextPanX, nextPanY) {
   pdfVisualPanX = clampPdfPanX(nextPanX);
+  pdfVisualPanY = clampPdfPanY(nextPanY);
   updatePdfVisualTransform();
 }
 
+function setPdfVisualPanX(nextPanX) {
+  setPdfVisualPan(nextPanX, pdfVisualPanY);
+}
+
+function setPdfVisualPanY(nextPanY) {
+  setPdfVisualPan(pdfVisualPanX, nextPanY);
+}
+
 function canDragPdfPan() {
-  return pdfVisualZoom > PDF_VISUAL_ZOOM_DEFAULT + 0.001 && getPdfMaxPanX() > 1;
+  return pdfVisualZoom > PDF_VISUAL_ZOOM_DEFAULT + 0.001 && (getPdfMaxPanX() > 1 || getPdfMaxPanY() > 1);
 }
 
 function temporarilyPassPdfTouchLayer(ms = 700) {
@@ -468,6 +501,7 @@ function beginPdfTouchPan(clientX, clientY, pointerId = null) {
   pdfTouchPanStartX = Number(clientX) || 0;
   pdfTouchPanStartY = Number(clientY) || 0;
   pdfTouchPanStartPanX = pdfVisualPanX;
+  pdfTouchPanStartPanY = pdfVisualPanY;
   pdfTouchPanPointerId = pointerId;
   pdfTouchPanLayer?.classList.add("isTouching");
   return true;
@@ -486,22 +520,16 @@ function movePdfTouchPan(clientX, clientY) {
   if (!pdfTouchPanLocked) {
     if (absX < 7 && absY < 7) return false;
 
-    // Se o gesto for vertical, libera rapidamente a camada para o Drive receber
-    // a rolagem/página no próximo toque, em vez de prender a tela.
-    if (absY > absX * 1.15) {
-      endPdfTouchPan(false);
-      temporarilyPassPdfTouchLayer(650);
-      return false;
-    }
-
     pdfTouchPanLocked = true;
     pdfTouchPanLayer?.classList.add("isPanning");
     pdfZoomControls?.classList.add("isPanning");
   }
 
-  // Mesma sensação de rolagem nativa: arrastar para a esquerda mostra a parte direita.
+  // Mesma sensação de rolagem nativa:
+  // arrastar para a esquerda mostra a parte direita; arrastar para cima mostra o rodapé.
   const deltaX = pdfTouchPanStartX - currentX;
-  setPdfVisualPanX(pdfTouchPanStartPanX + deltaX);
+  const deltaY = pdfTouchPanStartY - currentY;
+  setPdfVisualPan(pdfTouchPanStartPanX + deltaX, pdfTouchPanStartPanY + deltaY);
   return true;
 }
 
@@ -525,6 +553,7 @@ function endPdfTouchPan(allowTapPassthrough = true) {
 function resetPdfVisualZoom() {
   pdfVisualZoom = PDF_VISUAL_ZOOM_DEFAULT;
   pdfVisualPanX = 0;
+  pdfVisualPanY = 0;
   clearTimeout(pdfSingleTouchBypassTimer);
   pdfTouchPanLayer?.classList.remove("isTouching", "isPanning", "isPassthrough");
   requestAnimationFrame(() => applyPdfVisualZoom(PDF_VISUAL_ZOOM_DEFAULT, false));

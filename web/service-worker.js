@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-03-ios-internal-pdf-v22";
+const VERSION = "rf-fitness-v2026-07-03-ios-pdf-v24-technique-inline-pan-y";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -8,11 +8,24 @@ const APP_SHELL = [
 
   "/pages/index.html",
   "/pages/aluno.html",
+  "/pages/admin.html",
   "/pages/politica-privacidade.html",
 
   "/assets/css/main.css",
   "/assets/css/aluno-clean.css",
+  "/assets/css/admin-clean.css",
   "/assets/js/aluno.js",
+  "/assets/js/admin.js",
+  "/assets/js/admin/parts/00-bootstrap-elements-state.js",
+  "/assets/js/admin/parts/01-admin-core-students.js",
+  "/assets/js/admin/parts/02-dashboard-profile.js",
+  "/assets/js/admin/parts/03-admin-events-documents.js",
+  "/assets/js/admin/parts/04-workout-builder.js",
+  "/assets/js/admin/parts/05-catalogs-muscles-videos-exercises.js",
+  "/assets/js/admin/parts/06-student-records.js",
+  "/assets/js/admin/parts/07-techniques.js",
+  "/assets/js/admin/parts/08-extra-items.js",
+  "/assets/js/admin/parts/09-navigation-search-init.js",
   "/assets/js/aluno/parts/00-service-worker-elements-state.js",
   "/assets/js/aluno/parts/01-tabs-menu-documents-overlay.js",
   "/assets/js/aluno/parts/02-install-flow.js",

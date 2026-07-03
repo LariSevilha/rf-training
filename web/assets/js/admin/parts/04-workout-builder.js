@@ -24,6 +24,34 @@ function cleanRepsLabel(value) {
   return String(value || "").replace(/^\s*\d+\s*x\s*/i, "").trim();
 }
 
+function getWorkoutExerciseTechnique(ex = {}) {
+  const technique = ex.technique && typeof ex.technique === "object" ? ex.technique : {};
+
+  return {
+    name: String(ex.techniqueName || technique.name || "").trim(),
+    note: String(ex.techniqueNote || technique.exerciseNote || "").trim(),
+    notes: String(ex.techniqueNotes || technique.notes || "").trim(),
+  };
+}
+
+function renderAdminWorkoutTechniqueInline(ex = {}) {
+  const technique = getWorkoutExerciseTechnique(ex);
+  if (!technique.name) return "";
+
+  return `
+    <span class="workoutTechniqueInline">
+      <span class="workoutTechniqueSep"> • </span>
+      <span class="workoutTechniqueLabel">Técnica:</span>
+      <span class="workoutTechniqueName">${escapeHtml(technique.name)}</span>
+      ${technique.note ? `<span class="workoutTechniqueNote"> · ${escapeHtml(technique.note)}</span>` : ""}
+    </span>
+  `;
+}
+
+function renderAdminWorkoutTechnique(ex = {}) {
+  return renderAdminWorkoutTechniqueInline(ex);
+}
+
 function buildCardioPayload() {
   return {
     type: "written",
@@ -163,10 +191,9 @@ function renderWorkoutDraft() {
       <div draggable="true" data-draft-ex-index="${idx}" style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:8px 0;cursor:grab;">
         <div style="display:flex;justify-content:space-between;gap:10px;">
           <div>
-            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>
+            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}${renderAdminWorkoutTechniqueInline(ex)}</b>
             <div>${escapeHtml(ex.muscleGroup || "Sem agrupamento")}${ex.videoUrl ? " · vídeo vinculado" : ""}</div>
             ${ex.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(ex.notes)}</div>` : ""}
-            ${ex.techniqueName ? `<div style="margin-top:6px;"><b>Técnica:</b> ${escapeHtml(ex.techniqueName)}${ex.techniqueNote ? ` · ${escapeHtml(ex.techniqueNote)}` : ""}</div>` : ""}
             <div style="margin-top:6px;">Séries: ${ex.series.map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</div>
           </div>
           <div style="display:flex;gap:8px;height:max-content;flex-wrap:wrap;justify-content:flex-end;">
@@ -399,7 +426,7 @@ function renderWorkoutList() {
         <div style="margin-top:8px;">
           ${(w.exercises || []).map((ex, exIdx) => `
             <div style="margin:6px 0;">
-              ${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
+              ${exIdx + 1}. ${escapeHtml(ex.name)}${renderAdminWorkoutTechniqueInline(ex)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
             </div>
           `).join("")}
         </div>
