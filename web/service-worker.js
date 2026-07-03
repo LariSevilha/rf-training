@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-03-ios-internal-pdf-v13";
+const VERSION = "rf-fitness-v2026-07-03-ios-internal-pdf-v14";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

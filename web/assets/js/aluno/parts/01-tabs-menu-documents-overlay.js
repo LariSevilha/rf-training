@@ -261,6 +261,10 @@ let pdfVisualZoom = 1;
 let lastPdfFrameUrl = "";
 let pdfPinchStartDistance = 0;
 let pdfPinchStartZoom = 1;
+let pdfGestureStartZoom = 1;
+let pdfGestureAnchorClientX = 0;
+let pdfGestureAnchorClientY = 0;
+let pdfGestureActive = false;
 let pdfWasHiddenWhileOpen = false;
 let pdfRestoreTimer = 0;
 let pdfVisualPanX = 0;
@@ -324,8 +328,8 @@ function updatePdfZoomLabel() {
     pdfTouchPanLayer.classList.toggle("isEnabled", panEnabled);
     pdfTouchPanLayer.setAttribute("aria-hidden", panEnabled ? "false" : "true");
     pdfTouchPanLayer.title = panEnabled
-      ? "Arraste o PDF para os lados com o dedo"
-      : "Aumente o zoom para mover o PDF para os lados";
+      ? "Arraste o PDF com o dedo; use dois dedos para aproximar/afastar"
+      : "Use dois dedos para aproximar o PDF";
   }
 
   pdfOverlay?.classList.toggle("pdfZoomed", zoomed);
@@ -517,6 +521,74 @@ function touchDistance(touches) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function touchCenter(touches) {
+  if (!touches || touches.length < 2) return null;
+  const a = touches[0];
+  const b = touches[1];
+  return {
+    clientX: (a.clientX + b.clientX) / 2,
+    clientY: (a.clientY + b.clientY) / 2
+  };
+}
+
+function getPdfGestureAnchorFromEvent(ev) {
+  const rect = pdfFrameWrap?.getBoundingClientRect?.();
+  const fallback = rect
+    ? { clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 }
+    : { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 };
+
+  const clientX = Number.isFinite(ev?.clientX) && ev.clientX > 0 ? ev.clientX : fallback.clientX;
+  const clientY = Number.isFinite(ev?.clientY) && ev.clientY > 0 ? ev.clientY : fallback.clientY;
+
+  return { clientX, clientY };
+}
+
+function beginPdfGestureZoom(ev) {
+  if (!pdfOverlay?.classList.contains("show")) return false;
+  if (!pdfFrameWrap) return false;
+
+  ev?.preventDefault?.();
+  ev?.stopPropagation?.();
+
+  const anchor = getPdfGestureAnchorFromEvent(ev);
+  pdfGestureStartZoom = pdfVisualZoom || 1;
+  pdfGestureAnchorClientX = anchor.clientX;
+  pdfGestureAnchorClientY = anchor.clientY;
+  pdfGestureActive = true;
+  pdfOverlay?.classList.add("pdfPinching");
+  pdfTouchPanLayer?.classList.add("isPassthrough");
+  return true;
+}
+
+function movePdfGestureZoom(ev) {
+  if (!pdfGestureActive) return false;
+
+  ev?.preventDefault?.();
+  ev?.stopPropagation?.();
+
+  const scale = Number(ev?.scale) || 1;
+  applyPdfVisualZoom(pdfGestureStartZoom * scale, {
+    anchor: true,
+    clientX: pdfGestureAnchorClientX,
+    clientY: pdfGestureAnchorClientY
+  });
+  return true;
+}
+
+function endPdfGestureZoom(ev) {
+  if (!pdfGestureActive) return false;
+
+  ev?.preventDefault?.();
+  ev?.stopPropagation?.();
+
+  pdfGestureActive = false;
+  pdfGestureStartZoom = pdfVisualZoom || 1;
+  pdfOverlay?.classList.remove("pdfPinching");
+  pdfTouchPanLayer?.classList.remove("isPassthrough");
+  updatePdfZoomLabel();
+  return true;
+}
+
 function installPdfSafeGestures() {
   if (!pdfFrameWrap || pdfFrameWrap.dataset.safeGestures === "1") return;
   pdfFrameWrap.dataset.safeGestures = "1";
@@ -530,27 +602,43 @@ function installPdfSafeGestures() {
 
   pdfFrameWrap.addEventListener("touchstart", (ev) => {
     if (!preventTwoFinger(ev)) return;
+    const center = touchCenter(ev.touches);
     pdfPinchStartDistance = touchDistance(ev.touches) || 1;
     pdfPinchStartZoom = pdfVisualZoom;
+    pdfGestureAnchorClientX = center?.clientX || window.innerWidth / 2;
+    pdfGestureAnchorClientY = center?.clientY || window.innerHeight / 2;
+    pdfOverlay?.classList.add("pdfPinching");
+    endPdfTouchPan(false);
   }, { passive: false, capture: true });
 
   pdfFrameWrap.addEventListener("touchmove", (ev) => {
     if (!preventTwoFinger(ev)) return;
     const distance = touchDistance(ev.touches) || pdfPinchStartDistance || 1;
     const ratio = distance / (pdfPinchStartDistance || distance || 1);
-    const a = ev.touches[0];
-    const b = ev.touches[1];
+    const center = touchCenter(ev.touches);
     applyPdfVisualZoom(pdfPinchStartZoom * ratio, {
       anchor: true,
-      clientX: (a.clientX + b.clientX) / 2,
-      clientY: (a.clientY + b.clientY) / 2
+      clientX: center?.clientX || pdfGestureAnchorClientX,
+      clientY: center?.clientY || pdfGestureAnchorClientY
     });
   }, { passive: false, capture: true });
 
   pdfFrameWrap.addEventListener("touchend", () => {
     pdfPinchStartDistance = 0;
     pdfPinchStartZoom = pdfVisualZoom;
+    pdfOverlay?.classList.remove("pdfPinching");
+    updatePdfZoomLabel();
   }, { passive: true, capture: true });
+
+  // V14/iOS: captura o gesto nativo de pinça do Safari/PWA sem precisar de botão.
+  // Isso é o que permite pinçar diretamente sobre o PDF/iframe do Drive quando
+  // o navegador envia o gesto para a página principal.
+  const gestureTargets = [pdfFrameWrap, pdfOverlay, window].filter(Boolean);
+  gestureTargets.forEach((target) => {
+    target.addEventListener("gesturestart", beginPdfGestureZoom, { passive: false, capture: true });
+    target.addEventListener("gesturechange", movePdfGestureZoom, { passive: false, capture: true });
+    target.addEventListener("gestureend", endPdfGestureZoom, { passive: false, capture: true });
+  });
 }
 
 function shouldRestorePdfFrame(src) {

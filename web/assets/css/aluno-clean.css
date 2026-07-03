@@ -2056,3 +2056,16 @@ body.pdfOpen {
 .alunoClean .pdfOverlay.pdfZoomed #pdfFrame {
   pointer-events: auto !important;
 }
+
+/* =========================================================
+   V14 — zoom com pinça diretamente sobre o PDF
+   ========================================================= */
+.alunoClean .pdfOverlay.pdfPinching .pdfTouchPanLayer {
+  display: block !important;
+  pointer-events: auto !important;
+  cursor: zoom-in !important;
+}
+
+.alunoClean .pdfOverlay.pdfPinching .pdfZoomControls {
+  opacity: .92 !important;
+}
