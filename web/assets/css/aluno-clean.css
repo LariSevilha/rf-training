@@ -2494,3 +2494,29 @@ body.pdfOpen {
     padding-bottom: 8px !important;
   }
 }
+
+/* =========================================================
+   V22 — corrigir lateral faltando no fit inicial
+   =========================================================
+   A v21 reduzia o PDF aumentando o iframe interno, e o Google Drive podia
+   recalcular a página deixando uma faixa lateral. Agora a escala inicial é
+   visual e centralizada: a folha cabe melhor sem perder a lateral direita.
+*/
+.alunoClean .pdfOverlay.show .pdfFrameWrap {
+  background: #3a3a3a !important;
+  overflow: hidden !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfFrameScale {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  background: #3a3a3a !important;
+}
+
+.alunoClean .pdfOverlay.show #pdfFrame {
+  background: #3a3a3a !important;
+  will-change: transform !important;
+}

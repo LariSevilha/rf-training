@@ -254,10 +254,10 @@ function openHtmlOverlay(title, html) {
 // PDF interno no app: zoom visual seguro + recuperação ao voltar do YouTube/Drive.
 // O PDF do Drive continua dentro do app, mas o zoom do iOS é feito pelo shell
 // da aplicação para evitar que o WebKit re-renderize canvas gigante no iframe.
-// V21: abre o PDF um pouco menor no iPhone para caber melhor a última página.
+// V22: abre o PDF levemente menor, mas centralizado, sem cortar lateral.
 // O zoom visual pode começar abaixo de 100%, mas a pinça continua funcionando.
 const PDF_VISUAL_ZOOM_MIN = 0.85;
-const PDF_VISUAL_ZOOM_DEFAULT = 0.9;
+const PDF_VISUAL_ZOOM_DEFAULT = 0.96;
 const PDF_VISUAL_ZOOM_MAX = 2.75;
 const PDF_VISUAL_ZOOM_STEP = 0.25;
 let pdfVisualZoom = PDF_VISUAL_ZOOM_DEFAULT;
@@ -360,12 +360,12 @@ function updatePdfVisualTransform() {
 
   pdfVisualPanX = clampPdfPanX(pdfVisualPanX);
 
-  // Quando o zoom fica abaixo de 100%, aumentamos a área interna do iframe
-  // e reduzimos visualmente com transform. Assim o Google Drive tem mais
-  // altura/largura útil e a página aparece menor, sem cortar o fim.
-  const internalScale = Math.max(0.01, Math.min(1, pdfVisualZoom));
-  const frameWidth = Math.ceil(baseWidth / internalScale);
-  const frameHeight = Math.ceil(baseHeight / internalScale);
+  // V22: não aumentamos mais o iframe interno abaixo de 100%.
+  // A v21 revelava mais altura, mas o Drive recalculava o layout e deixava
+  // uma lateral faltando. Agora o iframe mantém a largura real do app e
+  // somente a escala visual muda, centralizada horizontalmente.
+  const frameWidth = baseWidth;
+  const frameHeight = baseHeight;
   const centerX = pdfVisualZoom < 1 ? Math.max(0, (baseWidth - frameWidth * pdfVisualZoom) / 2) : 0;
 
   pdfFrameScale.style.width = `${baseWidth}px`;
