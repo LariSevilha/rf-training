@@ -2168,3 +2168,75 @@ body.pdfOpen {
     font-size: 12px !important;
   }
 }
+
+/* =========================================================
+   V16 — barra de zoom com fundo transparente
+   =========================================================
+   A barra continua acessível embaixo, mas não cria mais uma faixa
+   preta nem um fundo sólido sobre o PDF. Só os botões recebem toque.
+*/
+.alunoClean .pdfOverlay.show {
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfFrameWrap {
+  grid-row: 2 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomControls {
+  grid-row: auto !important;
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+  transform: translateX(-50%) !important;
+  margin: 0 !important;
+  padding: 4px 6px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none !important;
+  z-index: 95 !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomBtn,
+.alunoClean .pdfOverlay.show .pdfZoomLabel {
+  pointer-events: auto !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomBtn {
+  background: rgba(10, 10, 10, .58) !important;
+  border-color: rgba(255,255,255,.24) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,.22) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+.alunoClean .pdfOverlay.show .pdfZoomLabel {
+  min-width: 50px !important;
+  padding: 9px 8px !important;
+  border-radius: 999px !important;
+  background: rgba(10, 10, 10, .42) !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,.16) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+@media (max-width: 380px) {
+  .alunoClean .pdfOverlay.show .pdfZoomControls {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 3px 5px !important;
+    gap: 6px !important;
+  }
+
+  .alunoClean .pdfOverlay.show .pdfZoomLabel {
+    min-width: 46px !important;
+    padding: 8px 7px !important;
+  }
+}
