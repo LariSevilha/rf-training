@@ -232,31 +232,6 @@ function cardioWrittenHtml() {
   `;
 }
 
-
-let pdfScrollY = 0;
-
-function lockPdfViewport() {
-  pdfScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-  document.documentElement.classList.add("pdfOpenRoot");
-  document.body.classList.add("pdfOpen");
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${pdfScrollY}px`;
-  document.body.style.left = "0";
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
-}
-
-function unlockPdfViewport() {
-  document.documentElement.classList.remove("pdfOpenRoot");
-  document.body.classList.remove("pdfOpen");
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.left = "";
-  document.body.style.right = "";
-  document.body.style.width = "";
-  window.scrollTo(0, pdfScrollY || 0);
-}
-
 function openHtmlOverlay(title, html) {
   if (pdfTitle) pdfTitle.textContent = title || "Material";
   showLoading();
@@ -269,7 +244,32 @@ function openHtmlOverlay(title, html) {
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
-  lockPdfViewport();
+  document.body.classList.add("pdfOpen");
+}
+
+
+function isTrainingLinkInIOS(type) {
+  return type === "training" && !workouts.length && isIOSDevice();
+}
+
+function openExternalPdfForIOS(title, rawUrl) {
+  const preview = driveToPreview(rawUrl || "");
+
+  if (!preview) {
+    openPdfOverlay(title, rawUrl);
+    return;
+  }
+
+  hideLoading();
+
+  // iOS + Google Drive dentro de iframe é o ponto que causava reload no zoom
+  // e tela branca ao voltar do YouTube. Para o treino cadastrado por link,
+  // abrimos fora do iframe e mantemos o app intacto ao fundo.
+  const opened = window.open(preview, "_blank", "noopener,noreferrer");
+
+  if (!opened) {
+    window.location.href = preview;
+  }
 }
 
 function openPdfOverlay(title, rawUrl) {
@@ -300,7 +300,7 @@ function openPdfOverlay(title, rawUrl) {
 
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
-  lockPdfViewport();
+  document.body.classList.add("pdfOpen");
 }
 
 function openContent(type) {
@@ -309,6 +309,11 @@ function openContent(type) {
     setTab("manual");
     renderWorkouts();
     window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  if (isTrainingLinkInIOS(type)) {
+    openExternalPdfForIOS("TREINO", urls.training || "");
     return;
   }
 
@@ -337,7 +342,7 @@ function openContent(type) {
 function closePdf() {
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
-  unlockPdfViewport();
+  document.body.classList.remove("pdfOpen");
   hideLoading();
 
   setTimeout(() => {
