@@ -24,32 +24,52 @@ function cleanRepsLabel(value) {
   return String(value || "").replace(/^\s*\d+\s*x\s*/i, "").trim();
 }
 
-function getWorkoutExerciseTechnique(ex = {}) {
-  const technique = ex.technique && typeof ex.technique === "object" ? ex.technique : {};
+function findTechniqueCatalogItemById(id) {
+  const techniqueId = String(id || "").trim();
+  if (!techniqueId) return null;
 
-  return {
-    name: String(ex.techniqueName || technique.name || "").trim(),
-    note: String(ex.techniqueNote || technique.exerciseNote || "").trim(),
-    notes: String(ex.techniqueNotes || technique.notes || "").trim(),
-  };
+  return (techniqueCatalog || []).find((item) => String(item.id || "") === techniqueId) || null;
 }
 
-function renderAdminWorkoutTechniqueInline(ex = {}) {
-  const technique = getWorkoutExerciseTechnique(ex);
-  if (!technique.name) return "";
-
-  return `
-    <span class="workoutTechniqueInline">
-      <span class="workoutTechniqueSep"> • </span>
-      <span class="workoutTechniqueLabel">Técnica:</span>
-      <span class="workoutTechniqueName">${escapeHtml(technique.name)}</span>
-      ${technique.note ? `<span class="workoutTechniqueNote"> · ${escapeHtml(technique.note)}</span>` : ""}
-    </span>
-  `;
+function getWorkoutExerciseTechniqueName(ex = {}) {
+  const catalogItem = findTechniqueCatalogItemById(ex.techniqueId || ex.technique?.id);
+  return String(
+    ex.techniqueName ||
+    ex.technique?.name ||
+    catalogItem?.name ||
+    ""
+  ).trim();
 }
 
-function renderAdminWorkoutTechnique(ex = {}) {
-  return renderAdminWorkoutTechniqueInline(ex);
+function getWorkoutExerciseTechniqueNote(ex = {}) {
+  const catalogItem = findTechniqueCatalogItemById(ex.techniqueId || ex.technique?.id);
+  return String(
+    ex.techniqueNote ||
+    ex.technique?.exerciseNote ||
+    ex.technique?.note ||
+    catalogItem?.exerciseNote ||
+    ""
+  ).trim();
+}
+
+function getWorkoutExerciseTechniqueVideoUrl(ex = {}) {
+  const catalogItem = findTechniqueCatalogItemById(ex.techniqueId || ex.technique?.id);
+  return String(
+    ex.techniqueVideoUrl ||
+    ex.technique?.videoUrl ||
+    catalogItem?.videoUrl ||
+    ""
+  ).trim();
+}
+
+function getWorkoutExerciseTechniqueNotes(ex = {}) {
+  const catalogItem = findTechniqueCatalogItemById(ex.techniqueId || ex.technique?.id);
+  return String(
+    ex.techniqueNotes ||
+    ex.technique?.notes ||
+    catalogItem?.notes ||
+    ""
+  ).trim();
 }
 
 function buildCardioPayload() {
@@ -76,6 +96,138 @@ function updateWorkoutExerciseButtonState() {
   workoutExerciseAddBtn.textContent = editingDraftExerciseIndex !== null
     ? "Atualizar exercício"
     : "Adicionar exercício ao treino";
+}
+
+function updateWorkoutAddButtonState() {
+  if (!workoutAddBtn) return;
+  workoutAddBtn.textContent = editingWorkoutKey !== null
+    ? "Atualizar treino na lista do aluno"
+    : "Adicionar treino à lista do aluno";
+}
+
+function createWorkoutClientKey(workout = {}, index = 0) {
+  const existing = workout._clientKey || workout.id || workout.workoutId;
+  if (existing) return String(existing);
+
+  return `local-${Date.now()}-${Math.random().toString(36).slice(2)}-${index}`;
+}
+
+function ensureWorkoutClientKeys() {
+  studentWorkoutList = studentWorkoutList.map((workout, index) => ({
+    ...workout,
+    _clientKey: createWorkoutClientKey(workout, index),
+  }));
+}
+
+function findEditingWorkoutIndex() {
+  if (editingWorkoutKey === null) return -1;
+  ensureWorkoutClientKeys();
+  return studentWorkoutList.findIndex((workout) => String(workout._clientKey) === String(editingWorkoutKey));
+}
+
+function clearEditingWorkoutState() {
+  editingWorkoutKey = null;
+  updateWorkoutAddButtonState();
+}
+
+function getIndexAfterMove(currentIndex, fromIndex, toIndex) {
+  if (currentIndex === null) return null;
+  if (currentIndex === fromIndex) return toIndex;
+  if (fromIndex < toIndex && currentIndex > fromIndex && currentIndex <= toIndex) return currentIndex - 1;
+  if (fromIndex > toIndex && currentIndex >= toIndex && currentIndex < fromIndex) return currentIndex + 1;
+  return currentIndex;
+}
+
+function normalizeWorkoutDraftExerciseOrders({ sort = true } = {}) {
+  if (sort) {
+    workoutDraftExercises.sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
+  }
+
+  workoutDraftExercises = workoutDraftExercises.map((ex, i) => ({
+    ...ex,
+    order: i,
+    series: (ex.series || []).map((s, si) => ({ ...s, order: Number(s.order ?? si) })),
+  }));
+}
+
+function buildWorkoutFromDraft(title, key, fallbackOrder) {
+  normalizeWorkoutDraftExerciseOrders({ sort: true });
+
+  return {
+    _clientKey: key || createWorkoutClientKey({}, studentWorkoutList.length),
+    title,
+    notes: (workoutNotes?.value || "").trim(),
+    active: workoutActive ? !!workoutActive.checked : true,
+    order: Number(workoutOrder?.value || fallbackOrder || 0),
+    exercises: workoutDraftExercises.map((ex, i) => ({
+      ...ex,
+      order: Number(ex.order ?? i),
+      series: (ex.series || []).map((s, si) => ({ ...s, order: Number(s.order ?? si) })),
+    })),
+  };
+}
+
+function buildCleanWorkoutPayload(workouts = studentWorkoutList) {
+  return (workouts || []).map((w, wi) => ({
+    title: String(w.title || `Treino ${wi + 1}`).trim(),
+    notes: w.notes || "",
+    active: w.active !== false,
+    order: Number(w.order ?? wi),
+    exercises: (w.exercises || []).map((ex, ei) => ({
+      exerciseId: ex.exerciseId || null,
+      name: String(ex.name || "").trim(),
+      muscleGroup: ex.muscleGroup || "",
+      videoUrl: ex.videoUrl || "",
+      videoTitle: ex.videoTitle || ex.name || "",
+      notes: ex.notes || "",
+      techniqueId: ex.techniqueId || ex.technique?.id || null,
+      techniqueName: getWorkoutExerciseTechniqueName(ex),
+      techniqueVideoUrl: getWorkoutExerciseTechniqueVideoUrl(ex),
+      techniqueNotes: getWorkoutExerciseTechniqueNotes(ex),
+      techniqueNote: getWorkoutExerciseTechniqueNote(ex),
+      order: Number(ex.order ?? ei),
+      series: (ex.series || []).map((serie, si) => ({
+        count: Math.max(1, Number(serie.count || 1)),
+        reps: cleanRepsLabel(serie.reps || serie.targetReps || ""),
+        targetReps: cleanRepsLabel(serie.reps || serie.targetReps || ""),
+        order: Number(serie.order ?? si),
+      })),
+    })),
+  }));
+}
+
+function commitEditingWorkoutDraft({ silent = false } = {}) {
+  if (editingWorkoutKey === null) return true;
+
+  const title = (workoutTitle?.value || "").trim();
+  if (!title) {
+    if (!silent) toast("error", "Atenção", "Informe o nome do treino.");
+    else toast("error", "Atenção", "Finalize a edição: informe o nome do treino antes de salvar.");
+    return false;
+  }
+
+  if (!workoutDraftExercises.length) {
+    if (!silent) toast("error", "Atenção", "Adicione pelo menos um exercício ao treino.");
+    else toast("error", "Atenção", "Finalize a edição: o treino em edição precisa ter pelo menos um exercício.");
+    return false;
+  }
+
+  const idx = findEditingWorkoutIndex();
+  if (idx < 0) {
+    toast("error", "Erro", "Não encontrei o treino original na lista. Recarregue os treinos e tente novamente.");
+    return false;
+  }
+
+  const existing = studentWorkoutList[idx] || {};
+  studentWorkoutList[idx] = buildWorkoutFromDraft(title, editingWorkoutKey, existing.order ?? idx);
+  studentWorkoutList.sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
+  updateWorkoutOrdersFromList();
+  setWorkoutUnsaved();
+  renderWorkoutList();
+  resetWorkoutDraft();
+
+  if (!silent) toast("ok", "Treino atualizado", "Clique em Salvar treinos manuais para gravar.");
+  return true;
 }
 
 function updateSeriesButtonState() {
@@ -157,6 +309,7 @@ function resetExerciseDraft() {
 }
 
 function resetWorkoutDraft() {
+  clearEditingWorkoutState();
   editingDraftExerciseIndex = null;
   editingSeriesIndex = null;
   workoutDraftExercises = [];
@@ -176,6 +329,7 @@ function resetWorkoutDraft() {
   renderWorkoutDraft();
   updateSeriesButtonState();
   updateWorkoutExerciseButtonState();
+  updateWorkoutAddButtonState();
 }
 
 function renderWorkoutDraft() {
@@ -191,9 +345,10 @@ function renderWorkoutDraft() {
       <div draggable="true" data-draft-ex-index="${idx}" style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:8px 0;cursor:grab;">
         <div style="display:flex;justify-content:space-between;gap:10px;">
           <div>
-            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}${renderAdminWorkoutTechniqueInline(ex)}</b>
+            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>
             <div>${escapeHtml(ex.muscleGroup || "Sem agrupamento")}${ex.videoUrl ? " · vídeo vinculado" : ""}</div>
             ${ex.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(ex.notes)}</div>` : ""}
+            ${getWorkoutExerciseTechniqueName(ex) ? `<div style="margin-top:6px;">${escapeHtml(getWorkoutExerciseTechniqueName(ex))}${getWorkoutExerciseTechniqueNote(ex) ? ` · ${escapeHtml(getWorkoutExerciseTechniqueNote(ex))}` : ""}</div>` : ""}
             <div style="margin-top:6px;">Séries: ${ex.series.map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</div>
           </div>
           <div style="display:flex;gap:8px;height:max-content;flex-wrap:wrap;justify-content:flex-end;">
@@ -236,9 +391,16 @@ function renderWorkoutDraft() {
       if (draggedDraftIndex === null || Number.isNaN(targetIndex) || draggedDraftIndex === targetIndex) return;
       const [moved] = workoutDraftExercises.splice(draggedDraftIndex, 1);
       workoutDraftExercises.splice(targetIndex, 0, moved);
-      workoutDraftExercises = workoutDraftExercises.map((ex, i) => ({ ...ex, order: i }));
-      if (workoutExerciseOrder) workoutExerciseOrder.value = String(workoutDraftExercises.length);
-      editingDraftExerciseIndex = null;
+      editingDraftExerciseIndex = getIndexAfterMove(editingDraftExerciseIndex, draggedDraftIndex, targetIndex);
+      normalizeWorkoutDraftExerciseOrders({ sort: false });
+
+      if (workoutExerciseOrder) {
+        workoutExerciseOrder.value = editingDraftExerciseIndex !== null
+          ? String(editingDraftExerciseIndex)
+          : String(workoutDraftExercises.length);
+      }
+
+      setWorkoutUnsaved();
       updateWorkoutExerciseButtonState();
       renderWorkoutDraft();
       toast("ok", "Ordem alterada", "Exercícios reorganizados no treino em montagem.");
@@ -265,10 +427,19 @@ function renderWorkoutDraft() {
         : [];
 
       workoutDraftExercises.splice(idx + 1, 0, duplicated);
-      workoutDraftExercises = workoutDraftExercises.map((item, i) => ({ ...item, order: i }));
+      normalizeWorkoutDraftExerciseOrders({ sort: false });
 
-      editingDraftExerciseIndex = null;
-      if (workoutExerciseOrder) workoutExerciseOrder.value = String(workoutDraftExercises.length);
+      if (editingDraftExerciseIndex !== null && editingDraftExerciseIndex > idx) {
+        editingDraftExerciseIndex += 1;
+      }
+
+      if (workoutExerciseOrder) {
+        workoutExerciseOrder.value = editingDraftExerciseIndex !== null
+          ? String(editingDraftExerciseIndex)
+          : String(workoutDraftExercises.length);
+      }
+
+      setWorkoutUnsaved();
       updateWorkoutExerciseButtonState();
       renderWorkoutDraft();
       toast("ok", "Exercício duplicado", "Exercício, séries, técnica e observações foram copiados.");
@@ -305,7 +476,7 @@ function renderWorkoutDraft() {
       if (workoutExerciseNotes) workoutExerciseNotes.value = ex.notes || "";
 
       const techniqueId = ex.techniqueId || ex.technique?.id || "";
-      const techniqueName = ex.techniqueName || ex.technique?.name || "";
+      const techniqueName = getWorkoutExerciseTechniqueName(ex);
 
       if (workoutTechniqueSelect) {
         if (
@@ -321,7 +492,7 @@ function renderWorkoutDraft() {
       }
 
       if (workoutTechniqueNote) {
-        workoutTechniqueNote.value = ex.techniqueNote || ex.technique?.exerciseNote || "";
+        workoutTechniqueNote.value = getWorkoutExerciseTechniqueNote(ex);
       }
 
       currentSeriesDraft = Array.isArray(ex.series)
@@ -343,21 +514,31 @@ function renderWorkoutDraft() {
     btn.addEventListener("click", () => {
       const idx = Number(btn.dataset.removeDraftEx);
       workoutDraftExercises.splice(idx, 1);
-      workoutDraftExercises = workoutDraftExercises.map((ex, i) => ({ ...ex, order: i }));
+      normalizeWorkoutDraftExerciseOrders({ sort: false });
       if (editingDraftExerciseIndex === idx) {
         resetExerciseDraft();
       } else if (editingDraftExerciseIndex !== null && editingDraftExerciseIndex > idx) {
         editingDraftExerciseIndex -= 1;
       }
-      if (workoutExerciseOrder) workoutExerciseOrder.value = String(workoutDraftExercises.length);
+      if (workoutExerciseOrder) {
+        workoutExerciseOrder.value = editingDraftExerciseIndex !== null
+          ? String(editingDraftExerciseIndex)
+          : String(workoutDraftExercises.length);
+      }
+      setWorkoutUnsaved();
       renderWorkoutDraft();
     });
   });
 }
 
 function updateWorkoutOrdersFromList() {
+  ensureWorkoutClientKeys();
   studentWorkoutList = studentWorkoutList.map((w, i) => ({ ...w, order: i }));
-  if (workoutOrder) workoutOrder.value = String(studentWorkoutList.length);
+
+  if (workoutOrder) {
+    const editingIndex = findEditingWorkoutIndex();
+    workoutOrder.value = editingIndex >= 0 ? String(editingIndex) : String(studentWorkoutList.length);
+  }
 }
 
 function cloneWorkoutForDuplicate(workout = {}, index = 0) {
@@ -409,29 +590,40 @@ function renderWorkoutList() {
   }
 
   workoutListBox.innerHTML = studentWorkoutList
-    .map((w, idx) => `
-      <div draggable="true" data-workout-index="${idx}" style="border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:12px;margin:10px 0;cursor:grab;background:rgba(255,255,255,.025);">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-          <div>
-            <b>☰ ${idx + 1}. ${escapeHtml(w.title || `Treino ${idx + 1}`)}</b>
-            <div>${w.active === false ? "Inativo" : "Ativo"} · ${w.exercises?.length || 0} exercício(s)</div>
-            ${w.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(w.notes)}</div>` : ""}
-          </div>
-          <div style="display:flex;gap:8px;height:max-content;">
-            <button class="btnGhost" type="button" data-edit-workout="${idx}" style="padding:8px 10px;min-width:auto;">Editar</button>
-            <button class="btnGhost" type="button" data-duplicate-workout="${idx}" style="padding:8px 10px;min-width:auto;">Duplicar treino</button>
-            <button class="btnGhost" type="button" data-remove-workout="${idx}" style="padding:8px 10px;min-width:auto;">Remover</button>
-          </div>
-        </div>
-        <div style="margin-top:8px;">
-          ${(w.exercises || []).map((ex, exIdx) => `
-            <div style="margin:6px 0;">
-              ${exIdx + 1}. ${escapeHtml(ex.name)}${renderAdminWorkoutTechniqueInline(ex)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
+    .map((w, idx) => {
+      const isEditingThisWorkout = editingWorkoutKey !== null && String(w._clientKey) === String(editingWorkoutKey);
+      return `
+        <div draggable="true" data-workout-index="${idx}" style="border:1px solid ${isEditingThisWorkout ? "rgba(206,172,94,.85)" : "rgba(255,255,255,.10)"};border-radius:16px;padding:12px;margin:10px 0;cursor:grab;background:rgba(255,255,255,.025);">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+            <div>
+              <b>☰ ${idx + 1}. ${escapeHtml(w.title || `Treino ${idx + 1}`)}</b>
+              ${isEditingThisWorkout ? `<span style="margin-left:8px;color:#ceac5e;">em edição</span>` : ""}
+              <div>${w.active === false ? "Inativo" : "Ativo"} · ${w.exercises?.length || 0} exercício(s)</div>
+              ${w.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(w.notes)}</div>` : ""}
             </div>
-          `).join("")}
+            <div style="display:flex;gap:8px;height:max-content;">
+              <button class="btnGhost" type="button" data-edit-workout="${idx}" style="padding:8px 10px;min-width:auto;">Editar</button>
+              <button class="btnGhost" type="button" data-duplicate-workout="${idx}" style="padding:8px 10px;min-width:auto;">Duplicar treino</button>
+              <button class="btnGhost" type="button" data-remove-workout="${idx}" style="padding:8px 10px;min-width:auto;">Remover</button>
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            ${(w.exercises || []).map((ex, exIdx) => {
+              const techniqueDisplayName = getWorkoutExerciseTechniqueName(ex);
+              const techniqueDisplayNote = getWorkoutExerciseTechniqueNote(ex);
+              return `
+                <div style="margin:6px 0;">
+                  <div>
+                    ${exIdx + 1}. ${escapeHtml(ex.name)} — ${(ex.series || []).map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}
+                    ${techniqueDisplayName ? `<span style="margin-left:8px;color:#ceac5e;font-weight:700;white-space:nowrap;"> ${escapeHtml(techniqueDisplayName)}${techniqueDisplayNote ? ` · ${escapeHtml(techniqueDisplayNote)}` : ""}</span>` : ""}
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
         </div>
-      </div>
-    `)
+      `;
+    })
     .join("");
 
   let draggedIndex = null;
@@ -476,7 +668,13 @@ function renderWorkoutList() {
   workoutListBox.querySelectorAll("[data-remove-workout]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = Number(btn.dataset.removeWorkout);
+      const removed = studentWorkoutList[idx];
       studentWorkoutList.splice(idx, 1);
+
+      if (removed && editingWorkoutKey !== null && String(removed._clientKey) === String(editingWorkoutKey)) {
+        resetWorkoutDraft();
+      }
+
       updateWorkoutOrdersFromList();
       setWorkoutUnsaved();
       renderWorkoutList();
@@ -490,6 +688,7 @@ function renderWorkoutList() {
       if (!workout) return;
 
       const duplicated = cloneWorkoutForDuplicate(workout, idx);
+      duplicated._clientKey = createWorkoutClientKey({}, idx + 1);
       studentWorkoutList.splice(idx + 1, 0, duplicated);
       updateWorkoutOrdersFromList();
       setWorkoutUnsaved();
@@ -504,22 +703,31 @@ function renderWorkoutList() {
       const w = studentWorkoutList[idx];
       if (!w) return;
 
+      editingWorkoutKey = createWorkoutClientKey(w, idx);
+      studentWorkoutList[idx] = { ...w, _clientKey: editingWorkoutKey };
+
       if (workoutTitle) workoutTitle.value = w.title || "";
       if (workoutNotes) workoutNotes.value = w.notes || "";
       if (workoutOrder) workoutOrder.value = String(w.order ?? idx);
       if (workoutActive) workoutActive.checked = w.active !== false;
 
       editingDraftExerciseIndex = null;
+      editingSeriesIndex = null;
+      currentSeriesDraft = [];
+      if (seriesCount) seriesCount.value = "";
+      if (seriesTargetReps) seriesTargetReps.value = "";
+      updateSeriesButtonState();
       updateWorkoutExerciseButtonState();
+      updateWorkoutAddButtonState();
       refreshExercises().catch(() => {});
       refreshTechniques().catch(() => {});
       workoutDraftExercises = Array.isArray(w.exercises) ? JSON.parse(JSON.stringify(w.exercises)) : [];
-      studentWorkoutList.splice(idx, 1);
-      updateWorkoutOrdersFromList();
-      setWorkoutUnsaved();
+      normalizeWorkoutDraftExerciseOrders({ sort: true });
+      if (workoutExerciseOrder) workoutExerciseOrder.value = String(workoutDraftExercises.length);
+      renderCurrentSeries();
       renderWorkoutDraft();
       renderWorkoutList();
-      toast("info", "Treino carregado para edição", "Ajuste e adicione novamente à lista do aluno.");
+      toast("info", "Treino carregado para edição", "Ajuste e clique em Atualizar treino na lista do aluno.");
     });
   });
 }
@@ -620,7 +828,7 @@ workoutExerciseAddBtn?.addEventListener("click", () => {
     toast("ok", "Exercício adicionado", "Agora você pode adicionar outro exercício ou finalizar o treino.");
   }
 
-  workoutDraftExercises.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  normalizeWorkoutDraftExerciseOrders({ sort: true });
   setWorkoutUnsaved();
   resetExerciseDraft();
   renderWorkoutDraft();
@@ -635,19 +843,15 @@ workoutAddBtn?.addEventListener("click", () => {
   if (!title) return toast("error", "Atenção", "Informe o nome do treino.");
   if (!workoutDraftExercises.length) return toast("error", "Atenção", "Adicione pelo menos um exercício ao treino.");
 
-  studentWorkoutList.push({
-    title,
-    notes: (workoutNotes?.value || "").trim(),
-    active: workoutActive ? !!workoutActive.checked : true,
-    order: Number(workoutOrder?.value || studentWorkoutList.length),
-    exercises: workoutDraftExercises.map((ex, i) => ({
-      ...ex,
-      order: Number(ex.order ?? i),
-      series: (ex.series || []).map((s, si) => ({ ...s, order: Number(s.order ?? si) })),
-    })),
-  });
+  if (editingWorkoutKey !== null) {
+    commitEditingWorkoutDraft();
+    return;
+  }
 
-  studentWorkoutList.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  studentWorkoutList.push(buildWorkoutFromDraft(title, null, studentWorkoutList.length));
+
+  studentWorkoutList.sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
+  updateWorkoutOrdersFromList();
   setWorkoutUnsaved();
   renderWorkoutList();
   resetWorkoutDraft();

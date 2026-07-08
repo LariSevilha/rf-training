@@ -102,9 +102,18 @@ saveBtn?.addEventListener("click", async () => {
     if (exams) exams.value = saved.exams || "";
     if (stretch) stretch.value = saved.stretch || "";
 
-    // Se o treino for manual, salva os treinos também.
+    // Se o treino for manual, salva os treinos também e limpa o estado de alterações pendentes.
     if (mode === "manual") {
-      await apiAdminSaveWorkouts(token, em, studentWorkoutList);
+      if (typeof commitEditingWorkoutDraft === "function" && !commitEditingWorkoutDraft({ silent: true })) return;
+
+      const cleanWorkouts = typeof buildCleanWorkoutPayload === "function"
+        ? buildCleanWorkoutPayload(studentWorkoutList)
+        : studentWorkoutList;
+
+      await apiAdminSaveWorkouts(token, em, cleanWorkouts);
+      studentWorkoutList = cleanWorkouts;
+      if (typeof renderWorkoutList === "function") renderWorkoutList();
+      clearWorkoutUnsaved();
     }
 
     toast(

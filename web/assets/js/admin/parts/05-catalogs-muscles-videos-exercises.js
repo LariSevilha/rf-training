@@ -285,32 +285,11 @@ workoutSaveBtn?.addEventListener("click", async () => {
   if (!em) return toast("error", "Atenção", "Informe o email do aluno.");
 
   try {
-    const cleanWorkouts = studentWorkoutList.map((w, wi) => ({
-      title: String(w.title || `Treino ${wi + 1}`).trim(),
-      notes: w.notes || "",
-      active: w.active !== false,
-      order: Number(w.order ?? wi),
-      exercises: (w.exercises || []).map((ex, ei) => ({
-        exerciseId: ex.exerciseId || null,
-        name: String(ex.name || "").trim(),
-        muscleGroup: ex.muscleGroup || "",
-        videoUrl: ex.videoUrl || "",
-        videoTitle: ex.videoTitle || ex.name || "",
-        notes: ex.notes || "",
-        techniqueId: ex.techniqueId || null,
-        techniqueName: ex.techniqueName || "",
-        techniqueVideoUrl: ex.techniqueVideoUrl || "",
-        techniqueNotes: ex.techniqueNotes || "",
-        techniqueNote: ex.techniqueNote || "",
-        order: Number(ex.order ?? ei),
-        series: (ex.series || []).map((serie, si) => ({
-          count: Math.max(1, Number(serie.count || 1)),
-          reps: cleanRepsLabel(serie.reps || serie.targetReps || ""),
-          targetReps: cleanRepsLabel(serie.reps || serie.targetReps || ""),
-          order: Number(serie.order ?? si),
-        })),
-      })),
-    }));
+    if (typeof commitEditingWorkoutDraft === "function" && !commitEditingWorkoutDraft({ silent: true })) return;
+
+    const cleanWorkouts = typeof buildCleanWorkoutPayload === "function"
+      ? buildCleanWorkoutPayload(studentWorkoutList)
+      : studentWorkoutList;
 
     await apiAdminSaveWorkouts(token, em, cleanWorkouts);
     studentWorkoutList = cleanWorkouts;

@@ -80,5 +80,25 @@ techniqueSaveBtn?.addEventListener("click", async () => {
     toast("error", "Erro", e.message || "Erro ao salvar técnica.");
   }
 });
+
+function syncWorkoutTechniqueNoteFromSelect() {
+  if (!workoutTechniqueNote) return;
+
+  const selectedTechniqueId = String(workoutTechniqueSelect?.value || "").trim();
+
+  if (!selectedTechniqueId) {
+    workoutTechniqueNote.value = "";
+    return;
+  }
+
+  const selectedTechnique = techniqueCatalog.find((item) => String(item.id) === selectedTechniqueId);
+  workoutTechniqueNote.value = selectedTechnique?.exerciseNote || selectedTechnique?.notes || "";
+}
+
+workoutTechniqueSelect?.addEventListener("change", () => {
+  syncWorkoutTechniqueNoteFromSelect();
+  setWorkoutUnsaved();
+});
+
 techniqueCancelEditBtn?.addEventListener("click", resetTechniqueEdit);
 techniqueRefreshBtn?.addEventListener("click", async () => { await refreshTechniques(); toast("ok", "Atualizado", "Técnicas carregadas."); });

@@ -191,6 +191,7 @@ let editingVideoId = null;
 let editingExerciseId = null;
 let editingTechniqueId = null;
 let editingDraftExerciseIndex = null;
+let editingWorkoutKey = null;
 let techniqueCatalog = [];
 let studentExtraItems = [];
 let extraStudents = [];
@@ -227,7 +228,8 @@ function hasWorkoutDraftContent() {
     workoutDraftExercises.length ||
     currentSeriesDraft.length ||
     editingDraftExerciseIndex !== null ||
-    editingSeriesIndex !== null
+    editingSeriesIndex !== null ||
+    editingWorkoutKey !== null
   );
 }
 
