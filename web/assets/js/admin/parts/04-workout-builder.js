@@ -345,10 +345,9 @@ function renderWorkoutDraft() {
       <div draggable="true" data-draft-ex-index="${idx}" style="border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px;margin:8px 0;cursor:grab;">
         <div style="display:flex;justify-content:space-between;gap:10px;">
           <div>
-            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>
+            <b>☰ ${idx + 1}. ${escapeHtml(ex.name)}</b>${getWorkoutExerciseTechniqueName(ex) ? `<span style="margin-left:8px;color:#ceac5e;font-weight:700;white-space:nowrap;"> ${escapeHtml(getWorkoutExerciseTechniqueName(ex))}${getWorkoutExerciseTechniqueNote(ex) ? ` · ${escapeHtml(getWorkoutExerciseTechniqueNote(ex))}` : ""}</span>` : ""}
             <div>${escapeHtml(ex.muscleGroup || "Sem agrupamento")}${ex.videoUrl ? " · vídeo vinculado" : ""}</div>
             ${ex.notes ? `<div style="margin-top:6px;">Obs.: ${escapeHtml(ex.notes)}</div>` : ""}
-            ${getWorkoutExerciseTechniqueName(ex) ? `<div style="margin-top:6px;">${escapeHtml(getWorkoutExerciseTechniqueName(ex))}${getWorkoutExerciseTechniqueNote(ex) ? ` · ${escapeHtml(getWorkoutExerciseTechniqueNote(ex))}` : ""}</div>` : ""}
             <div style="margin-top:6px;">Séries: ${ex.series.map((s) => escapeHtml(formatSeriesLabel(s))).join(" · ")}</div>
           </div>
           <div style="display:flex;gap:8px;height:max-content;flex-wrap:wrap;justify-content:flex-end;">
