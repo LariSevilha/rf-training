@@ -64,7 +64,7 @@ async function syncDocuments() {
   }
 }
 
-async function syncWorkouts(showLoadingMessage = true) {
+async function syncWorkouts(showLoadingMessage = true, options = {}) {
   if (!session?.token) return;
 
   if (showLoadingMessage) {
@@ -74,7 +74,12 @@ async function syncWorkouts(showLoadingMessage = true) {
   try {
     const data = await apiWorkouts(session.token);
     workouts = Array.isArray(data.workouts) ? data.workouts : [];
-    await syncWorkoutHistory(false);
+
+    // O histórico pode ser grande. Carrega só quando o aluno abrir o histórico
+    // ou depois de salvar uma execução, em vez de bloquear a abertura da página.
+    if (options.loadHistory === true) {
+      await syncWorkoutHistory(false);
+    }
 
     if (activeWorkoutIndex >= workouts.length) {
       activeWorkoutIndex = 0;
@@ -139,6 +144,11 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
 
   setTab("documents");
 
+  // Libera a interface antes das chamadas de dados terminarem.
+  // Assim o app deixa de ficar preso na tela de carregamento quando a API oscila.
+  document.body.classList.remove("studentBooting");
+  document.body.classList.add("studentReady");
+
   await Promise.allSettled([
     syncDocuments(),
     syncWorkouts(false),
@@ -152,7 +162,4 @@ refreshStudentBtn?.addEventListener("click", refreshAll);
       ? ""
       : "Nenhum material disponível no momento.";
   }
-
-  document.body.classList.remove("studentBooting");
-  document.body.classList.add("studentReady");
 })();

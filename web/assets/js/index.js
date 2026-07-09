@@ -71,25 +71,31 @@ loginBtn?.addEventListener("click", async (e) => {
   if (emailEl) emailEl.value = loadEmail();
   if (rememberEl) rememberEl.checked = !!(emailEl?.value || "");
 
-  try {
-    await apiHealth();
-    if (status) status.textContent = "API online ✅";
-  } catch {
-    if (status) status.textContent = "API offline ❌ (confira localhost:3333)";
-  }
+  // Não bloqueia a tela de login esperando /health.
+  // A checagem continua em segundo plano só para atualizar o status.
+  apiHealth()
+    .then(() => {
+      if (status) status.textContent = "API online ✅";
+    })
+    .catch(() => {
+      if (status) status.textContent = "API offline ❌ (confira localhost:3333)";
+    });
 
   const token = getToken();
-  if (token) {
-    try {
-      const me = await apiMe(token);
-      if (me.user?.active) {
-        goRole(me.user.role);
-        return;
-      }
-      clearSession();
-    } catch {
-      clearSession();
+  if (!token) {
+    showLoginScreen();
+    return;
+  }
+
+  try {
+    const me = await apiMe(token);
+    if (me.user?.active) {
+      goRole(me.user.role);
+      return;
     }
+    clearSession();
+  } catch {
+    clearSession();
   }
 
   showLoginScreen();

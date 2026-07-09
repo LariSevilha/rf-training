@@ -6,11 +6,15 @@ if ("serviceWorker" in navigator) {
 
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("/service-worker.js", {
-        updateViaCache: "none"
-      });
+      const reg = await navigator.serviceWorker.register("/service-worker.js");
 
-      await reg.update();
+      // Evita uma verificação de update em toda troca de página.
+      // Isso era um dos motivos de lentidão e recarregamentos no iOS.
+      const checkedKey = "rf_sw_update_checked";
+      if (!sessionStorage.getItem(checkedKey)) {
+        sessionStorage.setItem(checkedKey, "1");
+        reg.update().catch(() => {});
+      }
 
       if (reg.waiting) {
         reg.waiting.postMessage({ type: "SKIP_WAITING" });
@@ -39,10 +43,7 @@ if ("serviceWorker" in navigator) {
     if (refreshing) return;
 
     refreshing = true;
-    // iOS/PWA: não recarregar automaticamente aqui. Quando o WebKit mata
-    // a aba por memória durante o PDF, qualquer reload forçado piora o efeito
-    // de "voltar para a tela inicial". A nova versão entra no próximo acesso.
-    console.log("Service Worker atualizado; reload automático desativado no aluno.");
+    window.location.reload();
   });
 
   navigator.serviceWorker.addEventListener("message", (event) => {
@@ -62,13 +63,8 @@ const refreshStudentBtn = document.getElementById("refreshStudentBtn");
 
 const pdfOverlay = document.getElementById("pdfOverlay");
 const pdfFrame = document.getElementById("pdfFrame");
-const pdfFrameWrap = document.getElementById("pdfFrameWrap");
-const pdfFrameScale = document.getElementById("pdfFrameScale");
 const pdfBack = document.getElementById("pdfBack");
 const pdfTitle = document.getElementById("pdfTitle");
-const pdfZoomOut = document.getElementById("pdfZoomOut");
-const pdfZoomIn = document.getElementById("pdfZoomIn");
-const pdfZoomLabel = document.getElementById("pdfZoomLabel");
 const loadingLayer = document.getElementById("loadingLayer");
 
 const offlineMask = document.getElementById("offlineMask");

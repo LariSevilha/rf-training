@@ -71,20 +71,31 @@ window.addEventListener("routechange", async (e) => {
 
   token = session.token;
   if (who) who.textContent = session.user.email;
+  if (footerAdminEmail) footerAdminEmail.textContent = session.user.email || "";
+  if (footerAdminName) footerAdminName.textContent = session.user.name || "Admin";
+  if (adminAvatar) adminAvatar.textContent = getInitials(session.user.name || session.user.email || "RF");
 
   fillMonthSelects();
 
-  await loadMe().catch(() => {});
-  await refreshList().catch(() => {});
   renderCurrentSeries();
   updateSeriesButtonState();
   renderWorkoutDraft();
   renderWorkoutList();
   updateWorkoutExerciseButtonState();
   setupLibraryCards();
-  await refreshTechniques().catch(() => {});
   ensureRecordsStudentSelect();
   updateTrainingModeUI();
+
+  // O router já deixou a tela inicial ativa antes deste arquivo terminar.
+  // Dispara o carregamento apenas da tela atual, em vez de buscar listas que talvez nem sejam usadas.
+  const activeRoute = document.querySelector(".view.active")?.id?.replace(/^view-/, "") || "create";
+
+  // Carrega o perfil sem travar a abertura do painel.
+  if (activeRoute !== "me") {
+    loadMe().catch(() => {});
+  }
+
+  window.dispatchEvent(new CustomEvent("routechange", { detail: { route: activeRoute } }));
 })();
 
 function renderSearchResultList({ box, items, type }) {
