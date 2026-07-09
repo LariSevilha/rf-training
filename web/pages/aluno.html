@@ -115,7 +115,13 @@
     </div>
     <div class="pdfFrameWrap" id="pdfFrameWrap">
       <div class="pdfFrameScale" id="pdfFrameScale">
-        <iframe id="pdfFrame" title="Visualização de PDF" sandbox="allow-same-origin allow-scripts allow-forms allow-popups" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <iframe 
+          id="pdfFrame" 
+          loading="eager"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-downloads"
+          style="width:100%; height:100%; border: none; background: #f8f9fa;"
+          allowfullscreen>
+        </iframe>
       </div>
       <div class="loadingLayer" id="loadingLayer">
         <div class="spinner"></div>

@@ -36,13 +36,12 @@ export function driveToNativePdf(url) {
 
 export function driveToPreview(url) {
   if (!url) return "";
-
+  
   if (url.includes("drive.google.com")) {
-    // Força preview otimizado
-    return url
-      .replace(/\/view\?usp=drivesdk/, "/preview")
-      .replace(/\/edit\?usp=drivesdk/, "/preview")
-      .replace(/\/file\/d\/(.*?)\/.*/, "/file/d/$1/preview");
+    let clean = url.replace(/\/view.*$/, "/preview")
+                   .replace(/\/edit.*$/, "/preview")
+                   .replace(/\/file\/d\/(.*?)\/.*/, "/file/d/$1/preview");
+    return clean;
   }
   return url;
 }

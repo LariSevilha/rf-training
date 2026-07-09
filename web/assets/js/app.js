@@ -66,47 +66,43 @@ function hideLoading() {
 pdfFrame.addEventListener("load", () => hideLoading());
 
 // Open PDF
-function openPdfFullscreen(type) {
+async function openPdfFullscreen(type) {
   const titles = { training: "TREINO", diet: "ALIMENTAÇÃO", supp: "SUPLEMENTAÇÃO" };
   pdfTitle.textContent = titles[type] || "PDF";
 
-  let raw = state.urls[type] || "";
-  let preview = driveToPreview(raw);
-
+  const raw = state.urls[type] || "";
   showLoading();
 
-  if (!preview) {
-    const placeholder = makePlaceholderHtml(titles[type], "Configure o PDF com o admin ou use o painel lateral.");
+  if (!raw) {
+    const placeholder = makePlaceholderHtml(titles[type], "Nenhum PDF configurado.");
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholder);
-    setTimeout(hideLoading, 350);
+    hideLoading();
     return;
   }
 
-  // === MELHORIA PRINCIPAL ===
-  pdfFrame.style.background = "#f8f9fa"; // evita flash branco
-  pdfFrame.loading = "eager";           // força carregamento antecipado
-
-  // Se for Google Drive, força modo preview otimizado
-  if (preview.includes("drive.google.com")) {
-    preview = preview.replace(/\/view.*$/, "/preview").replace(/\/edit.*$/, "/preview");
-  }
-
-  pdfFrame.src = preview;
-
   topbar.style.display = "none";
   pdfOverlay.classList.add("show");
-  pdfOverlay.setAttribute("aria-hidden", "false");
 
-  // Reset scroll suave após carregar
-  pdfFrame.onload = () => {
+  // Se for link do Drive, tenta pegar o ID
+  let pdfUrl = raw;
+  if (raw.includes("drive.google.com")) {
+    const match = raw.match(/\/file\/d\/([^\/]+)/);
+    if (match) {
+      pdfUrl = `https://drive.google.com/uc?id=${match[1]}&export=download`;
+    }
+  }
+
+  // Carrega com PDF.js
+  try {
+    pdfFrame.src = `/assets/pdfjs/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`;
+    
+    pdfFrame.onload = () => {
+      hideLoading();
+    };
+  } catch (e) {
     hideLoading();
-    // Pequeno delay para estabilizar o viewer do Drive/PDF
-    setTimeout(() => {
-      try {
-        pdfFrame.contentWindow.scrollTo(0, 0); // reset scroll
-      } catch (e) {}
-    }, 600);
-  };
+    console.error("Erro ao carregar PDF", e);
+  }
 }
 
 function closePdfFullscreen() {
