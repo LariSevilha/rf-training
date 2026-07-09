@@ -6,15 +6,11 @@ if ("serviceWorker" in navigator) {
 
   window.addEventListener("load", async () => {
     try {
-      const reg = await navigator.serviceWorker.register("/service-worker.js");
+      const reg = await navigator.serviceWorker.register("/service-worker.js", {
+        updateViaCache: "none"
+      });
 
-      // Evita uma verificação de update em toda troca de página.
-      // Isso era um dos motivos de lentidão e recarregamentos no iOS.
-      const checkedKey = "rf_sw_update_checked";
-      if (!sessionStorage.getItem(checkedKey)) {
-        sessionStorage.setItem(checkedKey, "1");
-        reg.update().catch(() => {});
-      }
+      await reg.update();
 
       if (reg.waiting) {
         reg.waiting.postMessage({ type: "SKIP_WAITING" });
@@ -43,6 +39,15 @@ if ("serviceWorker" in navigator) {
     if (refreshing) return;
 
     refreshing = true;
+
+    // Não recarrega enquanto o aluno está com PDF aberto.
+    // No iOS, gestos de zoom/scroll no visualizador podem coincidir com
+    // atualização do service worker e derrubar o aluno para a tela inicial.
+    if (document.body?.classList.contains("pdfOpen")) {
+      console.log("App atualizado; recarregamento adiado até sair do PDF.");
+      return;
+    }
+
     window.location.reload();
   });
 
@@ -172,7 +177,32 @@ function hideLoading() {
   fallbackTimer = null;
 }
 
-pdfFrame?.addEventListener("load", hideLoading);
+let pdfFramePrimed = false;
+
+function primePdfFrameTouch() {
+  if (!pdfFrame || pdfFramePrimed) return;
+
+  pdfFramePrimed = true;
+
+  // Preparação única ao abrir o overlay.
+  // Não roda em touchstart/pointerdown para não interferir no pinch zoom do iOS.
+  requestAnimationFrame(() => {
+    try {
+      pdfFrame.focus({ preventScroll: true });
+    } catch {
+      try { pdfFrame.focus(); } catch {}
+    }
+  });
+}
+
+function resetPdfFrameTouchPrime() {
+  pdfFramePrimed = false;
+}
+
+if (pdfFrame) {
+  pdfFrame.setAttribute("tabindex", "0");
+  pdfFrame.addEventListener("load", hideLoading);
+}
 
 function setOfflineUI() {
   const online = navigator.onLine;
