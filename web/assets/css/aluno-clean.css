@@ -20,7 +20,17 @@
   overflow-y:auto;
   overflow-x:hidden;
 }
+#pdfOverlay {
+  background: #000;
+}
 
+#pdfFrame {
+  transition: opacity 0.3s;
+}
+
+#pdfFrame.loading {
+  opacity: 0.6;
+}
 .alunoClean * { box-sizing: border-box; }
 
 .alunoClean .alunoTop {

@@ -35,21 +35,16 @@ export function driveToNativePdf(url) {
 }
 
 export function driveToPreview(url) {
-  const value = String(url || "").trim();
-  if (!value) return "";
+  if (!url) return "";
 
-  if (value.includes("drive.google.com") || value.includes("docs.google.com")) {
-    const fileId = extractDriveFileId(value);
-    if (fileId) {
-      return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
-    }
-
-    return value.includes("/preview")
-      ? value
-      : value.replace(/\/view.*$/, "/preview");
+  if (url.includes("drive.google.com")) {
+    // Força preview otimizado
+    return url
+      .replace(/\/view\?usp=drivesdk/, "/preview")
+      .replace(/\/edit\?usp=drivesdk/, "/preview")
+      .replace(/\/file\/d\/(.*?)\/.*/, "/file/d/$1/preview");
   }
-
-  return value;
+  return url;
 }
 
 export function placeholderHtml(title, msg) {

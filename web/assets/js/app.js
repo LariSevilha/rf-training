@@ -70,8 +70,8 @@ function openPdfFullscreen(type) {
   const titles = { training: "TREINO", diet: "ALIMENTAÇÃO", supp: "SUPLEMENTAÇÃO" };
   pdfTitle.textContent = titles[type] || "PDF";
 
-  const raw = state.urls[type] || "";
-  const preview = driveToPreview(raw);
+  let raw = state.urls[type] || "";
+  let preview = driveToPreview(raw);
 
   showLoading();
 
@@ -79,13 +79,34 @@ function openPdfFullscreen(type) {
     const placeholder = makePlaceholderHtml(titles[type], "Configure o PDF com o admin ou use o painel lateral.");
     pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(placeholder);
     setTimeout(hideLoading, 350);
-  } else {
-    pdfFrame.src = preview;
+    return;
   }
+
+  // === MELHORIA PRINCIPAL ===
+  pdfFrame.style.background = "#f8f9fa"; // evita flash branco
+  pdfFrame.loading = "eager";           // força carregamento antecipado
+
+  // Se for Google Drive, força modo preview otimizado
+  if (preview.includes("drive.google.com")) {
+    preview = preview.replace(/\/view.*$/, "/preview").replace(/\/edit.*$/, "/preview");
+  }
+
+  pdfFrame.src = preview;
 
   topbar.style.display = "none";
   pdfOverlay.classList.add("show");
   pdfOverlay.setAttribute("aria-hidden", "false");
+
+  // Reset scroll suave após carregar
+  pdfFrame.onload = () => {
+    hideLoading();
+    // Pequeno delay para estabilizar o viewer do Drive/PDF
+    setTimeout(() => {
+      try {
+        pdfFrame.contentWindow.scrollTo(0, 0); // reset scroll
+      } catch (e) {}
+    }, 600);
+  };
 }
 
 function closePdfFullscreen() {
