@@ -2543,3 +2543,34 @@ body.pdfOpen {
   background: #3a3a3a !important;
   will-change: transform !important;
 }
+
+/* =========================================================
+   PDF.js local — um único controlador de zoom e rolagem
+   ========================================================= */
+.alunoClean .pdfOverlay.pdfJsViewer .pdfTouchPanLayer {
+  display: none !important;
+  pointer-events: none !important;
+  touch-action: auto !important;
+}
+
+.alunoClean .pdfOverlay.pdfJsViewer .pdfFrameWrap,
+.alunoClean .pdfOverlay.pdfJsViewer .pdfFrameScale {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  touch-action: auto !important;
+}
+
+.alunoClean .pdfOverlay.pdfJsViewer #pdfFrame {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  transform: none !important;
+  transform-origin: initial !important;
+  will-change: auto !important;
+  pointer-events: auto !important;
+  touch-action: auto !important;
+}

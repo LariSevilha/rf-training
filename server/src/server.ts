@@ -1,6 +1,7 @@
 import "dotenv/config";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { Readable } from "node:stream";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
@@ -10,6 +11,19 @@ import fastifyStatic from "@fastify/static";
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import {
+  PDF_MAX_BYTES,
+  PDF_MAX_REDIRECTS,
+  PDF_TICKET_TTL,
+  PDF_UPSTREAM_TIMEOUT_MS,
+  PdfTicketPayload,
+  buildGoogleDriveDownloadUrl,
+  hasPdfSignature,
+  isAllowedGoogleDriveDeliveryUrl,
+  isPdfLikeContentType,
+  normalizeRangeHeader,
+  parseContentLength,
+} from "./pdf-access";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -17,14 +31,20 @@ const prisma = new PrismaClient({ adapter });
 type JwtPayload = { sub: string; role: "admin" | "student" };
 
 function normEmail(v: string) {
-  return String(v || "").trim().toLowerCase();
+  return String(v || "")
+    .trim()
+    .toLowerCase();
 }
 function normKey(v: string) {
-  return String(v || "").trim().toLowerCase();
+  return String(v || "")
+    .trim()
+    .toLowerCase();
 }
 
 function startOfWeek(date = new Date()) {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const d = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
   const day = d.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day; // segunda-feira
   d.setUTCDate(d.getUTCDate() + diff);
@@ -37,6 +57,77 @@ function parseDateParam(value: any) {
   if (!raw) return null;
   const d = new Date(raw);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+async function fetchGoogleDrivePdf(downloadUrl: string, range?: string) {
+  let currentUrl = downloadUrl;
+
+  for (let redirectCount = 0; redirectCount <= PDF_MAX_REDIRECTS; redirectCount += 1) {
+    if (!isAllowedGoogleDriveDeliveryUrl(currentUrl)) {
+      throw new Error("PDF_REDIRECT_NOT_ALLOWED");
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PDF_UPSTREAM_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(currentUrl, {
+        method: "GET",
+        redirect: "manual",
+        signal: controller.signal,
+        headers: {
+          Accept: "application/pdf,application/octet-stream;q=0.9",
+          "Accept-Encoding": "identity",
+          ...(range ? { Range: range } : {}),
+        },
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+      await response.body?.cancel();
+      if (!location || redirectCount >= PDF_MAX_REDIRECTS) {
+        throw new Error("PDF_TOO_MANY_REDIRECTS");
+      }
+
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error("PDF_TOO_MANY_REDIRECTS");
+}
+
+async function* streamPdfBody(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  firstChunk: Uint8Array,
+) {
+  let transferred = 0;
+
+  try {
+    let chunk: Uint8Array | undefined = firstChunk;
+    while (chunk) {
+      transferred += chunk.byteLength;
+      if (transferred > PDF_MAX_BYTES) throw new Error("PDF_TOO_LARGE");
+      yield Buffer.from(chunk);
+
+      const next = await reader.read();
+      if (next.done) break;
+      chunk = next.value;
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } catch {
+      // O cliente pode ter encerrado a conexão enquanto o PDF era transmitido.
+    }
+    reader.releaseLock();
+  }
 }
 
 async function main() {
@@ -91,14 +182,16 @@ async function main() {
     const normalized = normEmail(email);
 
     const user = await prisma.user.findUnique({ where: { email: normalized } });
-    if (!user) return reply.code(401).send({ message: "Email ou senha inválidos" });
+    if (!user)
+      return reply.code(401).send({ message: "Email ou senha inválidos" });
 
     const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) return reply.code(401).send({ message: "Email ou senha inválidos" });
+    if (!ok)
+      return reply.code(401).send({ message: "Email ou senha inválidos" });
 
     const token = app.jwt.sign(
       { role: user.role as JwtPayload["role"] },
-      { sub: user.id, expiresIn: "2h" }
+      { sub: user.id, expiresIn: "2h" },
     );
 
     return {
@@ -112,74 +205,302 @@ async function main() {
     };
   });
 
-  app.get(`${API_PREFIX}/me`, { preHandler: (app as any).auth }, async (req: any) => {
-    const payload = req.user as JwtPayload;
-    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!user) return { user: null };
-    return {
-      user: {
-        email: user.email,
-        name: user.name,
-        active: user.active,
-        role: user.role,
-      },
-    };
-  });
+  app.get(
+    `${API_PREFIX}/me`,
+    { preHandler: (app as any).auth },
+    async (req: any) => {
+      const payload = req.user as JwtPayload;
+      const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if (!user) return { user: null };
+      return {
+        user: {
+          email: user.email,
+          name: user.name,
+          active: user.active,
+          role: user.role,
+        },
+      };
+    },
+  );
 
   // ===== ALUNO =====
-  app.get(`${API_PREFIX}/documents`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = req.user as JwtPayload;
+  app.get(
+    `${API_PREFIX}/documents`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = req.user as JwtPayload;
 
-    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!user) return reply.code(404).send({ message: "Usuário não encontrado" });
-    if (!user.active) return reply.code(403).send({ message: "Usuário desativado" });
+      const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if (!user)
+        return reply.code(404).send({ message: "Usuário não encontrado" });
+      if (!user.active)
+        return reply.code(403).send({ message: "Usuário desativado" });
 
-    const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
+      const docs = await prisma.studentDocument.findMany({
+        where: { userId: user.id },
+      });
 
-    const out: Record<string, string> = { training: "", diet: "", supp: "", cardio: "", cardioName: "", cardioTime: "", cardioIntensity: "", cardioDays: "", exams: "", stretch: "" };
-    for (const d of docs) out[normKey(d.docType)] = d.url;
+      const out: Record<string, string> = {
+        training: "",
+        diet: "",
+        supp: "",
+        cardio: "",
+        cardioName: "",
+        cardioTime: "",
+        cardioIntensity: "",
+        cardioDays: "",
+        exams: "",
+        stretch: "",
+      };
+      for (const d of docs) out[normKey(d.docType)] = d.url;
 
-    return out;
-  });
-
+      return out;
+    },
+  );
 
   // ===== ITENS EXTRAS - ALUNO =====
-  app.get(`${API_PREFIX}/extra-items`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = req.user as JwtPayload;
+  app.get(
+    `${API_PREFIX}/extra-items`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = req.user as JwtPayload;
 
-    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!user) return reply.code(404).send({ message: "Usuário não encontrado" });
-    if (!user.active) return reply.code(403).send({ message: "Usuário desativado" });
+      const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if (!user)
+        return reply.code(404).send({ message: "Usuário não encontrado" });
+      if (!user.active)
+        return reply.code(403).send({ message: "Usuário desativado" });
 
-    const items = await (prisma as any).studentExtraItem.findMany({
-      where: { userId: user.id, active: true },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    });
+      const items = await (prisma as any).studentExtraItem.findMany({
+        where: { userId: user.id, active: true },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      });
 
-    return {
-      items: items.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        category: item.category || "outros",
-        sourceType: item.sourceType || "link",
-        url: item.url,
-        notes: item.notes || "",
-        active: item.active,
-        order: item.order,
-      })),
-    };
+      return {
+        items: items.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          category: item.category || "outros",
+          sourceType: item.sourceType || "link",
+          url: item.url,
+          notes: item.notes || "",
+          active: item.active,
+          order: item.order,
+        })),
+      };
+    },
+  );
+
+  // ===== ACESSO SEGURO AO PDF =====
+  app.post(
+    `${API_PREFIX}/pdf/ticket`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = req.user as JwtPayload;
+      const body = z
+        .object({
+          resourceKind: z.enum(["document", "extra"]),
+          resourceKey: z.string().trim().min(1).max(120),
+        })
+        .parse(req.body);
+
+      const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if (!user)
+        return reply.code(404).send({ message: "Usuário não encontrado" });
+      if (!user.active)
+        return reply.code(403).send({ message: "Usuário desativado" });
+
+      let sourceUrl = "";
+      let resourceKey = body.resourceKey;
+
+      if (body.resourceKind === "document") {
+        resourceKey = normKey(resourceKey);
+        const allowedTypes = new Set([
+          "training",
+          "diet",
+          "supp",
+          "cardio",
+          "exams",
+          "stretch",
+        ]);
+        if (!allowedTypes.has(resourceKey)) {
+          return reply.code(400).send({ message: "Tipo de documento inválido" });
+        }
+
+        const document = await prisma.studentDocument.findFirst({
+          where: { userId: user.id, docType: resourceKey },
+          select: { url: true },
+        });
+        sourceUrl = String(document?.url || "").trim();
+      } else {
+        const extra = await (prisma as any).studentExtraItem.findFirst({
+          where: { id: resourceKey, userId: user.id, active: true },
+          select: { url: true },
+        });
+        sourceUrl = String(extra?.url || "").trim();
+      }
+
+      if (!sourceUrl) {
+        return reply.code(404).send({ message: "Documento não encontrado" });
+      }
+
+      if (!buildGoogleDriveDownloadUrl(sourceUrl)) {
+        return reply.code(422).send({
+          code: "PDF_SOURCE_UNSUPPORTED",
+          message: "Este documento ainda não pode ser aberto no leitor interno.",
+        });
+      }
+
+      const ticket = app.jwt.sign(
+        {
+          role: payload.role,
+          scope: "pdf",
+          resourceKind: body.resourceKind,
+          resourceKey,
+        },
+        { sub: user.id, expiresIn: PDF_TICKET_TTL },
+      );
+
+      return {
+        contentUrl: `${API_PREFIX}/pdf/content?ticket=${encodeURIComponent(ticket)}`,
+        expiresIn: PDF_TICKET_TTL,
+      };
+    },
+  );
+
+  app.get(`${API_PREFIX}/pdf/content`, async (req: any, reply: any) => {
+    const query = z.object({ ticket: z.string().min(1) }).parse(req.query);
+
+    let ticket: PdfTicketPayload;
+    try {
+      ticket = app.jwt.verify<PdfTicketPayload>(query.ticket);
+    } catch {
+      return reply.code(401).send({ message: "Acesso ao PDF expirado ou inválido" });
+    }
+
+    if (
+      ticket.scope !== "pdf" ||
+      !ticket.sub ||
+      !["document", "extra"].includes(ticket.resourceKind)
+    ) {
+      return reply.code(401).send({ message: "Acesso ao PDF inválido" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: ticket.sub } });
+    if (!user || !user.active) {
+      return reply.code(403).send({ message: "Usuário sem acesso ao documento" });
+    }
+
+    let sourceUrl = "";
+    if (ticket.resourceKind === "document") {
+      const document = await prisma.studentDocument.findFirst({
+        where: { userId: user.id, docType: normKey(ticket.resourceKey) },
+        select: { url: true },
+      });
+      sourceUrl = String(document?.url || "").trim();
+    } else {
+      const extra = await (prisma as any).studentExtraItem.findFirst({
+        where: { id: ticket.resourceKey, userId: user.id, active: true },
+        select: { url: true },
+      });
+      sourceUrl = String(extra?.url || "").trim();
+    }
+
+    const downloadUrl = buildGoogleDriveDownloadUrl(sourceUrl);
+    if (!downloadUrl) {
+      return reply.code(404).send({ message: "PDF não encontrado" });
+    }
+
+    const range = normalizeRangeHeader(req.headers.range);
+    if (req.headers.range && !range) {
+      return reply.code(416).send({ message: "Intervalo inválido" });
+    }
+
+    let upstream: Response;
+    try {
+      upstream = await fetchGoogleDrivePdf(downloadUrl, range);
+    } catch (error: any) {
+      req.log.warn({ error: error?.message }, "Falha ao acessar PDF no Google Drive");
+      const timedOut = error?.name === "AbortError";
+      return reply
+        .code(timedOut ? 504 : 502)
+        .send({ message: timedOut ? "Tempo esgotado ao carregar PDF" : "Falha ao carregar PDF" });
+    }
+
+    if (upstream.status === 416) {
+      await upstream.body?.cancel();
+      const contentRange = upstream.headers.get("content-range");
+      if (contentRange) reply.header("Content-Range", contentRange);
+      return reply.code(416).send({ message: "Intervalo indisponível" });
+    }
+
+    if (!upstream.ok || !upstream.body) {
+      await upstream.body?.cancel();
+      return reply.code(502).send({ message: "Origem do PDF indisponível" });
+    }
+
+    const contentType = upstream.headers.get("content-type");
+    if (!isPdfLikeContentType(contentType)) {
+      await upstream.body.cancel();
+      return reply.code(415).send({ message: "A origem não retornou um arquivo PDF" });
+    }
+
+    const contentLength = parseContentLength(upstream.headers.get("content-length"));
+    if (contentLength !== null && contentLength > PDF_MAX_BYTES) {
+      await upstream.body.cancel();
+      return reply.code(413).send({ message: "PDF excede o tamanho permitido" });
+    }
+
+    const reader = upstream.body.getReader();
+    const first = await reader.read();
+    if (first.done || !first.value?.byteLength) {
+      reader.releaseLock();
+      return reply.code(502).send({ message: "A origem retornou um PDF vazio" });
+    }
+
+    const contentRange = upstream.headers.get("content-range");
+    const beginsAtZero = !contentRange || /^bytes\s+0-/i.test(contentRange);
+    if (
+      beginsAtZero &&
+      !contentType?.toLowerCase().includes("application/pdf") &&
+      !hasPdfSignature(first.value)
+    ) {
+      await reader.cancel();
+      reader.releaseLock();
+      return reply.code(415).send({ message: "O arquivo recebido não é um PDF válido" });
+    }
+
+    reply.header("Content-Type", "application/pdf");
+    reply.header("Content-Disposition", 'inline; filename="documento.pdf"');
+    reply.header("Cache-Control", "private, no-store");
+    reply.header("X-Content-Type-Options", "nosniff");
+
+    for (const header of [
+      "accept-ranges",
+      "content-range",
+      "content-length",
+      "etag",
+      "last-modified",
+    ]) {
+      const value = upstream.headers.get(header);
+      if (value) reply.header(header, value);
+    }
+
+    reply.code(upstream.status === 206 ? 206 : 200);
+    return reply.send(Readable.from(streamPdfBody(reader, first.value)));
   });
 
   // ===== ADMIN =====
-  app.get(`${API_PREFIX}/admin/users`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-  
-    const q = String(req.query?.q || "").trim();
+  app.get(
+    `${API_PREFIX}/admin/users`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
 
-    const terms = q
-      .split(/\s+/)
-      .filter(Boolean);
-    
+      const q = String(req.query?.q || "").trim();
+
+      const terms = q.split(/\s+/).filter(Boolean);
+
       const users = await prisma.user.findMany({
         where: {
           role: "student",
@@ -203,349 +524,457 @@ async function main() {
           createdAt: true,
         },
       });
-  
-    return { users };
-  });
 
-  app.post(`${API_PREFIX}/admin/users`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
+      return { users };
+    },
+  );
 
-    const schema = z.object({
-      email: z.string().email(),
-      password: z.string().min(6),
-      active: z.boolean().optional(),
-      name: z.string().min(2).max(80).optional(),
-    });
+  app.post(
+    `${API_PREFIX}/admin/users`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
 
-    const { email, password, active, name } = schema.parse(req.body);
-    const normalized = normEmail(email);
-
-    const exists = await prisma.user.findUnique({ where: { email: normalized } });
-    if (exists) return reply.code(409).send({ message: "Usuário já existe" });
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const user = await prisma.user.create({
-      data: {
-        email: normalized,
-        name: name?.trim() || null,
-        passwordHash,
-        role: "student",
-        active: active ?? true,
-      },
-      select: { email: true, name: true, active: true, role: true, createdAt: true },
-    });
-
-    return { ok: true, user };
-  });
-
-  // ===== ME (UPDATE) =====
-  app.patch(`${API_PREFIX}/me`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = req.user as JwtPayload;
-
-    const schema = z.object({
-      name: z.string().trim().min(2).max(80).optional().nullable(),
-      email: z.string().email().optional().nullable(),
-    });
-
-    const body = schema.parse(req.body);
-
-    const me = await prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!me) return reply.code(404).send({ message: "Usuário não encontrado" });
-
-    const data: any = {};
-
-    if ("name" in body) {
-      const cleanName = String(body.name ?? "").trim();
-      data.name = cleanName ? cleanName : null;
-    }
-
-    if ("email" in body) {
-      const newEmail = normEmail(body.email ?? "");
-      if (!newEmail) return reply.code(400).send({ message: "Email inválido" });
-
-      if (newEmail !== me.email) {
-        const exists = await prisma.user.findUnique({ where: { email: newEmail } });
-        if (exists) return reply.code(409).send({ message: "Email já está em uso" });
-        data.email = newEmail;
-      }
-    }
-
-    const updated = await prisma.user.update({
-      where: { id: me.id },
-      data,
-      select: { email: true, name: true, active: true, role: true },
-    });
-
-    return { ok: true, user: updated };
-  });
-
-  app.patch(`${API_PREFIX}/me/password`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = req.user as JwtPayload;
-
-    const schema = z.object({ password: z.string().min(6) });
-    const { password } = schema.parse(req.body);
-
-    const me = await prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!me) return reply.code(404).send({ message: "Usuário não encontrado" });
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    await prisma.user.update({
-      where: { id: me.id },
-      data: { passwordHash },
-    });
-
-    return { ok: true };
-  });
-
-  app.patch(`${API_PREFIX}/admin/users/:email/profile`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-
-    const email = normEmail(req.params.email);
-
-    const schema = z.object({
-      name: z.string().trim().min(2).max(80).optional().nullable(),
-    });
-
-    const { name } = schema.parse(req.body);
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
-
-    const clean = (name ?? "").toString().trim();
-    const updated = await prisma.user.update({
-      where: { email },
-      data: { name: clean ? clean : null },
-      select: { email: true, name: true },
-    });
- 
-    return { ok: true, user: updated };
-  });
-
-  app.patch(`${API_PREFIX}/admin/users/:email`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-
-    const email = normEmail(req.params.email);
-
-    const schema = z.object({ active: z.boolean() });
-    const { active } = schema.parse(req.body);
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
-
-    const updated = await prisma.user.update({ where: { email }, data: { active } });
-    return { ok: true, user: { email: updated.email, active: updated.active } };
-  });
-
-  app.get(`${API_PREFIX}/admin/users/:email/documents`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-
-    const email = normEmail(req.params.email);
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
-
-    const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
-
-    const out: Record<string, string> = { training: "", diet: "", supp: "", cardio: "", cardioName: "", cardioTime: "", cardioIntensity: "", cardioDays: "", exams: "", stretch: "" };
-    for (const d of docs) out[normKey(d.docType)] = d.url;
-
-    return out;
-  });
-
-  app.put(`${API_PREFIX}/admin/users/:email/documents`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-
-    const email = normEmail(req.params.email);
-
-    const schema = z.object({
-      training: z.string().optional(),
-      diet: z.string().optional(),
-      supp: z.string().optional(),
-      cardio: z.string().optional(),
-      cardioName: z.string().optional(),
-      cardioTime: z.string().optional(),
-      cardioIntensity: z.string().optional(),
-      cardioDays: z.string().optional(),
-      exams: z.string().optional(),
-      stretch: z.string().optional(),
-    });
-
-    const body = schema.parse(req.body);
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
-
-    for (const [docTypeRaw, url] of Object.entries(body)) {
-      if (typeof url === "undefined") continue;
-
-      const docType = normKey(docTypeRaw);
-      const clean = String(url).trim();
-
-      if (clean === "") {
-        await prisma.studentDocument.deleteMany({ where: { userId: user.id, docType } });
-        continue;
-      }
-
-      const existing = await prisma.studentDocument.findFirst({
-        where: { userId: user.id, docType },
+      const schema = z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        active: z.boolean().optional(),
+        name: z.string().min(2).max(80).optional(),
       });
 
-      if (existing) {
-        await prisma.studentDocument.update({
-          where: { id: existing.id },
-          data: { url: clean, updatedAt: new Date() },
-        });
-      } else {
-        await prisma.studentDocument.create({
-          data: { userId: user.id, docType, url: clean },
-        });
+      const { email, password, active, name } = schema.parse(req.body);
+      const normalized = normEmail(email);
+
+      const exists = await prisma.user.findUnique({
+        where: { email: normalized },
+      });
+      if (exists) return reply.code(409).send({ message: "Usuário já existe" });
+
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      const user = await prisma.user.create({
+        data: {
+          email: normalized,
+          name: name?.trim() || null,
+          passwordHash,
+          role: "student",
+          active: active ?? true,
+        },
+        select: {
+          email: true,
+          name: true,
+          active: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      return { ok: true, user };
+    },
+  );
+
+  // ===== ME (UPDATE) =====
+  app.patch(
+    `${API_PREFIX}/me`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = req.user as JwtPayload;
+
+      const schema = z.object({
+        name: z.string().trim().min(2).max(80).optional().nullable(),
+        email: z.string().email().optional().nullable(),
+      });
+
+      const body = schema.parse(req.body);
+
+      const me = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if (!me)
+        return reply.code(404).send({ message: "Usuário não encontrado" });
+
+      const data: any = {};
+
+      if ("name" in body) {
+        const cleanName = String(body.name ?? "").trim();
+        data.name = cleanName ? cleanName : null;
       }
-    }
 
-    const docs = await prisma.studentDocument.findMany({ where: { userId: user.id } });
-    const out: Record<string, string> = { training: "", diet: "", supp: "", cardio: "", cardioName: "", cardioTime: "", cardioIntensity: "", cardioDays: "", exams: "", stretch: "" };
-    for (const d of docs) out[normKey(d.docType)] = d.url;
+      if ("email" in body) {
+        const newEmail = normEmail(body.email ?? "");
+        if (!newEmail)
+          return reply.code(400).send({ message: "Email inválido" });
 
-    return out;
-  });
+        if (newEmail !== me.email) {
+          const exists = await prisma.user.findUnique({
+            where: { email: newEmail },
+          });
+          if (exists)
+            return reply.code(409).send({ message: "Email já está em uso" });
+          data.email = newEmail;
+        }
+      }
 
-  app.patch(`${API_PREFIX}/admin/users/:email/password`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
+      const updated = await prisma.user.update({
+        where: { id: me.id },
+        data,
+        select: { email: true, name: true, active: true, role: true },
+      });
 
-    const email = normEmail(req.params.email);
+      return { ok: true, user: updated };
+    },
+  );
 
-    const schema = z.object({ password: z.string().min(6) });
-    const { password } = schema.parse(req.body);
+  app.patch(
+    `${API_PREFIX}/me/password`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = req.user as JwtPayload;
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
+      const schema = z.object({ password: z.string().min(6) });
+      const { password } = schema.parse(req.body);
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    await prisma.user.update({ where: { email }, data: { passwordHash } });
+      const me = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if (!me)
+        return reply.code(404).send({ message: "Usuário não encontrado" });
 
-    return { ok: true };
-  });
+      const passwordHash = await bcrypt.hash(password, 10);
 
+      await prisma.user.update({
+        where: { id: me.id },
+        data: { passwordHash },
+      });
+
+      return { ok: true };
+    },
+  );
+
+  app.patch(
+    `${API_PREFIX}/admin/users/:email/profile`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+
+      const email = normEmail(req.params.email);
+
+      const schema = z.object({
+        name: z.string().trim().min(2).max(80).optional().nullable(),
+      });
+
+      const { name } = schema.parse(req.body);
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
+
+      const clean = (name ?? "").toString().trim();
+      const updated = await prisma.user.update({
+        where: { email },
+        data: { name: clean ? clean : null },
+        select: { email: true, name: true },
+      });
+
+      return { ok: true, user: updated };
+    },
+  );
+
+  app.patch(
+    `${API_PREFIX}/admin/users/:email`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+
+      const email = normEmail(req.params.email);
+
+      const schema = z.object({ active: z.boolean() });
+      const { active } = schema.parse(req.body);
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
+
+      const updated = await prisma.user.update({
+        where: { email },
+        data: { active },
+      });
+      return {
+        ok: true,
+        user: { email: updated.email, active: updated.active },
+      };
+    },
+  );
+
+  app.get(
+    `${API_PREFIX}/admin/users/:email/documents`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+
+      const email = normEmail(req.params.email);
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
+
+      const docs = await prisma.studentDocument.findMany({
+        where: { userId: user.id },
+      });
+
+      const out: Record<string, string> = {
+        training: "",
+        diet: "",
+        supp: "",
+        cardio: "",
+        cardioName: "",
+        cardioTime: "",
+        cardioIntensity: "",
+        cardioDays: "",
+        exams: "",
+        stretch: "",
+      };
+      for (const d of docs) out[normKey(d.docType)] = d.url;
+
+      return out;
+    },
+  );
+
+  app.put(
+    `${API_PREFIX}/admin/users/:email/documents`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+
+      const email = normEmail(req.params.email);
+
+      const schema = z.object({
+        training: z.string().optional(),
+        diet: z.string().optional(),
+        supp: z.string().optional(),
+        cardio: z.string().optional(),
+        cardioName: z.string().optional(),
+        cardioTime: z.string().optional(),
+        cardioIntensity: z.string().optional(),
+        cardioDays: z.string().optional(),
+        exams: z.string().optional(),
+        stretch: z.string().optional(),
+      });
+
+      const body = schema.parse(req.body);
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
+
+      for (const [docTypeRaw, url] of Object.entries(body)) {
+        if (typeof url === "undefined") continue;
+
+        const docType = normKey(docTypeRaw);
+        const clean = String(url).trim();
+
+        if (clean === "") {
+          await prisma.studentDocument.deleteMany({
+            where: { userId: user.id, docType },
+          });
+          continue;
+        }
+
+        const existing = await prisma.studentDocument.findFirst({
+          where: { userId: user.id, docType },
+        });
+
+        if (existing) {
+          await prisma.studentDocument.update({
+            where: { id: existing.id },
+            data: { url: clean, updatedAt: new Date() },
+          });
+        } else {
+          await prisma.studentDocument.create({
+            data: { userId: user.id, docType, url: clean },
+          });
+        }
+      }
+
+      const docs = await prisma.studentDocument.findMany({
+        where: { userId: user.id },
+      });
+      const out: Record<string, string> = {
+        training: "",
+        diet: "",
+        supp: "",
+        cardio: "",
+        cardioName: "",
+        cardioTime: "",
+        cardioIntensity: "",
+        cardioDays: "",
+        exams: "",
+        stretch: "",
+      };
+      for (const d of docs) out[normKey(d.docType)] = d.url;
+
+      return out;
+    },
+  );
+
+  app.patch(
+    `${API_PREFIX}/admin/users/:email/password`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+
+      const email = normEmail(req.params.email);
+
+      const schema = z.object({ password: z.string().min(6) });
+      const { password } = schema.parse(req.body);
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      await prisma.user.update({ where: { email }, data: { passwordHash } });
+
+      return { ok: true };
+    },
+  );
 
   // ===== ITENS EXTRAS - ADMIN =====
-  app.get(`${API_PREFIX}/admin/users/:email/extra-items`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
+  app.get(
+    `${API_PREFIX}/admin/users/:email/extra-items`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
 
-    const email = normEmail(req.params.email);
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
+      const email = normEmail(req.params.email);
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
 
-    const items = await (prisma as any).studentExtraItem.findMany({
-      where: { userId: user.id },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    });
+      const items = await (prisma as any).studentExtraItem.findMany({
+        where: { userId: user.id },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      });
 
-    return {
-      items: items.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        category: item.category || "outros",
-        sourceType: item.sourceType || "link",
-        url: item.url,
-        notes: item.notes || "",
-        active: item.active,
-        order: item.order,
-      })),
-    };
-  });
+      return {
+        items: items.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          category: item.category || "outros",
+          sourceType: item.sourceType || "link",
+          url: item.url,
+          notes: item.notes || "",
+          active: item.active,
+          order: item.order,
+        })),
+      };
+    },
+  );
 
-  app.put(`${API_PREFIX}/admin/users/:email/extra-items`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
+  app.put(
+    `${API_PREFIX}/admin/users/:email/extra-items`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
 
-    const email = normEmail(req.params.email);
-    const schema = z.object({
-      items: z.array(z.object({
-        title: z.string().trim().min(1),
-        url: z.string().trim().min(1),
-        notes: z.string().optional().nullable(),
-        active: z.boolean().optional(),
-        order: z.number().int().optional(),
-        category: z.string().optional().nullable(),
-        sourceType: z.string().optional().nullable(),
-      })).default([]),
-    });
-    const body = schema.parse(req.body);
+      const email = normEmail(req.params.email);
+      const schema = z.object({
+        items: z
+          .array(
+            z.object({
+              title: z.string().trim().min(1),
+              url: z.string().trim().min(1),
+              notes: z.string().optional().nullable(),
+              active: z.boolean().optional(),
+              order: z.number().int().optional(),
+              category: z.string().optional().nullable(),
+              sourceType: z.string().optional().nullable(),
+            }),
+          )
+          .default([]),
+      });
+      const body = schema.parse(req.body);
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
 
-    await prisma.$transaction(async (tx: any) => {
-      await tx.studentExtraItem.deleteMany({ where: { userId: user.id } });
+      await prisma.$transaction(async (tx: any) => {
+        await tx.studentExtraItem.deleteMany({ where: { userId: user.id } });
 
-      for (const [idx, item] of body.items.entries()) {
-        const title = String(item.title || "").trim();
-        const url = String(item.url || "").trim();
-        if (!title || !url) continue;
+        for (const [idx, item] of body.items.entries()) {
+          const title = String(item.title || "").trim();
+          const url = String(item.url || "").trim();
+          if (!title || !url) continue;
 
-        await tx.studentExtraItem.create({
-          data: {
-            userId: user.id,
-            title,
-            url,
-            notes: String(item.notes || "").trim() || null,
-            active: item.active ?? true,
-            order: item.order ?? idx,
-            category: String(item.category || "outros").trim() || "outros",
-            sourceType: String(item.sourceType || "link").trim() || "link",
-          },
-        });
-      }
-    });
+          await tx.studentExtraItem.create({
+            data: {
+              userId: user.id,
+              title,
+              url,
+              notes: String(item.notes || "").trim() || null,
+              active: item.active ?? true,
+              order: item.order ?? idx,
+              category: String(item.category || "outros").trim() || "outros",
+              sourceType: String(item.sourceType || "link").trim() || "link",
+            },
+          });
+        }
+      });
 
-    const items = await (prisma as any).studentExtraItem.findMany({
-      where: { userId: user.id },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-    });
+      const items = await (prisma as any).studentExtraItem.findMany({
+        where: { userId: user.id },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+      });
 
-    return { ok: true, items };
-  });
-
-
+      return { ok: true, items };
+    },
+  );
 
   // ===== TREINOS MANUAIS - ALUNO =====
-  app.get(`${API_PREFIX}/workouts`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = req.user as JwtPayload;
+  app.get(
+    `${API_PREFIX}/workouts`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = req.user as JwtPayload;
 
-    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!user) return reply.code(404).send({ message: "Usuário não encontrado" });
-    if (!user.active) return reply.code(403).send({ message: "Usuário desativado" });
+      const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if (!user)
+        return reply.code(404).send({ message: "Usuário não encontrado" });
+      if (!user.active)
+        return reply.code(403).send({ message: "Usuário desativado" });
 
-    const workouts = await (prisma as any).workout.findMany({
-      where: { userId: user.id, active: true },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      include: {
-        exercises: {
-          orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-          include: {
-            exercise: { include: { video: true, muscleGroup: true } },
-            series: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] },
+      const workouts = await (prisma as any).workout.findMany({
+        where: { userId: user.id, active: true },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        include: {
+          exercises: {
+            orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+            include: {
+              exercise: { include: { video: true, muscleGroup: true } },
+              series: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] },
+            },
           },
         },
-      },
-    });
+      });
 
-    const currentWeekStart = startOfWeek();
-    const seriesIds = workouts.flatMap((w: any) => w.exercises.flatMap((we: any) => we.series.map((s: any) => s.id)));
-    const logs = seriesIds.length
-      ? await (prisma as any).studentWorkoutLog.findMany({
-          where: { userId: user.id, seriesId: { in: seriesIds } },
-          orderBy: { createdAt: "desc" },
-        })
-      : [];
+      const currentWeekStart = startOfWeek();
+      const seriesIds = workouts.flatMap((w: any) =>
+        w.exercises.flatMap((we: any) => we.series.map((s: any) => s.id)),
+      );
+      const logs = seriesIds.length
+        ? await (prisma as any).studentWorkoutLog.findMany({
+            where: { userId: user.id, seriesId: { in: seriesIds } },
+            orderBy: { createdAt: "desc" },
+          })
+        : [];
 
-    const sessions = workouts.length
-      ? await (prisma as any).studentWorkoutSession.findMany({
-          where: { userId: user.id, workoutId: { in: workouts.map((w: any) => w.id) }, weekStart: currentWeekStart },
-          orderBy: { createdAt: "desc" },
-        })
-      : [];
+      const sessions = workouts.length
+        ? await (prisma as any).studentWorkoutSession.findMany({
+            where: {
+              userId: user.id,
+              workoutId: { in: workouts.map((w: any) => w.id) },
+              weekStart: currentWeekStart,
+            },
+            orderBy: { createdAt: "desc" },
+          })
+        : [];
       interface Session {
         workoutId: string;
         notes?: string | null;
@@ -557,455 +986,633 @@ async function main() {
           sessionByWorkout.set(s.workoutId, { notes: s.notes });
         }
       }
-    const lastBySeriesSet = new Map<string, any>();
-    for (const log of logs) {
-      const key = `${log.seriesId}:${log.setIndex ?? 0}`;
-      if (!lastBySeriesSet.has(key)) lastBySeriesSet.set(key, log);
-    }
+      const lastBySeriesSet = new Map<string, any>();
+      for (const log of logs) {
+        const key = `${log.seriesId}:${log.setIndex ?? 0}`;
+        if (!lastBySeriesSet.has(key)) lastBySeriesSet.set(key, log);
+      }
 
-    return {
-      workouts: workouts.map((w: any) => ({
-        id: w.id,
-        title: w.title,
-        notes: w.notes || "",
-        order: w.order,
-        sessionNotes: sessionByWorkout.get(w.id)?.notes || "",
-        weekStart: currentWeekStart.toISOString(),
-        exercises: w.exercises.map((we: any) => ({
-          id: we.id,
-          notes: we.notes || "",
-          order: we.order,
-          technique: we.techniqueName ? {
-            id: we.techniqueId || "",
-            name: we.techniqueName || "",
-            videoUrl: we.techniqueVideoUrl || "",
-            notes: we.techniqueNotes || "",
-            exerciseNote: we.techniqueNote || "",
-          } : null,
-          exercise: {
-            id: we.exercise.id,
-            name: we.exercise.name,
-            videoUrl: we.exercise.video?.url || "",
-            videoTitle: we.exercise.video?.title || "",
-            muscleGroup: we.exercise.muscleGroup?.name || "",
-          },
-          series: we.series.map((serie: any) => {
-            const count = Math.max(1, Number(serie.count || 1));
-            const lastSets = Array.from({ length: count }, (_, index) => {
-              const last = lastBySeriesSet.get(`${serie.id}:${index}`);
+      return {
+        workouts: workouts.map((w: any) => ({
+          id: w.id,
+          title: w.title,
+          notes: w.notes || "",
+          order: w.order,
+          sessionNotes: sessionByWorkout.get(w.id)?.notes || "",
+          weekStart: currentWeekStart.toISOString(),
+          exercises: w.exercises.map((we: any) => ({
+            id: we.id,
+            notes: we.notes || "",
+            order: we.order,
+            technique: we.techniqueName
+              ? {
+                  id: we.techniqueId || "",
+                  name: we.techniqueName || "",
+                  videoUrl: we.techniqueVideoUrl || "",
+                  notes: we.techniqueNotes || "",
+                  exerciseNote: we.techniqueNote || "",
+                }
+              : null,
+            exercise: {
+              id: we.exercise.id,
+              name: we.exercise.name,
+              videoUrl: we.exercise.video?.url || "",
+              videoTitle: we.exercise.video?.title || "",
+              muscleGroup: we.exercise.muscleGroup?.name || "",
+            },
+            series: we.series.map((serie: any) => {
+              const count = Math.max(1, Number(serie.count || 1));
+              const lastSets = Array.from({ length: count }, (_, index) => {
+                const last = lastBySeriesSet.get(`${serie.id}:${index}`);
+                return {
+                  setIndex: index,
+                  lastWeight: last?.weight ?? null,
+                  lastPerformedReps: last?.performedReps ?? null,
+                };
+              });
               return {
-                setIndex: index,
-                lastWeight: last?.weight ?? null,
-                lastPerformedReps: last?.performedReps ?? null,
+                id: serie.id,
+                targetReps: serie.targetReps,
+                count,
+                order: serie.order,
+                lastSets,
               };
-            });
-            return {
-              id: serie.id,
-              targetReps: serie.targetReps,
-              count,
-              order: serie.order,
-              lastSets,
-            };
-          }),
+            }),
+          })),
         })),
-      })),
-    };
-  });
+      };
+    },
+  );
 
-  app.post(`${API_PREFIX}/student/workouts/:workoutId/logs`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = req.user as JwtPayload;
-    const workoutId = String(req.params.workoutId || "");
+  app.post(
+    `${API_PREFIX}/student/workouts/:workoutId/logs`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = req.user as JwtPayload;
+      const workoutId = String(req.params.workoutId || "");
 
-    const schema = z.object({
-      notes: z.string().trim().max(2000).optional().nullable(),
-      logs: z.array(z.object({
-        seriesId: z.string().min(1),
-        setIndex: z.union([z.number().int(), z.string(), z.null()]).optional(),
-        weight: z.union([z.number(), z.string(), z.null()]).optional(),
-        performedReps: z.union([z.number().int(), z.string(), z.null()]).optional(),
-      })).min(1),
-    });
-    const body = schema.parse(req.body);
+      const schema = z.object({
+        notes: z.string().trim().max(2000).optional().nullable(),
+        logs: z
+          .array(
+            z.object({
+              seriesId: z.string().min(1),
+              setIndex: z
+                .union([z.number().int(), z.string(), z.null()])
+                .optional(),
+              weight: z.union([z.number(), z.string(), z.null()]).optional(),
+              performedReps: z
+                .union([z.number().int(), z.string(), z.null()])
+                .optional(),
+            }),
+          )
+          .min(1),
+      });
+      const body = schema.parse(req.body);
 
-    const workout = await (prisma as any).workout.findFirst({ where: { id: workoutId, userId: payload.sub } });
-    if (!workout) return reply.code(404).send({ message: "Treino não encontrado" });
+      const workout = await (prisma as any).workout.findFirst({
+        where: { id: workoutId, userId: payload.sub },
+      });
+      if (!workout)
+        return reply.code(404).send({ message: "Treino não encontrado" });
 
-    const seriesIds = body.logs.map((l) => l.seriesId);
-    const validSeries = await (prisma as any).workoutSeries.findMany({
-      where: { id: { in: seriesIds }, workoutExercise: { workoutId } },
-      include: {
-        workoutExercise: {
-          include: {
-            exercise: { include: { muscleGroup: true } },
-            workout: { select: { title: true } },
+      const seriesIds = body.logs.map((l) => l.seriesId);
+      const validSeries = await (prisma as any).workoutSeries.findMany({
+        where: { id: { in: seriesIds }, workoutExercise: { workoutId } },
+        include: {
+          workoutExercise: {
+            include: {
+              exercise: { include: { muscleGroup: true } },
+              workout: { select: { title: true } },
+            },
           },
         },
-      },
-    });
-    const validById = new Map<string, any>(validSeries.map((s: any) => [s.id, s]));
-    const validSet = new Set(validSeries.map((s: any) => s.id));
-
-    const weekStart = startOfWeek();
-
-    const baseData = body.logs
-      .filter((l) => validSet.has(l.seriesId))
-      .map((l) => {
-        const wRaw = l.weight === "" || l.weight === null || typeof l.weight === "undefined" ? null : Number(l.weight);
-        const rRaw = l.performedReps === "" || l.performedReps === null || typeof l.performedReps === "undefined" ? null : Number(l.performedReps);
-        const setRaw = l.setIndex === "" || l.setIndex === null || typeof l.setIndex === "undefined" ? 0 : Number(l.setIndex);
-        return {
-          userId: payload.sub,
-          workoutId,
-          seriesId: l.seriesId,
-          setIndex: Number.isFinite(setRaw) && setRaw >= 0 ? Math.trunc(setRaw) : 0,
-          weight: Number.isFinite(wRaw as number) ? wRaw : null,
-          performedReps: Number.isFinite(rRaw as number) ? Math.trunc(rRaw as number) : null,
-          workoutTitle: validById.get(l.seriesId)?.workoutExercise?.workout?.title || workout.title || null,
-          exerciseName: validById.get(l.seriesId)?.workoutExercise?.exercise?.name || null,
-          muscleGroup: validById.get(l.seriesId)?.workoutExercise?.exercise?.muscleGroup?.name || null,
-          targetReps: validById.get(l.seriesId)?.targetReps || null,
-        };
-      })
-      .filter((l) => l.weight !== null || l.performedReps !== null);
-
-    if (!baseData.length) return reply.code(400).send({ message: "Nenhum registro válido para salvar" });
-
-    // IMPORTANTE: não usar createMany aqui.
-    // Com Prisma 7 + @prisma/adapter-pg, createMany pode gerar ON CONFLICT mesmo sem skipDuplicates,
-    // e isso quebra quando a constraint única antiga foi removida para permitir múltiplas execuções.
-    const result = await (prisma as any).$transaction(async (tx: any) => {
-      const sessionId = randomUUID();
-
-      // SQL direto para evitar erro do Prisma/Postgres:
-      // "there is no unique or exclusion constraint matching the ON CONFLICT specification".
-      await tx.$executeRawUnsafe(
-        `INSERT INTO "StudentWorkoutSession" ("id", "userId", "workoutId", "weekStart", "notes", "createdAt")
-         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
-        sessionId,
-        payload.sub,
-        workoutId,
-        weekStart,
-        body.notes || null
+      });
+      const validById = new Map<string, any>(
+        validSeries.map((s: any) => [s.id, s]),
       );
+      const validSet = new Set(validSeries.map((s: any) => s.id));
 
-      for (const item of baseData) {
+      const weekStart = startOfWeek();
+
+      const baseData = body.logs
+        .filter((l) => validSet.has(l.seriesId))
+        .map((l) => {
+          const wRaw =
+            l.weight === "" ||
+            l.weight === null ||
+            typeof l.weight === "undefined"
+              ? null
+              : Number(l.weight);
+          const rRaw =
+            l.performedReps === "" ||
+            l.performedReps === null ||
+            typeof l.performedReps === "undefined"
+              ? null
+              : Number(l.performedReps);
+          const setRaw =
+            l.setIndex === "" ||
+            l.setIndex === null ||
+            typeof l.setIndex === "undefined"
+              ? 0
+              : Number(l.setIndex);
+          return {
+            userId: payload.sub,
+            workoutId,
+            seriesId: l.seriesId,
+            setIndex:
+              Number.isFinite(setRaw) && setRaw >= 0 ? Math.trunc(setRaw) : 0,
+            weight: Number.isFinite(wRaw as number) ? wRaw : null,
+            performedReps: Number.isFinite(rRaw as number)
+              ? Math.trunc(rRaw as number)
+              : null,
+            workoutTitle:
+              validById.get(l.seriesId)?.workoutExercise?.workout?.title ||
+              workout.title ||
+              null,
+            exerciseName:
+              validById.get(l.seriesId)?.workoutExercise?.exercise?.name ||
+              null,
+            muscleGroup:
+              validById.get(l.seriesId)?.workoutExercise?.exercise?.muscleGroup
+                ?.name || null,
+            targetReps: validById.get(l.seriesId)?.targetReps || null,
+          };
+        })
+        .filter((l) => l.weight !== null || l.performedReps !== null);
+
+      if (!baseData.length)
+        return reply
+          .code(400)
+          .send({ message: "Nenhum registro válido para salvar" });
+
+      // IMPORTANTE: não usar createMany aqui.
+      // Com Prisma 7 + @prisma/adapter-pg, createMany pode gerar ON CONFLICT mesmo sem skipDuplicates,
+      // e isso quebra quando a constraint única antiga foi removida para permitir múltiplas execuções.
+      const result = await (prisma as any).$transaction(async (tx: any) => {
+        const sessionId = randomUUID();
+
+        // SQL direto para evitar erro do Prisma/Postgres:
+        // "there is no unique or exclusion constraint matching the ON CONFLICT specification".
         await tx.$executeRawUnsafe(
-          `INSERT INTO "StudentWorkoutLog"
+          `INSERT INTO "StudentWorkoutSession" ("id", "userId", "workoutId", "weekStart", "notes", "createdAt")
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)`,
+          sessionId,
+          payload.sub,
+          workoutId,
+          weekStart,
+          body.notes || null,
+        );
+
+        for (const item of baseData) {
+          await tx.$executeRawUnsafe(
+            `INSERT INTO "StudentWorkoutLog"
             ("id", "userId", "workoutId", "seriesId", "sessionId", "setIndex", "weight", "performedReps",
              "workoutTitle", "exerciseName", "muscleGroup", "targetReps", "createdAt")
            VALUES
             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)`,
-          randomUUID(),
-          item.userId,
-          item.workoutId,
-          item.seriesId,
-          sessionId,
-          item.setIndex,
-          item.weight,
-          item.performedReps,
-          item.workoutTitle,
-          item.exerciseName,
-          item.muscleGroup,
-          item.targetReps
-        );
-      }
+            randomUUID(),
+            item.userId,
+            item.workoutId,
+            item.seriesId,
+            sessionId,
+            item.setIndex,
+            item.weight,
+            item.performedReps,
+            item.workoutTitle,
+            item.exerciseName,
+            item.muscleGroup,
+            item.targetReps,
+          );
+        }
 
-      return { sessionId, saved: baseData.length };
-    });
+        return { sessionId, saved: baseData.length };
+      });
 
-    return { ok: true, ...result };
-  });
+      return { ok: true, ...result };
+    },
+  );
 
+  app.get(
+    `${API_PREFIX}/student/workouts/history`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = req.user as JwtPayload;
 
-  app.get(`${API_PREFIX}/student/workouts/history`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = req.user as JwtPayload;
+      const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+      if (!user)
+        return reply.code(404).send({ message: "Usuário não encontrado" });
+      if (!user.active)
+        return reply.code(403).send({ message: "Usuário desativado" });
 
-    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!user) return reply.code(404).send({ message: "Usuário não encontrado" });
-    if (!user.active) return reply.code(403).send({ message: "Usuário desativado" });
-
-    const logs = await (prisma as any).studentWorkoutLog.findMany({
-      where: { userId: payload.sub },
-      orderBy: { createdAt: "desc" },
-      take: 500,
-      include: {
-        workout: { select: { title: true } },
-        session: { select: { id: true, notes: true, createdAt: true, weekStart: true } },
-        series: {
-          include: {
-            workoutExercise: {
-              include: { exercise: { include: { muscleGroup: true } } },
+      const logs = await (prisma as any).studentWorkoutLog.findMany({
+        where: { userId: payload.sub },
+        orderBy: { createdAt: "desc" },
+        take: 500,
+        include: {
+          workout: { select: { title: true } },
+          session: {
+            select: { id: true, notes: true, createdAt: true, weekStart: true },
+          },
+          series: {
+            include: {
+              workoutExercise: {
+                include: { exercise: { include: { muscleGroup: true } } },
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    const grouped = new Map<string, any>();
+      const grouped = new Map<string, any>();
 
-    for (const log of logs) {
-      const created = new Date(log.createdAt);
-      const fallbackKey = `${created.toISOString().slice(0, 16)}:${log.workoutTitle || log.workout?.title || "Treino"}`;
-      const key = log.sessionId ? `${log.sessionId}:${created.toISOString().slice(0, 16)}` : fallbackKey;
+      for (const log of logs) {
+        const created = new Date(log.createdAt);
+        const fallbackKey = `${created.toISOString().slice(0, 16)}:${log.workoutTitle || log.workout?.title || "Treino"}`;
+        const key = log.sessionId
+          ? `${log.sessionId}:${created.toISOString().slice(0, 16)}`
+          : fallbackKey;
 
-      if (!grouped.has(key)) {
-        grouped.set(key, {
-          id: key,
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            id: key,
+            date: log.createdAt,
+            weekStart: log.session?.weekStart || null,
+            workoutTitle: log.workoutTitle || log.workout?.title || "Treino",
+            notes: log.session?.notes || "",
+            logs: [],
+          });
+        }
+
+        grouped.get(key).logs.push({
+          id: log.id,
           date: log.createdAt,
-          weekStart: log.session?.weekStart || null,
-          workoutTitle: log.workoutTitle || log.workout?.title || "Treino",
-          notes: log.session?.notes || "",
-          logs: [],
+          setIndex: log.setIndex ?? 0,
+          weight: log.weight,
+          performedReps: log.performedReps,
+          targetReps: log.targetReps || log.series?.targetReps || "",
+          exerciseName:
+            log.exerciseName ||
+            log.series?.workoutExercise?.exercise?.name ||
+            "",
+          muscleGroup:
+            log.muscleGroup ||
+            log.series?.workoutExercise?.exercise?.muscleGroup?.name ||
+            "",
         });
       }
 
-      grouped.get(key).logs.push({
-        id: log.id,
-        date: log.createdAt,
-        setIndex: log.setIndex ?? 0,
-        weight: log.weight,
-        performedReps: log.performedReps,
-        targetReps: log.targetReps || log.series?.targetReps || "",
-        exerciseName: log.exerciseName || log.series?.workoutExercise?.exercise?.name || "",
-        muscleGroup: log.muscleGroup || log.series?.workoutExercise?.exercise?.muscleGroup?.name || "",
-      });
-    }
-
-    return { records: Array.from(grouped.values()).slice(0, 80) };
-  });
+      return { records: Array.from(grouped.values()).slice(0, 80) };
+    },
+  );
 
   // ===== TREINOS MANUAIS - ADMIN =====
 
-  app.get(`${API_PREFIX}/admin/muscle-groups`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const muscleGroups = await (prisma as any).muscleGroup.findMany({ orderBy: { name: "asc" } });
-    return { muscleGroups };
-  });
+  app.get(
+    `${API_PREFIX}/admin/muscle-groups`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const muscleGroups = await (prisma as any).muscleGroup.findMany({
+        orderBy: { name: "asc" },
+      });
+      return { muscleGroups };
+    },
+  );
 
-  app.post(`${API_PREFIX}/admin/muscle-groups`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const schema = z.object({ name: z.string().trim().min(2) });
-    const body = schema.parse(req.body || {});
-    const muscleGroup = await (prisma as any).muscleGroup.upsert({
-      where: { name: body.name },
-      update: {},
-      create: { name: body.name },
-    });
-    return { ok: true, muscleGroup };
-  });
-
-  app.patch(`${API_PREFIX}/admin/muscle-groups/:id`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const id = String(req.params.id || "");
-    const schema = z.object({ name: z.string().trim().min(2) });
-    const body = schema.parse(req.body || {});
-    const muscleGroup = await (prisma as any).muscleGroup.update({ where: { id }, data: { name: body.name } });
-    return { ok: true, muscleGroup };
-  });
-
-  app.delete(`${API_PREFIX}/admin/muscle-groups/:id`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const id = String(req.params.id || "");
-    await (prisma as any).exercise.updateMany({ where: { muscleGroupId: id }, data: { muscleGroupId: null } });
-    await (prisma as any).muscleGroup.delete({ where: { id } });
-    return { ok: true };
-  });
-
-  app.get(`${API_PREFIX}/admin/videos`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const videos = await (prisma as any).video.findMany({ orderBy: { title: "asc" } });
-    return { videos };
-  });
-
-  app.post(`${API_PREFIX}/admin/videos`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const schema = z.object({ title: z.string().trim().min(2), url: z.string().trim().min(3) });
-    const body = schema.parse(req.body || {});
-    const video = await (prisma as any).video.upsert({
-      where: { title: body.title },
-      update: { url: body.url },
-      create: { title: body.title, url: body.url },
-    });
-    return { ok: true, video };
-  });
-
-  app.patch(`${API_PREFIX}/admin/videos/:id`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const id = String(req.params.id || "");
-    const schema = z.object({ title: z.string().trim().min(2), url: z.string().trim().min(3) });
-    const body = schema.parse(req.body || {});
-    const video = await (prisma as any).video.update({ where: { id }, data: { title: body.title, url: body.url } });
-    return { ok: true, video };
-  });
-
-  app.delete(`${API_PREFIX}/admin/videos/:id`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const id = String(req.params.id || "");
-    await (prisma as any).exercise.updateMany({ where: { videoId: id }, data: { videoId: null } });
-    await (prisma as any).video.delete({ where: { id } });
-    return { ok: true };
-  });
-
-  app.get(`${API_PREFIX}/admin/exercises`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-    const q = String(req.query?.q || "").trim();
-    const exercises = await (prisma as any).exercise.findMany({
-      where: q ? { name: { contains: q, mode: "insensitive" } } : {},
-      take: 300,
-      orderBy: { name: "asc" },
-      include: { video: true, muscleGroup: true },
-    });
-    return { exercises: exercises.map((e: any) => ({
-      id: e.id,
-      name: e.name,
-      muscleGroup: e.muscleGroup?.name || "",
-      videoUrl: e.video?.url || "",
-      videoTitle: e.video?.title || "",
-    })) };
-  });
-
-  app.post(`${API_PREFIX}/admin/exercises`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-    const schema = z.object({
-      name: z.string().trim().min(2),
-      muscleGroup: z.string().trim().optional().nullable(),
-      videoUrl: z.string().trim().optional().nullable(),
-      videoTitle: z.string().trim().optional().nullable(),
-    });
-    const body = schema.parse(req.body);
-    const exercise = await upsertExercise(body.name, body.muscleGroup || "", body.videoUrl || "", body.videoTitle || body.name);
-    return { ok: true, exercise };
-  });
-
-  app.patch(`${API_PREFIX}/admin/exercises/:id`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-    const id = String(req.params.id || "");
-    const schema = z.object({
-      name: z.string().trim().min(2),
-      muscleGroup: z.string().trim().optional().nullable(),
-      videoUrl: z.string().trim().optional().nullable(),
-      videoTitle: z.string().trim().optional().nullable(),
-    });
-    const body = schema.parse(req.body || {});
-
-    let muscleGroupId: string | null = null;
-    const muscleName = String(body.muscleGroup || "").trim();
-    if (muscleName) {
-      const mg = await (prisma as any).muscleGroup.upsert({
-        where: { name: muscleName },
+  app.post(
+    `${API_PREFIX}/admin/muscle-groups`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const schema = z.object({ name: z.string().trim().min(2) });
+      const body = schema.parse(req.body || {});
+      const muscleGroup = await (prisma as any).muscleGroup.upsert({
+        where: { name: body.name },
         update: {},
-        create: { name: muscleName },
+        create: { name: body.name },
       });
-      muscleGroupId = mg.id;
-    }
+      return { ok: true, muscleGroup };
+    },
+  );
 
-    let videoId: string | null = null;
-    const videoUrl = String(body.videoUrl || "").trim();
-    if (videoUrl) {
-      const title = String(body.videoTitle || body.name).trim() || body.name;
+  app.patch(
+    `${API_PREFIX}/admin/muscle-groups/:id`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const id = String(req.params.id || "");
+      const schema = z.object({ name: z.string().trim().min(2) });
+      const body = schema.parse(req.body || {});
+      const muscleGroup = await (prisma as any).muscleGroup.update({
+        where: { id },
+        data: { name: body.name },
+      });
+      return { ok: true, muscleGroup };
+    },
+  );
+
+  app.delete(
+    `${API_PREFIX}/admin/muscle-groups/:id`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const id = String(req.params.id || "");
+      await (prisma as any).exercise.updateMany({
+        where: { muscleGroupId: id },
+        data: { muscleGroupId: null },
+      });
+      await (prisma as any).muscleGroup.delete({ where: { id } });
+      return { ok: true };
+    },
+  );
+
+  app.get(
+    `${API_PREFIX}/admin/videos`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const videos = await (prisma as any).video.findMany({
+        orderBy: { title: "asc" },
+      });
+      return { videos };
+    },
+  );
+
+  app.post(
+    `${API_PREFIX}/admin/videos`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const schema = z.object({
+        title: z.string().trim().min(2),
+        url: z.string().trim().min(3),
+      });
+      const body = schema.parse(req.body || {});
       const video = await (prisma as any).video.upsert({
-        where: { title },
-        update: { url: videoUrl },
-        create: { title, url: videoUrl },
+        where: { title: body.title },
+        update: { url: body.url },
+        create: { title: body.title, url: body.url },
       });
-      videoId = video.id;
-    }
+      return { ok: true, video };
+    },
+  );
 
-    const exercise = await (prisma as any).exercise.update({ where: { id }, data: { name: body.name, muscleGroupId, videoId } });
-    return { ok: true, exercise };
-  });
+  app.patch(
+    `${API_PREFIX}/admin/videos/:id`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const id = String(req.params.id || "");
+      const schema = z.object({
+        title: z.string().trim().min(2),
+        url: z.string().trim().min(3),
+      });
+      const body = schema.parse(req.body || {});
+      const video = await (prisma as any).video.update({
+        where: { id },
+        data: { title: body.title, url: body.url },
+      });
+      return { ok: true, video };
+    },
+  );
 
-  app.delete(`${API_PREFIX}/admin/exercises/:id`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-    const id = String(req.params.id || "");
-    const used = await (prisma as any).workoutExercise.count({ where: { exerciseId: id } });
-    if (used > 0) {
-      return reply.code(409).send({ message: "Este exercício já está vinculado a treino. Remova dos treinos antes de excluir." });
-    }
-    await (prisma as any).exercise.delete({ where: { id } });
-    return { ok: true };
-  });
+  app.delete(
+    `${API_PREFIX}/admin/videos/:id`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const id = String(req.params.id || "");
+      await (prisma as any).exercise.updateMany({
+        where: { videoId: id },
+        data: { videoId: null },
+      });
+      await (prisma as any).video.delete({ where: { id } });
+      return { ok: true };
+    },
+  );
 
+  app.get(
+    `${API_PREFIX}/admin/exercises`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+      const q = String(req.query?.q || "").trim();
+      const exercises = await (prisma as any).exercise.findMany({
+        where: q ? { name: { contains: q, mode: "insensitive" } } : {},
+        take: 300,
+        orderBy: { name: "asc" },
+        include: { video: true, muscleGroup: true },
+      });
+      return {
+        exercises: exercises.map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          muscleGroup: e.muscleGroup?.name || "",
+          videoUrl: e.video?.url || "",
+          videoTitle: e.video?.title || "",
+        })),
+      };
+    },
+  );
+
+  app.post(
+    `${API_PREFIX}/admin/exercises`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+      const schema = z.object({
+        name: z.string().trim().min(2),
+        muscleGroup: z.string().trim().optional().nullable(),
+        videoUrl: z.string().trim().optional().nullable(),
+        videoTitle: z.string().trim().optional().nullable(),
+      });
+      const body = schema.parse(req.body);
+      const exercise = await upsertExercise(
+        body.name,
+        body.muscleGroup || "",
+        body.videoUrl || "",
+        body.videoTitle || body.name,
+      );
+      return { ok: true, exercise };
+    },
+  );
+
+  app.patch(
+    `${API_PREFIX}/admin/exercises/:id`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+      const id = String(req.params.id || "");
+      const schema = z.object({
+        name: z.string().trim().min(2),
+        muscleGroup: z.string().trim().optional().nullable(),
+        videoUrl: z.string().trim().optional().nullable(),
+        videoTitle: z.string().trim().optional().nullable(),
+      });
+      const body = schema.parse(req.body || {});
+
+      let muscleGroupId: string | null = null;
+      const muscleName = String(body.muscleGroup || "").trim();
+      if (muscleName) {
+        const mg = await (prisma as any).muscleGroup.upsert({
+          where: { name: muscleName },
+          update: {},
+          create: { name: muscleName },
+        });
+        muscleGroupId = mg.id;
+      }
+
+      let videoId: string | null = null;
+      const videoUrl = String(body.videoUrl || "").trim();
+      if (videoUrl) {
+        const title = String(body.videoTitle || body.name).trim() || body.name;
+        const video = await (prisma as any).video.upsert({
+          where: { title },
+          update: { url: videoUrl },
+          create: { title, url: videoUrl },
+        });
+        videoId = video.id;
+      }
+
+      const exercise = await (prisma as any).exercise.update({
+        where: { id },
+        data: { name: body.name, muscleGroupId, videoId },
+      });
+      return { ok: true, exercise };
+    },
+  );
+
+  app.delete(
+    `${API_PREFIX}/admin/exercises/:id`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+      const id = String(req.params.id || "");
+      const used = await (prisma as any).workoutExercise.count({
+        where: { exerciseId: id },
+      });
+      if (used > 0) {
+        return reply.code(409).send({
+          message:
+            "Este exercício já está vinculado a treino. Remova dos treinos antes de excluir.",
+        });
+      }
+      await (prisma as any).exercise.delete({ where: { id } });
+      return { ok: true };
+    },
+  );
 
   // ===== TÉCNICAS DE TREINO - ADMIN =====
-  app.get(`${API_PREFIX}/admin/techniques`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const techniques = await (prisma as any).trainingTechnique.findMany({ orderBy: { name: "asc" } });
-    return { techniques };
-  });
+  app.get(
+    `${API_PREFIX}/admin/techniques`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const techniques = await (prisma as any).trainingTechnique.findMany({
+        orderBy: { name: "asc" },
+      });
+      return { techniques };
+    },
+  );
 
-  app.post(`${API_PREFIX}/admin/techniques`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const schema = z.object({
-      name: z.string().trim().min(2, "Informe o nome da técnica"),
-      videoUrl: z.string().trim().optional().nullable(),
-      notes: z.string().trim().optional().nullable(),
-    });
-    const body = schema.parse(req.body || {});
-    const technique = await (prisma as any).trainingTechnique.upsert({
-      where: { name: body.name },
-      update: { videoUrl: body.videoUrl || null, notes: body.notes || null },
-      create: { name: body.name, videoUrl: body.videoUrl || null, notes: body.notes || null },
-    });
-    return { ok: true, technique };
-  });
+  app.post(
+    `${API_PREFIX}/admin/techniques`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const schema = z.object({
+        name: z.string().trim().min(2, "Informe o nome da técnica"),
+        videoUrl: z.string().trim().optional().nullable(),
+        notes: z.string().trim().optional().nullable(),
+      });
+      const body = schema.parse(req.body || {});
+      const technique = await (prisma as any).trainingTechnique.upsert({
+        where: { name: body.name },
+        update: { videoUrl: body.videoUrl || null, notes: body.notes || null },
+        create: {
+          name: body.name,
+          videoUrl: body.videoUrl || null,
+          notes: body.notes || null,
+        },
+      });
+      return { ok: true, technique };
+    },
+  );
 
-  app.patch(`${API_PREFIX}/admin/techniques/:id`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const id = String(req.params.id || "");
-    const schema = z.object({
-      name: z.string().trim().min(2, "Informe o nome da técnica"),
-      videoUrl: z.string().trim().optional().nullable(),
-      notes: z.string().trim().optional().nullable(),
-    });
-    const body = schema.parse(req.body || {});
-    const technique = await (prisma as any).trainingTechnique.update({
-      where: { id },
-      data: { name: body.name, videoUrl: body.videoUrl || null, notes: body.notes || null },
-    });
+  app.patch(
+    `${API_PREFIX}/admin/techniques/:id`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const id = String(req.params.id || "");
+      const schema = z.object({
+        name: z.string().trim().min(2, "Informe o nome da técnica"),
+        videoUrl: z.string().trim().optional().nullable(),
+        notes: z.string().trim().optional().nullable(),
+      });
+      const body = schema.parse(req.body || {});
+      const technique = await (prisma as any).trainingTechnique.update({
+        where: { id },
+        data: {
+          name: body.name,
+          videoUrl: body.videoUrl || null,
+          notes: body.notes || null,
+        },
+      });
 
-    await (prisma as any).workoutExercise.updateMany({
-      where: { techniqueId: id },
-      data: {
-        techniqueName: technique.name,
-        techniqueVideoUrl: technique.videoUrl,
-        techniqueNotes: technique.notes,
-      },
-    });
+      await (prisma as any).workoutExercise.updateMany({
+        where: { techniqueId: id },
+        data: {
+          techniqueName: technique.name,
+          techniqueVideoUrl: technique.videoUrl,
+          techniqueNotes: technique.notes,
+        },
+      });
 
-    return { ok: true, technique };
-  });
+      return { ok: true, technique };
+    },
+  );
 
-  app.delete(`${API_PREFIX}/admin/techniques/:id`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    const payload = await requireAdmin(req, reply);
-    if (!payload) return;
-    const id = String(req.params.id || "");
-    await (prisma as any).workoutExercise.updateMany({
-      where: { techniqueId: id },
-      data: {
-        techniqueId: null,
-        techniqueName: null,
-        techniqueVideoUrl: null,
-        techniqueNotes: null,
-        techniqueNote: null,
-      },
-    });
-    await (prisma as any).trainingTechnique.delete({ where: { id } });
-    return { ok: true };
-  });
+  app.delete(
+    `${API_PREFIX}/admin/techniques/:id`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      const payload = await requireAdmin(req, reply);
+      if (!payload) return;
+      const id = String(req.params.id || "");
+      await (prisma as any).workoutExercise.updateMany({
+        where: { techniqueId: id },
+        data: {
+          techniqueId: null,
+          techniqueName: null,
+          techniqueVideoUrl: null,
+          techniqueNotes: null,
+          techniqueNote: null,
+        },
+      });
+      await (prisma as any).trainingTechnique.delete({ where: { id } });
+      return { ok: true };
+    },
+  );
 
-  async function upsertExercise(nameRaw: string, muscleRaw = "", videoUrlRaw = "", videoTitleRaw = "") {
+  async function upsertExercise(
+    nameRaw: string,
+    muscleRaw = "",
+    videoUrlRaw = "",
+    videoTitleRaw = "",
+  ) {
     const name = String(nameRaw || "").trim();
     const muscleName = String(muscleRaw || "").trim();
     const videoUrl = String(videoUrlRaw || "").trim();
@@ -1031,11 +1638,18 @@ async function main() {
       videoId = video.id;
     }
 
-    const existing = await (prisma as any).exercise.findFirst({ where: { name, muscleGroupId } });
+    const existing = await (prisma as any).exercise.findFirst({
+      where: { name, muscleGroupId },
+    });
     if (existing) {
-      return (prisma as any).exercise.update({ where: { id: existing.id }, data: { videoId } });
+      return (prisma as any).exercise.update({
+        where: { id: existing.id },
+        data: { videoId },
+      });
     }
-    return (prisma as any).exercise.create({ data: { name, muscleGroupId, videoId } });
+    return (prisma as any).exercise.create({
+      data: { name, muscleGroupId, videoId },
+    });
   }
 
   const workoutInputSchema = z.object({
@@ -1043,221 +1657,277 @@ async function main() {
     notes: z.string().optional().nullable(),
     active: z.boolean().optional(),
     order: z.number().int().optional(),
-    exercises: z.array(z.object({
-      exerciseId: z.string().optional().nullable(),
-      name: z.string().trim().min(2),
-      muscleGroup: z.string().optional().nullable(),
-      videoUrl: z.string().optional().nullable(),
-      videoTitle: z.string().optional().nullable(),
-      notes: z.string().optional().nullable(),
-      techniqueId: z.string().optional().nullable(),
-      techniqueName: z.string().optional().nullable(),
-      techniqueVideoUrl: z.string().optional().nullable(),
-      techniqueNotes: z.string().optional().nullable(),
-      techniqueNote: z.string().optional().nullable(),
-      order: z.number().int().optional(),
-      series: z.array(z.object({
-        count: z.number().int().min(1).optional(),
-        reps: z.string().trim().optional().nullable(),
-        targetReps: z.string().trim().min(1),
-        order: z.number().int().optional(),
-      })).min(1),
-    })).min(1),
+    exercises: z
+      .array(
+        z.object({
+          exerciseId: z.string().optional().nullable(),
+          name: z.string().trim().min(2),
+          muscleGroup: z.string().optional().nullable(),
+          videoUrl: z.string().optional().nullable(),
+          videoTitle: z.string().optional().nullable(),
+          notes: z.string().optional().nullable(),
+          techniqueId: z.string().optional().nullable(),
+          techniqueName: z.string().optional().nullable(),
+          techniqueVideoUrl: z.string().optional().nullable(),
+          techniqueNotes: z.string().optional().nullable(),
+          techniqueNote: z.string().optional().nullable(),
+          order: z.number().int().optional(),
+          series: z
+            .array(
+              z.object({
+                count: z.number().int().min(1).optional(),
+                reps: z.string().trim().optional().nullable(),
+                targetReps: z.string().trim().min(1),
+                order: z.number().int().optional(),
+              }),
+            )
+            .min(1),
+        }),
+      )
+      .min(1),
   });
 
-  app.get(`${API_PREFIX}/admin/users/:email/workouts`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-    const email = normEmail(req.params.email);
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
+  app.get(
+    `${API_PREFIX}/admin/users/:email/workouts`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+      const email = normEmail(req.params.email);
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
 
-    const workouts = await (prisma as any).workout.findMany({
-      where: { userId: user.id },
-      orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-      include: {
-        exercises: {
-          orderBy: [{ order: "asc" }, { createdAt: "asc" }],
-          include: { exercise: { include: { video: true, muscleGroup: true } }, series: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] } },
-        },
-      },
-    });
-
-    return { workouts: workouts.map((w: any) => ({
-      id: w.id,
-      title: w.title,
-      notes: w.notes || "",
-      active: w.active,
-      order: w.order,
-      exercises: w.exercises.map((we: any) => ({
-        id: we.id,
-        exerciseId: we.exercise.id,
-        name: we.exercise.name,
-        muscleGroup: we.exercise.muscleGroup?.name || "",
-        videoUrl: we.exercise.video?.url || "",
-        videoTitle: we.exercise.video?.title || "",
-        notes: we.notes || "",
-        techniqueId: we.techniqueId || null,
-        techniqueName: we.techniqueName || "",
-        techniqueVideoUrl: we.techniqueVideoUrl || "",
-        techniqueNotes: we.techniqueNotes || "",
-        techniqueNote: we.techniqueNote || "",
-        order: we.order,
-        series: we.series.map((s: any) => ({ id: s.id, count: s.count || 1, reps: s.targetReps, targetReps: s.targetReps, order: s.order })),
-      })),
-    })) };
-  });
-
-  app.put(`${API_PREFIX}/admin/users/:email/workouts`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
-    const email = normEmail(req.params.email);
-    const schema = z.object({ workouts: z.array(workoutInputSchema).default([]) });
-    const body = schema.parse(req.body);
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
-
-    await prisma.$transaction(async (tx: any) => {
-      await tx.workout.deleteMany({ where: { userId: user.id } });
-
-      for (const [wi, workout] of body.workouts.entries()) {
-        const createdWorkout = await tx.workout.create({
-          data: {
-            userId: user.id,
-            title: workout.title,
-            notes: workout.notes || null,
-            active: workout.active ?? true,
-            order: workout.order ?? wi,
+      const workouts = await (prisma as any).workout.findMany({
+        where: { userId: user.id },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        include: {
+          exercises: {
+            orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+            include: {
+              exercise: { include: { video: true, muscleGroup: true } },
+              series: { orderBy: [{ order: "asc" }, { createdAt: "asc" }] },
+            },
           },
-        });
+        },
+      });
 
-        for (const [ei, item] of workout.exercises.entries()) {
-          let exerciseId = item.exerciseId || "";
-          if (!exerciseId) {
-            const createdExercise = await upsertExercise(item.name, item.muscleGroup || "", item.videoUrl || "", item.videoTitle || item.name);
-            exerciseId = createdExercise.id;
-          }
+      return {
+        workouts: workouts.map((w: any) => ({
+          id: w.id,
+          title: w.title,
+          notes: w.notes || "",
+          active: w.active,
+          order: w.order,
+          exercises: w.exercises.map((we: any) => ({
+            id: we.id,
+            exerciseId: we.exercise.id,
+            name: we.exercise.name,
+            muscleGroup: we.exercise.muscleGroup?.name || "",
+            videoUrl: we.exercise.video?.url || "",
+            videoTitle: we.exercise.video?.title || "",
+            notes: we.notes || "",
+            techniqueId: we.techniqueId || null,
+            techniqueName: we.techniqueName || "",
+            techniqueVideoUrl: we.techniqueVideoUrl || "",
+            techniqueNotes: we.techniqueNotes || "",
+            techniqueNote: we.techniqueNote || "",
+            order: we.order,
+            series: we.series.map((s: any) => ({
+              id: s.id,
+              count: s.count || 1,
+              reps: s.targetReps,
+              targetReps: s.targetReps,
+              order: s.order,
+            })),
+          })),
+        })),
+      };
+    },
+  );
 
-          const we = await tx.workoutExercise.create({
+  app.put(
+    `${API_PREFIX}/admin/users/:email/workouts`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
+      const email = normEmail(req.params.email);
+      const schema = z.object({
+        workouts: z.array(workoutInputSchema).default([]),
+      });
+      const body = schema.parse(req.body);
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
+
+      await prisma.$transaction(async (tx: any) => {
+        await tx.workout.deleteMany({ where: { userId: user.id } });
+
+        for (const [wi, workout] of body.workouts.entries()) {
+          const createdWorkout = await tx.workout.create({
             data: {
-              workoutId: createdWorkout.id,
-              exerciseId,
-              notes: item.notes || null,
-              techniqueId: item.techniqueId || null,
-              techniqueName: item.techniqueName || null,
-              techniqueVideoUrl: item.techniqueVideoUrl || null,
-              techniqueNotes: item.techniqueNotes || null,
-              techniqueNote: item.techniqueNote || null,
-              order: item.order ?? ei,
+              userId: user.id,
+              title: workout.title,
+              notes: workout.notes || null,
+              active: workout.active ?? true,
+              order: workout.order ?? wi,
             },
           });
 
-          for (const [si, serie] of item.series.entries()) {
-            const count = Math.max(1, Number(serie.count || 1));
-            const reps = String(serie.reps || serie.targetReps || "").replace(/^\s*\d+\s*x\s*/i, "").trim();
-            await tx.workoutSeries.create({
+          for (const [ei, item] of workout.exercises.entries()) {
+            let exerciseId = item.exerciseId || "";
+            if (!exerciseId) {
+              const createdExercise = await upsertExercise(
+                item.name,
+                item.muscleGroup || "",
+                item.videoUrl || "",
+                item.videoTitle || item.name,
+              );
+              exerciseId = createdExercise.id;
+            }
+
+            const we = await tx.workoutExercise.create({
               data: {
-                workoutExerciseId: we.id,
-                count,
-                targetReps: reps || String(serie.targetReps || "").trim(),
-                order: serie.order ?? si,
+                workoutId: createdWorkout.id,
+                exerciseId,
+                notes: item.notes || null,
+                techniqueId: item.techniqueId || null,
+                techniqueName: item.techniqueName || null,
+                techniqueVideoUrl: item.techniqueVideoUrl || null,
+                techniqueNotes: item.techniqueNotes || null,
+                techniqueNote: item.techniqueNote || null,
+                order: item.order ?? ei,
               },
             });
+
+            for (const [si, serie] of item.series.entries()) {
+              const count = Math.max(1, Number(serie.count || 1));
+              const reps = String(serie.reps || serie.targetReps || "")
+                .replace(/^\s*\d+\s*x\s*/i, "")
+                .trim();
+              await tx.workoutSeries.create({
+                data: {
+                  workoutExerciseId: we.id,
+                  count,
+                  targetReps: reps || String(serie.targetReps || "").trim(),
+                  order: serie.order ?? si,
+                },
+              });
+            }
           }
         }
-      }
-    });
+      });
 
-    return { ok: true };
-  });
-
-
+      return { ok: true };
+    },
+  );
 
   // ===== REGISTROS DE EXECUÇÃO - ADMIN =====
-  app.get(`${API_PREFIX}/admin/workout-records`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
+  app.get(
+    `${API_PREFIX}/admin/workout-records`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
 
-    const email = normEmail(String(req.query?.email || ""));
-    const from = parseDateParam(req.query?.from);
-    const to = parseDateParam(req.query?.to);
+      const email = normEmail(String(req.query?.email || ""));
+      const from = parseDateParam(req.query?.from);
+      const to = parseDateParam(req.query?.to);
 
-    const where: any = {};
-    if (email) {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
-      where.userId = user.id;
-    }
-    if (from || to) {
-      where.createdAt = {};
-      if (from) where.createdAt.gte = from;
-      if (to) where.createdAt.lte = to;
-    }
+      const where: any = {};
+      if (email) {
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user || user.role !== "student")
+          return reply.code(404).send({ message: "Aluno não encontrado" });
+        where.userId = user.id;
+      }
+      if (from || to) {
+        where.createdAt = {};
+        if (from) where.createdAt.gte = from;
+        if (to) where.createdAt.lte = to;
+      }
 
-    const logs = await (prisma as any).studentWorkoutLog.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: 1000,
-      include: {
-        user: { select: { name: true, email: true } },
-        workout: { select: { title: true } },
-        session: { select: { id: true, notes: true, createdAt: true, weekStart: true } },
-        series: {
-          include: {
-            workoutExercise: {
-              include: { exercise: { include: { muscleGroup: true } } },
+      const logs = await (prisma as any).studentWorkoutLog.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: 1000,
+        include: {
+          user: { select: { name: true, email: true } },
+          workout: { select: { title: true } },
+          session: {
+            select: { id: true, notes: true, createdAt: true, weekStart: true },
+          },
+          series: {
+            include: {
+              workoutExercise: {
+                include: { exercise: { include: { muscleGroup: true } } },
+              },
             },
           },
         },
-      },
-    });
+      });
 
-    const grouped = new Map<string, any>();
+      const grouped = new Map<string, any>();
 
-    for (const log of logs) {
-      const created = new Date(log.createdAt);
-      const fallbackKey = `${log.userId}:${created.toISOString().slice(0, 16)}:${log.workoutTitle || log.workout?.title || "Treino"}`;
-      const key = log.sessionId ? `${log.sessionId}:${created.toISOString().slice(0, 16)}` : fallbackKey;
+      for (const log of logs) {
+        const created = new Date(log.createdAt);
+        const fallbackKey = `${log.userId}:${created.toISOString().slice(0, 16)}:${log.workoutTitle || log.workout?.title || "Treino"}`;
+        const key = log.sessionId
+          ? `${log.sessionId}:${created.toISOString().slice(0, 16)}`
+          : fallbackKey;
 
-      if (!grouped.has(key)) {
-        grouped.set(key, {
-          id: key,
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            id: key,
+            date: log.createdAt,
+            weekStart: log.session?.weekStart || null,
+            studentName: log.user?.name || "",
+            studentEmail: log.user?.email || "",
+            workoutTitle: log.workoutTitle || log.workout?.title || "Treino",
+            notes: log.session?.notes || "",
+            logs: [],
+          });
+        }
+
+        grouped.get(key).logs.push({
+          id: log.id,
           date: log.createdAt,
-          weekStart: log.session?.weekStart || null,
-          studentName: log.user?.name || "",
-          studentEmail: log.user?.email || "",
-          workoutTitle: log.workoutTitle || log.workout?.title || "Treino",
-          notes: log.session?.notes || "",
-          logs: [],
+          setIndex: log.setIndex ?? 0,
+          weight: log.weight,
+          performedReps: log.performedReps,
+          targetReps: log.targetReps || log.series?.targetReps || "",
+          exerciseName:
+            log.exerciseName ||
+            log.series?.workoutExercise?.exercise?.name ||
+            "",
+          muscleGroup:
+            log.muscleGroup ||
+            log.series?.workoutExercise?.exercise?.muscleGroup?.name ||
+            "",
         });
       }
 
-      grouped.get(key).logs.push({
-        id: log.id,
-        date: log.createdAt,
-        setIndex: log.setIndex ?? 0,
-        weight: log.weight,
-        performedReps: log.performedReps,
-        targetReps: log.targetReps || log.series?.targetReps || "",
-        exerciseName: log.exerciseName || log.series?.workoutExercise?.exercise?.name || "",
-        muscleGroup: log.muscleGroup || log.series?.workoutExercise?.exercise?.muscleGroup?.name || "",
-      });
-    }
+      return { records: Array.from(grouped.values()).slice(0, 200) };
+    },
+  );
 
-    return { records: Array.from(grouped.values()).slice(0, 200) };
-  });
+  app.delete(
+    `${API_PREFIX}/admin/users/:email`,
+    { preHandler: (app as any).auth },
+    async (req: any, reply: any) => {
+      if (!requireAdmin(req, reply)) return;
 
-  app.delete(`${API_PREFIX}/admin/users/:email`, { preHandler: (app as any).auth }, async (req: any, reply: any) => {
-    if (!requireAdmin(req, reply)) return;
+      const email = normEmail(req.params.email);
 
-    const email = normEmail(req.params.email);
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user || user.role !== "student")
+        return reply.code(404).send({ message: "Aluno não encontrado" });
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.role !== "student") return reply.code(404).send({ message: "Aluno não encontrado" });
+      await prisma.studentDocument.deleteMany({ where: { userId: user.id } });
+      await prisma.user.delete({ where: { email } });
 
-    await prisma.studentDocument.deleteMany({ where: { userId: user.id } });
-    await prisma.user.delete({ where: { email } });
-
-    return { ok: true };
-  });
+      return { ok: true };
+    },
+  );
 
   const port = Number(process.env.PORT) || 3333;
   await app.listen({ port, host: "0.0.0.0" });

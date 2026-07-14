@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-09-performance";
+const VERSION = "rf-fitness-v2026-07-14-pdfjs-v1";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

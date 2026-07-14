@@ -283,6 +283,13 @@ let pdfTouchPanPassthroughTimer = 0;
 let pdfSingleTouchBypassTimer = 0;
 const pdfZoomControls = document.getElementById("pdfZoomControls");
 const pdfTouchPanLayer = document.getElementById("pdfTouchPanLayer");
+const PDF_JS_VIEWER_PATH = "/assets/pdfjs/pdfjs-6.1.200-dist/web/viewer.html";
+const PDF_JS_MAX_SCALE = 2;
+let pdfUsesLocalViewer = false;
+let pdfOpenRequestId = 0;
+let pdfJsGuardedEventBus = null;
+let pdfJsGuardInstallTimer = 0;
+let pdfJsScaleClampPending = false;
 
 function clampPdfZoom(value) {
   const n = Number(value) || 1;
@@ -346,15 +353,19 @@ function updatePdfZoomLabel() {
   if (pdfZoomIn) pdfZoomIn.disabled = pdfVisualZoom >= PDF_VISUAL_ZOOM_MAX - 0.001;
 
   const panEnabled = zoomed && (maxPanX > 1 || maxPanY > 1);
-  const pinchCatcherEnabled = pdfVisualZoom <= 1.001 && pdfOverlay?.classList.contains("show");
 
   if (pdfTouchPanLayer) {
     pdfTouchPanLayer.classList.toggle("isEnabled", panEnabled);
-    pdfTouchPanLayer.classList.toggle("isPinchCatcher", pinchCatcherEnabled);
-    pdfTouchPanLayer.setAttribute("aria-hidden", panEnabled || pinchCatcherEnabled ? "false" : "true");
-    pdfTouchPanLayer.title = panEnabled
-      ? "Arraste o PDF com o dedo para qualquer direção; use dois dedos para aproximar/afastar"
-      : "Use dois dedos para aproximar o PDF";
+    // Em 100%, o iframe precisa receber o gesto desde o primeiro toque para que
+    // a rolagem nativa do visualizador funcione. A antiga camada de captura de
+    // pinça engolia esse primeiro gesto e voltava a cobrir o PDF logo depois.
+    pdfTouchPanLayer.classList.remove("isPinchCatcher");
+    pdfTouchPanLayer.setAttribute("aria-hidden", panEnabled ? "false" : "true");
+    if (panEnabled) {
+      pdfTouchPanLayer.title = "Arraste o PDF com o dedo para qualquer direção; use dois dedos para aproximar/afastar";
+    } else {
+      pdfTouchPanLayer.removeAttribute("title");
+    }
   }
 
   pdfOverlay?.classList.toggle("pdfZoomed", zoomed);
@@ -589,6 +600,7 @@ function getPdfGestureAnchorFromEvent(ev) {
 }
 
 function beginPdfGestureZoom(ev) {
+  if (pdfUsesLocalViewer) return false;
   if (!pdfOverlay?.classList.contains("show")) return false;
   if (!pdfFrameWrap) return false;
 
@@ -646,6 +658,7 @@ function installPdfSafeGestures() {
   };
 
   pdfFrameWrap.addEventListener("touchstart", (ev) => {
+    if (pdfUsesLocalViewer) return;
     if (!preventTwoFinger(ev)) {
       // No 100%, a camada transparente fica por cima somente para permitir
       // a pinça inicial. Um toque com 1 dedo deve sair do caminho quase na hora.
@@ -671,6 +684,7 @@ function installPdfSafeGestures() {
   }, { passive: false, capture: true });
 
   pdfFrameWrap.addEventListener("touchmove", (ev) => {
+    if (pdfUsesLocalViewer) return;
     if (!preventTwoFinger(ev)) return;
     const distance = touchDistance(ev.touches) || pdfPinchStartDistance || 1;
     const ratio = distance / (pdfPinchStartDistance || distance || 1);
@@ -683,6 +697,7 @@ function installPdfSafeGestures() {
   }, { passive: false, capture: true });
 
   pdfFrameWrap.addEventListener("touchend", () => {
+    if (pdfUsesLocalViewer) return;
     pdfPinchStartDistance = 0;
     pdfPinchStartZoom = pdfVisualZoom;
     pdfOverlay?.classList.remove("pdfPinching");
@@ -749,12 +764,14 @@ function schedulePdfRestore(force = false, reason = "return") {
 }
 
 pdfZoomOut?.addEventListener("click", (ev) => {
+  if (pdfUsesLocalViewer) return;
   ev.preventDefault();
   ev.stopPropagation();
   applyPdfVisualZoom(pdfVisualZoom - PDF_VISUAL_ZOOM_STEP, { anchor: "center" });
 });
 
 pdfZoomIn?.addEventListener("click", (ev) => {
+  if (pdfUsesLocalViewer) return;
   ev.preventDefault();
   ev.stopPropagation();
   applyPdfVisualZoom(pdfVisualZoom + PDF_VISUAL_ZOOM_STEP, { anchor: "center" });
@@ -806,26 +823,29 @@ if (window.PointerEvent && pdfTouchPanLayer) {
 }
 
 pdfZoomLabel?.addEventListener("click", (ev) => {
+  if (pdfUsesLocalViewer) return;
   ev.preventDefault();
   ev.stopPropagation();
   applyPdfVisualZoom(PDF_VISUAL_ZOOM_DEFAULT, { anchor: "center" });
 });
 
 window.addEventListener("resize", () => {
-  if (pdfOverlay?.classList.contains("show")) {
+  if (!pdfUsesLocalViewer && pdfOverlay?.classList.contains("show")) {
     requestAnimationFrame(() => applyPdfVisualZoom(pdfVisualZoom, { anchor: "center" }));
   }
 });
 
 window.addEventListener("pageshow", () => {
-  if (pdfWasHiddenWhileOpen) schedulePdfRestore(true, "pageshow");
+  if (!pdfUsesLocalViewer && pdfWasHiddenWhileOpen) schedulePdfRestore(true, "pageshow");
 });
 
 window.addEventListener("focus", () => {
-  if (pdfWasHiddenWhileOpen) schedulePdfRestore(true, "focus");
+  if (!pdfUsesLocalViewer && pdfWasHiddenWhileOpen) schedulePdfRestore(true, "focus");
 });
 
 document.addEventListener("visibilitychange", () => {
+  if (pdfUsesLocalViewer) return;
+
   if (document.visibilityState === "hidden" && pdfOverlay?.classList.contains("show")) {
     pdfWasHiddenWhileOpen = true;
     return;
@@ -836,41 +856,169 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-function openPdfOverlay(title, rawUrl) {
-  if (pdfTitle) pdfTitle.textContent = title || "PDF";
-  showLoading();
+
+function installPdfJsMemoryGuards(attempt = 0) {
+  clearTimeout(pdfJsGuardInstallTimer);
+  if (!pdfUsesLocalViewer || !pdfFrame?.src.includes(PDF_JS_VIEWER_PATH)) return;
+
+  let viewerWindow;
+  try {
+    viewerWindow = pdfFrame.contentWindow;
+  } catch {
+    return;
+  }
+
+  const viewerApp = viewerWindow?.PDFViewerApplication;
+  const eventBus = viewerApp?.eventBus;
+  const pdfViewer = viewerApp?.pdfViewer;
+
+  if (!eventBus || !pdfViewer) {
+    if (attempt < 50) {
+      pdfJsGuardInstallTimer = window.setTimeout(
+        () => installPdfJsMemoryGuards(attempt + 1),
+        100
+      );
+    }
+    return;
+  }
+
+  if (pdfJsGuardedEventBus === eventBus) return;
+  pdfJsGuardedEventBus = eventBus;
+
+  eventBus.on("scalechanging", ({ scale }) => {
+    if (!pdfUsesLocalViewer) return;
+
+    const numericScale = Number(scale) || 1;
+    const zoomInButton = pdfFrame.contentDocument?.getElementById("zoomInButton");
+    if (zoomInButton) zoomInButton.disabled = numericScale >= PDF_JS_MAX_SCALE - 0.001;
+
+    if (numericScale <= PDF_JS_MAX_SCALE + 0.001 || pdfJsScaleClampPending) return;
+    pdfJsScaleClampPending = true;
+    viewerWindow.requestAnimationFrame(() => {
+      try {
+        pdfViewer.currentScaleValue = String(PDF_JS_MAX_SCALE);
+      } finally {
+        pdfJsScaleClampPending = false;
+      }
+    });
+  });
+}
+
+pdfFrame?.addEventListener("load", () => {
+  if (!pdfUsesLocalViewer) return;
+  pdfJsGuardedEventBus = null;
+  installPdfJsMemoryGuards();
+});
+
+function setLocalPdfViewerMode(enabled) {
+  pdfUsesLocalViewer = Boolean(enabled);
+  pdfOverlay?.classList.toggle("pdfJsViewer", pdfUsesLocalViewer);
+
+  if (!pdfUsesLocalViewer) {
+    clearTimeout(pdfJsGuardInstallTimer);
+    pdfJsGuardedEventBus = null;
+    pdfJsScaleClampPending = false;
+    return;
+  }
+
+  pdfOverlay?.classList.remove("pdfZoomed", "pdfPinching");
+  pdfFrameWrap?.classList.remove("pdfZoomed");
+  pdfFrameScale?.classList.remove("pdfZoomed");
+  pdfTouchPanLayer?.classList.remove(
+    "isEnabled",
+    "isPinchCatcher",
+    "isPassthrough",
+    "isTouching",
+    "isPanning"
+  );
+  pdfTouchPanLayer?.setAttribute("aria-hidden", "true");
+  pdfTouchPanLayer?.removeAttribute("title");
+
+  if (pdfFrameScale) {
+    pdfFrameScale.style.removeProperty("width");
+    pdfFrameScale.style.removeProperty("height");
+  }
+  if (pdfFrame) {
+    pdfFrame.style.removeProperty("width");
+    pdfFrame.style.removeProperty("height");
+    pdfFrame.style.removeProperty("transform");
+    pdfFrame.style.removeProperty("transform-origin");
+  }
+}
+
+function showPdfFrameMessage(title, message) {
+  setLocalPdfViewerMode(true);
+  pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
+    placeholderHtml(title, message)
+  );
+  window.setTimeout(hideLoading, 250);
+}
+
+function openLegacyPdfSource(rawUrl) {
+  setLocalPdfViewerMode(false);
   installPdfSafeGestures();
   resetPdfVisualZoom();
+
+  const preview = driveToPreview(rawUrl);
+  if (!preview) {
+    showPdfFrameMessage("Link inválido", "Envie um link do Drive/PDF compatível.");
+    return;
+  }
+
+  lastPdfFrameUrl = preview;
+  pdfFrame.src = preview;
+}
+
+async function openPdfOverlay(title, rawUrl, resource = null) {
+  const requestId = ++pdfOpenRequestId;
+
+  if (pdfTitle) pdfTitle.textContent = title || "PDF";
+  showLoading();
+  setLocalPdfViewerMode(true);
   lastPdfFrameUrl = "";
   pdfWasHiddenWhileOpen = false;
   clearTimeout(pdfRestoreTimer);
 
-  if (!rawUrl) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Material não configurado", "Entre em contato com o personal.")
-    );
-    setTimeout(hideLoading, 250);
-  } else if (!navigator.onLine) {
-    pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-      placeholderHtml("Você está offline", "Conecte-se para abrir este material.")
-    );
-    setTimeout(hideLoading, 250);
-  } else {
-    const preview = driveToPreview(rawUrl);
-    if (!preview) {
-      pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(
-        placeholderHtml("Link inválido", "Envie um link do Drive/PDF compatível.")
-      );
-      setTimeout(hideLoading, 250);
-    } else {
-      lastPdfFrameUrl = preview;
-      pdfFrame.src = preview;
-    }
-  }
-
   pdfOverlay?.classList.add("show");
   pdfOverlay?.setAttribute("aria-hidden", "false");
   document.body.classList.add("pdfOpen");
+
+  if (!rawUrl) {
+    showPdfFrameMessage("Material não configurado", "Entre em contato com o personal.");
+    return;
+  }
+
+  if (!navigator.onLine) {
+    showPdfFrameMessage("Você está offline", "Conecte-se para abrir este material.");
+    return;
+  }
+
+  if (!resource || !session?.token) {
+    openLegacyPdfSource(rawUrl);
+    return;
+  }
+
+  try {
+    const access = await apiPdfTicket(
+      session.token,
+      resource.resourceKind,
+      resource.resourceKey
+    );
+    if (requestId !== pdfOpenRequestId || !pdfOverlay?.classList.contains("show")) return;
+
+    const contentUrl = new URL(access.contentUrl, window.location.origin);
+    if (contentUrl.origin !== window.location.origin || !contentUrl.pathname.startsWith("/api/pdf/content")) {
+      throw new Error("URL interna do PDF inválida");
+    }
+
+    setLocalPdfViewerMode(true);
+    const viewerUrl = `${PDF_JS_VIEWER_PATH}?file=${encodeURIComponent(contentUrl.href)}#zoom=page-width&pagemode=none`;
+    pdfFrame.src = viewerUrl;
+  } catch (error) {
+    if (requestId !== pdfOpenRequestId || !pdfOverlay?.classList.contains("show")) return;
+    console.warn("Leitor PDF.js indisponível; usando visualizador compatível:", error);
+    openLegacyPdfSource(rawUrl);
+  }
 }
 
 function openContent(type) {
@@ -897,14 +1045,21 @@ function openContent(type) {
 
   if (type.startsWith("extra-")) {
     const extra = extraItems.find((item) => `extra-${item.id}` === type);
-    openPdfOverlay(extra?.title || "MATERIAL EXTRA", extraUrls[type] || "");
+    openPdfOverlay(extra?.title || "MATERIAL EXTRA", extraUrls[type] || "", {
+      resourceKind: "extra",
+      resourceKey: extra?.id || ""
+    });
     return;
   }
 
-  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "");
+  openPdfOverlay(titles[type] || "MATERIAL", urls[type] || "", {
+    resourceKind: "document",
+    resourceKey: type
+  });
 }
 
 function closePdf() {
+  ++pdfOpenRequestId;
   pdfOverlay?.classList.remove("show");
   pdfOverlay?.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pdfOpen");
@@ -918,6 +1073,7 @@ function closePdf() {
   setTimeout(() => {
     if (pdfFrame) pdfFrame.src = "about:blank";
     lastPdfFrameUrl = "";
+    setLocalPdfViewerMode(false);
     resetPdfVisualZoom();
   }, 200);
 }

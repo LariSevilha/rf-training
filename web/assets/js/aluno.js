@@ -6,6 +6,7 @@ import {
   apiSaveWorkoutLogs,
   apiWorkoutHistory,
   apiExtraItems,
+  apiPdfTicket,
 } from "./api.js";
 import { clearSession } from "./state.js";
 import { driveToPreview, driveToNativePdf, placeholderHtml } from "./pdf.js";
@@ -20,6 +21,7 @@ Object.assign(window, {
   apiSaveWorkoutLogs,
   apiWorkoutHistory,
   apiExtraItems,
+  apiPdfTicket,
   clearSession,
   driveToPreview,
   driveToNativePdf,

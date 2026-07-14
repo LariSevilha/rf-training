@@ -96,6 +96,14 @@ export async function apiDocuments(token) {
   };
 }
 
+export async function apiPdfTicket(token, resourceKind, resourceKey) {
+  return apiFetch("/pdf/ticket", {
+    method: "POST",
+    headers: jsonHeaders(token),
+    body: JSON.stringify({ resourceKind, resourceKey }),
+  });
+}
+
 // ===== ADMIN =====
 export async function apiAdminListUsers(token, q = "") {
   const search = String(q || "").trim();
