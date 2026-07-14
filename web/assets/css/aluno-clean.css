@@ -1687,6 +1687,13 @@ body.pdfOpen {
   background: #fff !important;
   transform-origin: 0 0 !important;
   overscroll-behavior: contain !important;
+  
+   will-change: transform !important;
+  -webkit-transform: translateZ(0) !important;
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: manipulation !important;
 }
 
 @media (max-width: 640px) {
@@ -2065,6 +2072,12 @@ body.pdfOpen {
 
 .alunoClean .pdfOverlay.pdfZoomed #pdfFrame {
   pointer-events: auto !important;
+  will-change: transform !important;
+  -webkit-transform: translateZ(0) !important;
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: manipulation !important;
 }
 
 /* =========================================================
