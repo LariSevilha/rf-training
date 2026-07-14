@@ -857,6 +857,29 @@ document.addEventListener("visibilitychange", () => {
 });
 
 
+function applyPdfJsReaderUi(viewerDocument) {
+  if (!viewerDocument || viewerDocument.getElementById("rfPdfJsReaderUi")) return;
+
+  // O viewer possui CSP que bloqueia estilos inline. Um stylesheet same-origin
+  // mantém o pacote PDF.js intacto e é aceito pela política do iframe.
+  const stylesheet = viewerDocument.createElement("link");
+  stylesheet.id = "rfPdfJsReaderUi";
+  stylesheet.rel = "stylesheet";
+  stylesheet.href = "/assets/css/pdfjs-reader.css";
+  viewerDocument.head.appendChild(stylesheet);
+
+  // O PDF.js também calcula a posição do viewer em runtime. Zeramos apenas
+  // esse espaço; nenhuma cor ou aparência do documento é alterada.
+  const viewerContainer = viewerDocument.getElementById("viewerContainer");
+  viewerContainer?.style.setProperty("inset", "0", "important");
+  viewerContainer?.style.setProperty("inset-block-start", "0", "important");
+  viewerContainer?.style.setProperty("top", "0", "important");
+
+  const loadingBar = viewerDocument.getElementById("loadingBar");
+  loadingBar?.style.setProperty("inset-block-start", "0", "important");
+  loadingBar?.style.setProperty("top", "0", "important");
+}
+
 function installPdfJsMemoryGuards(attempt = 0) {
   clearTimeout(pdfJsGuardInstallTimer);
   if (!pdfUsesLocalViewer || !pdfFrame?.src.includes(PDF_JS_VIEWER_PATH)) return;
@@ -882,8 +905,23 @@ function installPdfJsMemoryGuards(attempt = 0) {
     return;
   }
 
+  applyPdfJsReaderUi(pdfFrame.contentDocument);
+
   if (pdfJsGuardedEventBus === eventBus) return;
   pdfJsGuardedEventBus = eventBus;
+
+  const finishPdfJsLoading = () => {
+    if (!pdfUsesLocalViewer || pdfJsGuardedEventBus !== eventBus) return;
+    hideLoading();
+  };
+
+  // O load do iframe significa apenas que a interface do PDF.js abriu.
+  // Mantemos o spinner até uma página ser realmente desenhada.
+  eventBus.on("pagerendered", finishPdfJsLoading);
+  eventBus.on("documenterror", finishPdfJsLoading);
+
+  const firstPage = pdfViewer.getPageView?.(0);
+  if (firstPage?.renderingState === 3) finishPdfJsLoading();
 
   eventBus.on("scalechanging", ({ scale }) => {
     if (!pdfUsesLocalViewer) return;
@@ -905,7 +943,11 @@ function installPdfJsMemoryGuards(attempt = 0) {
 }
 
 pdfFrame?.addEventListener("load", () => {
-  if (!pdfUsesLocalViewer) return;
+  if (!pdfUsesLocalViewer || !pdfFrame.src.includes(PDF_JS_VIEWER_PATH)) return;
+
+  // O listener global esconde o loading no load do iframe. Para o PDF.js isso
+  // ainda é cedo; mostramos novamente até o primeiro pagerendered.
+  showLoading();
   pdfJsGuardedEventBus = null;
   installPdfJsMemoryGuards();
 });

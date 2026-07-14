@@ -1,0 +1,27 @@
+:root {
+  --toolbar-height: 0px !important;
+}
+
+#mainContainer > .toolbar,
+#toolbarContainer,
+#secondaryToolbar,
+#sidebarContainer,
+#viewsManager,
+#findbar {
+  display: none !important;
+}
+
+#mainContainer {
+  min-width: 0 !important;
+}
+
+#outerContainer #mainContainer #viewerContainer {
+  inset: 0 !important;
+  inset-block-start: 0 !important;
+  top: 0 !important;
+}
+
+#outerContainer #loadingBar {
+  inset-block-start: 0 !important;
+  top: 0 !important;
+}
