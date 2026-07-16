@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-14-pdfjs-v3-loading";
+const VERSION = "rf-fitness-v2026-07-16-pdf-zoom-clamp";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
