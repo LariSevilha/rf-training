@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-16-pdf-zoom-clamp";
+const VERSION = "rf-fitness-v2026-07-16-mjs-mime-fix";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -135,6 +135,7 @@ self.addEventListener("fetch", (event) => {
   const isHtml = url.pathname.endsWith(".html");
   const isStatic =
     url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".mjs") ||
     url.pathname.endsWith(".css") ||
     url.pathname.endsWith(".webmanifest") ||
     url.pathname.endsWith(".png") ||
