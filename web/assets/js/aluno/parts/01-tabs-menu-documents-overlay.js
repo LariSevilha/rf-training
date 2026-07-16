@@ -293,6 +293,16 @@ const PDF_JS_MAX_SCALE = 2;
 const PDF_JS_MIN_SCALE_FALLBACK = 1;
 let pdfJsFitScale = null;
 let pdfUsesLocalViewer = false;
+// V28: se o visualizador local não renderizar a tempo (erro de módulo,
+// memória insuficiente, navegador antigo etc.), caímos pro iframe direto do
+// Drive em vez de deixar a tela preta/travada. Se até esse fallback falhar
+// em carregar, mostramos um link manual pra abrir em outra aba.
+const PDF_JS_RENDER_TIMEOUT_MS = 8000;
+const PDF_LEGACY_LOAD_TIMEOUT_MS = 10000;
+let pdfCurrentRawUrl = "";
+let pdfJsRenderedOnce = false;
+let pdfRenderWatchdogTimer = 0;
+let pdfLegacyLoadWatchdogTimer = 0;
 let pdfOpenRequestId = 0;
 let pdfJsGuardedEventBus = null;
 let pdfJsGuardInstallTimer = 0;
@@ -936,13 +946,23 @@ function installPdfJsMemoryGuards(attempt = 0) {
   const finishPdfJsLoading = () => {
     if (!pdfUsesLocalViewer || pdfJsGuardedEventBus !== eventBus) return;
     captureFitScaleOnce();
+    pdfJsRenderedOnce = true;
+    clearTimeout(pdfRenderWatchdogTimer);
     hideLoading();
+  };
+
+  // V28: erro de documento (PDF corrompido, módulo que não carregou etc.)
+  // não fica esperando o watchdog — cai pro visualizador antigo na hora.
+  const handlePdfJsDocumentError = () => {
+    if (!pdfUsesLocalViewer || pdfJsGuardedEventBus !== eventBus) return;
+    console.warn("pdf.js reportou erro ao abrir o documento; usando visualizador compatível.");
+    fallbackToLegacyPdf(pdfOpenRequestId);
   };
 
   // O load do iframe significa apenas que a interface do PDF.js abriu.
   // Mantemos o spinner até uma página ser realmente desenhada.
   eventBus.on("pagerendered", finishPdfJsLoading);
-  eventBus.on("documenterror", finishPdfJsLoading);
+  eventBus.on("documenterror", handlePdfJsDocumentError);
 
   const firstPage = pdfViewer.getPageView?.(0);
   if (firstPage?.renderingState === 3) finishPdfJsLoading();
@@ -996,6 +1016,13 @@ pdfFrame?.addEventListener("load", () => {
   showLoading();
   pdfJsGuardedEventBus = null;
   installPdfJsMemoryGuards();
+});
+
+// V28: iframe do visualizador antigo (Drive direto) carregou com sucesso —
+// desarma o alarme que mostraria o link "abrir em outra aba".
+pdfFrame?.addEventListener("load", () => {
+  if (pdfUsesLocalViewer) return;
+  clearTimeout(pdfLegacyLoadWatchdogTimer);
 });
 
 function setLocalPdfViewerMode(enabled) {
@@ -1057,6 +1084,66 @@ function openLegacyPdfSource(rawUrl) {
   pdfFrame.src = preview;
 }
 
+function clearPdfWatchdogs() {
+  clearTimeout(pdfRenderWatchdogTimer);
+  clearTimeout(pdfLegacyLoadWatchdogTimer);
+}
+
+function showPdfOpenExternallyFallback(rawUrl) {
+  const safeUrl = String(rawUrl || "").replace(/"/g, "&quot;");
+  setLocalPdfViewerMode(true);
+  pdfFrame.src = "data:text/html;charset=utf-8," + encodeURIComponent(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <style>
+          html,body{height:100%;margin:0;background:#111;}
+          body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eee;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;}
+          .box{width:min(520px,100%);text-align:center;border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:28px 22px;background:#151515;}
+          h1{margin:0 0 8px;font-size:22px;line-height:1.1;}
+          p{margin:0 0 18px;color:rgba(255,255,255,.72);line-height:1.45;}
+          a{display:inline-block;padding:12px 20px;border-radius:999px;background:#e8b923;color:#111;font-weight:700;text-decoration:none;}
+        </style>
+      </head>
+      <body>
+        <div class="box">
+          <h1>Não foi possível abrir aqui</h1>
+          <p>Esse material não carregou neste aparelho/navegador. Toque abaixo para abrir direto no Google Drive.</p>
+          <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">Abrir em outra aba</a>
+        </div>
+      </body>
+    </html>
+  `);
+  hideLoading();
+}
+
+function schedulePdfJsRenderWatchdog(requestId) {
+  clearTimeout(pdfRenderWatchdogTimer);
+  pdfRenderWatchdogTimer = window.setTimeout(() => {
+    if (requestId !== pdfOpenRequestId || pdfJsRenderedOnce || !pdfUsesLocalViewer) return;
+    console.warn("Leitor PDF.js não renderizou a tempo; usando visualizador compatível.");
+    fallbackToLegacyPdf(requestId);
+  }, PDF_JS_RENDER_TIMEOUT_MS);
+}
+
+function scheduleLegacyLoadWatchdog(requestId) {
+  clearTimeout(pdfLegacyLoadWatchdogTimer);
+  pdfLegacyLoadWatchdogTimer = window.setTimeout(() => {
+    if (requestId !== pdfOpenRequestId || pdfUsesLocalViewer) return;
+    showPdfOpenExternallyFallback(pdfCurrentRawUrl);
+  }, PDF_LEGACY_LOAD_TIMEOUT_MS);
+}
+
+function fallbackToLegacyPdf(requestId) {
+  if (requestId !== pdfOpenRequestId) return;
+  clearPdfWatchdogs();
+  showLoading();
+  openLegacyPdfSource(pdfCurrentRawUrl);
+  scheduleLegacyLoadWatchdog(requestId);
+}
+
 async function openPdfOverlay(title, rawUrl, resource = null) {
   const requestId = ++pdfOpenRequestId;
 
@@ -1065,6 +1152,9 @@ async function openPdfOverlay(title, rawUrl, resource = null) {
   setLocalPdfViewerMode(true);
   lastPdfFrameUrl = "";
   pdfWasHiddenWhileOpen = false;
+  pdfCurrentRawUrl = rawUrl || "";
+  pdfJsRenderedOnce = false;
+  clearPdfWatchdogs();
   clearTimeout(pdfRestoreTimer);
 
   pdfOverlay?.classList.add("show");
@@ -1083,6 +1173,7 @@ async function openPdfOverlay(title, rawUrl, resource = null) {
 
   if (!resource || !session?.token) {
     openLegacyPdfSource(rawUrl);
+    scheduleLegacyLoadWatchdog(requestId);
     return;
   }
 
@@ -1102,10 +1193,12 @@ async function openPdfOverlay(title, rawUrl, resource = null) {
     setLocalPdfViewerMode(true);
     const viewerUrl = `${PDF_JS_VIEWER_PATH}?file=${encodeURIComponent(contentUrl.href)}#zoom=page-width&pagemode=none`;
     pdfFrame.src = viewerUrl;
+    schedulePdfJsRenderWatchdog(requestId);
   } catch (error) {
     if (requestId !== pdfOpenRequestId || !pdfOverlay?.classList.contains("show")) return;
     console.warn("Leitor PDF.js indisponível; usando visualizador compatível:", error);
     openLegacyPdfSource(rawUrl);
+    scheduleLegacyLoadWatchdog(requestId);
   }
 }
 
@@ -1156,6 +1249,7 @@ function closePdf() {
   clearTimeout(pdfRestoreTimer);
   clearTimeout(pdfTouchPanPassthroughTimer);
   clearTimeout(pdfSingleTouchBypassTimer);
+  clearPdfWatchdogs();
   pdfTouchPanLayer?.classList.remove("isPassthrough", "isTouching", "isPanning", "isPinchCatcher");
 
   setTimeout(() => {
