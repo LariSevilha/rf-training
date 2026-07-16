@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-16-pdf-render-fallback";
+const VERSION = "rf-fitness-v2026-07-16-pdf-link-parent-open";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 

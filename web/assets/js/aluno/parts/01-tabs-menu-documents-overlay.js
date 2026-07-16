@@ -937,6 +937,26 @@ function installPdfJsMemoryGuards(attempt = 0) {
   pdfJsGuardedEventBus = eventBus;
   pdfJsFitScale = null;
 
+  // V29: mesmo com target="_blank", alguns bloqueadores de anúncio/pop-up
+  // tratam a abertura de nova aba disparada de DENTRO de um iframe como
+  // suspeita (é o padrão clássico de pop-up de anúncio), e bloqueiam mesmo
+  // sendo um link legítimo do PDF — mesmo em Chrome puro, sem extensão.
+  // Interceptamos o clique e reabrimos via window.open() da PÁGINA PAI: pro
+  // navegador/extensão, fica indistinguível de um link clicado fora do PDF.
+  try {
+    pdfFrame.contentDocument?.addEventListener(
+      "click",
+      (ev) => {
+        const link = ev.target?.closest?.('a[target="_blank"]');
+        if (!link?.href) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        window.open(link.href, "_blank", "noopener,noreferrer");
+      },
+      true
+    );
+  } catch {}
+
   const captureFitScaleOnce = () => {
     if (pdfJsFitScale !== null) return;
     const initialScale = Number(pdfViewer.currentScale) || 0;
