@@ -914,6 +914,15 @@ function installPdfJsMemoryGuards(attempt = 0) {
 
   applyPdfJsReaderUi(pdfFrame.contentDocument);
 
+  // V27: links do PDF (ex.: botão "Vídeo" apontando pro YouTube) precisam
+  // abrir em nova aba. Como o viewer roda dentro de um iframe, o pdf.js
+  // detecta "embedded" e por padrão navega a janela TOPO (_top) — bloqueado
+  // pelo sandbox do iframe, então o clique não fazia nada. LinkTarget.BLANK
+  // (2) força target="_blank", que o "allow-popups" do sandbox já permite.
+  if (viewerApp.pdfLinkService) {
+    viewerApp.pdfLinkService.externalLinkTarget = 2;
+  }
+
   if (pdfJsGuardedEventBus === eventBus) return;
   pdfJsGuardedEventBus = eventBus;
   pdfJsFitScale = null;
