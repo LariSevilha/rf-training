@@ -102,9 +102,17 @@ export function isPdfLikeContentType(value: string | null): boolean {
   );
 }
 
+const PDF_SIGNATURE_SCAN_BYTES = 1024;
+
+// Per PDF spec 32000-1 §7.5.2, readers should tolerate leading bytes before
+// the header and look for "%PDF-" within the first 1024 bytes of the file.
 export function hasPdfSignature(chunk: Uint8Array): boolean {
   if (chunk.byteLength < 5) return false;
-  return Buffer.from(chunk.buffer, chunk.byteOffset, 5).toString("ascii") === "%PDF-";
+  const scanLength = Math.min(chunk.byteLength, PDF_SIGNATURE_SCAN_BYTES);
+  const head = Buffer.from(chunk.buffer, chunk.byteOffset, scanLength).toString(
+    "latin1",
+  );
+  return head.includes("%PDF-");
 }
 
 export function parseContentLength(value: string | null): number | null {
