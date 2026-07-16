@@ -285,6 +285,13 @@ const pdfZoomControls = document.getElementById("pdfZoomControls");
 const pdfTouchPanLayer = document.getElementById("pdfTouchPanLayer");
 const PDF_JS_VIEWER_PATH = "/assets/pdfjs/pdfjs-6.1.200-dist/web/viewer.html";
 const PDF_JS_MAX_SCALE = 2;
+// V26: o zoom nativo do pdf.js (pinça/roda do mouse/botão −) permite reduzir
+// até 10% (MIN_SCALE do viewer.mjs). O documento abre em "page-width", cuja
+// escala numérica varia por tela (bem menor que 1 em celulares estreitos),
+// então o piso do zoom-out é a escala com que o documento abriu — não um
+// número fixo — pra não brigar com o ajuste automático de largura.
+const PDF_JS_MIN_SCALE_FALLBACK = 1;
+let pdfJsFitScale = null;
 let pdfUsesLocalViewer = false;
 let pdfOpenRequestId = 0;
 let pdfJsGuardedEventBus = null;
@@ -909,9 +916,17 @@ function installPdfJsMemoryGuards(attempt = 0) {
 
   if (pdfJsGuardedEventBus === eventBus) return;
   pdfJsGuardedEventBus = eventBus;
+  pdfJsFitScale = null;
+
+  const captureFitScaleOnce = () => {
+    if (pdfJsFitScale !== null) return;
+    const initialScale = Number(pdfViewer.currentScale) || 0;
+    if (initialScale > 0) pdfJsFitScale = initialScale;
+  };
 
   const finishPdfJsLoading = () => {
     if (!pdfUsesLocalViewer || pdfJsGuardedEventBus !== eventBus) return;
+    captureFitScaleOnce();
     hideLoading();
   };
 
@@ -927,18 +942,40 @@ function installPdfJsMemoryGuards(attempt = 0) {
     if (!pdfUsesLocalViewer) return;
 
     const numericScale = Number(scale) || 1;
+    // A primeira mudança de escala real é o próprio ajuste "page-width" —
+    // é ela que define o piso do zoom-out, não um número fixo.
+    captureFitScaleOnce();
+    const minScale = pdfJsFitScale || PDF_JS_MIN_SCALE_FALLBACK;
+
     const zoomInButton = pdfFrame.contentDocument?.getElementById("zoomInButton");
     if (zoomInButton) zoomInButton.disabled = numericScale >= PDF_JS_MAX_SCALE - 0.001;
+    const zoomOutButton = pdfFrame.contentDocument?.getElementById("zoomOutButton");
+    if (zoomOutButton) zoomOutButton.disabled = numericScale <= minScale + 0.001;
 
-    if (numericScale <= PDF_JS_MAX_SCALE + 0.001 || pdfJsScaleClampPending) return;
-    pdfJsScaleClampPending = true;
-    viewerWindow.requestAnimationFrame(() => {
-      try {
-        pdfViewer.currentScaleValue = String(PDF_JS_MAX_SCALE);
-      } finally {
-        pdfJsScaleClampPending = false;
-      }
-    });
+    if (pdfJsScaleClampPending) return;
+
+    if (numericScale > PDF_JS_MAX_SCALE + 0.001) {
+      pdfJsScaleClampPending = true;
+      viewerWindow.requestAnimationFrame(() => {
+        try {
+          pdfViewer.currentScaleValue = String(PDF_JS_MAX_SCALE);
+        } finally {
+          pdfJsScaleClampPending = false;
+        }
+      });
+      return;
+    }
+
+    if (numericScale < minScale - 0.001) {
+      pdfJsScaleClampPending = true;
+      viewerWindow.requestAnimationFrame(() => {
+        try {
+          pdfViewer.currentScaleValue = String(minScale);
+        } finally {
+          pdfJsScaleClampPending = false;
+        }
+      });
+    }
   });
 }
 
