@@ -1,4 +1,4 @@
-const VERSION = "rf-fitness-v2026-07-16-mjs-mime-fix";
+const VERSION = "rf-fitness-v2026-07-16-pdf-video-link-target";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
